@@ -1,0 +1,60 @@
+from functools import lru_cache
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    # App
+    APP_NAME: str = "Eko AI Business Automation"
+    APP_VERSION: str = "0.1.0"
+    ENVIRONMENT: str = "development"
+    DEBUG: bool = True
+    SECRET_KEY: str = "change-this-in-production"
+    LOG_LEVEL: str = "INFO"
+
+    # Database
+    DATABASE_URL: str = "postgresql+asyncpg://eko:eko_dev_pass@localhost:5432/eko_ai"
+
+    # Redis
+    REDIS_URL: str = "redis://localhost:6379/0"
+
+    # API Keys
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o"
+    OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
+
+    RESEND_API_KEY: str = ""
+    RESEND_FROM_EMAIL: str = "Eko AI <eko@ekoai.com>"
+
+    OUTSCRAPER_API_KEY: str = ""
+    APIFY_API_KEY: str = ""
+
+    # Phase 3: Voice
+    RETELL_API_KEY: str = ""
+    VAPI_API_KEY: str = ""
+
+    # Phase 2: Calendar
+    CAL_COM_API_KEY: str = ""
+
+    # Compliance
+    DNC_SYNC_CRON: str = "0 2 1 * *"
+    MAX_CONTACT_ATTEMPTS: int = 5
+    COOLDOWN_HOURS_BETWEEN_CONTACTS: int = 72
+
+    @property
+    def is_development(self) -> bool:
+        return self.ENVIRONMENT == "development"
+
+    @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT == "production"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
