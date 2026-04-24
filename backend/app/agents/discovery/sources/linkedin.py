@@ -1,4 +1,4 @@
-"""Discovery source using LinkedIn via Apify + DuckDuckGo fallback."""
+"""Discovery source using LinkedIn via Apify + SerpApi + DuckDuckGo fallback."""
 
 from typing import List, Dict, Optional
 import logging
@@ -8,6 +8,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from app.services.apify import ApifyClient
+from app.services.serpapi import SerpApiClient
 
 logger = logging.getLogger(__name__)
 
@@ -19,12 +20,15 @@ LINKEDIN_PUBLIC_URL = "https://www.linkedin.com/company/"
 class LinkedInSource:
     """Discovery source for LinkedIn companies.
 
-    Primary: Apify actor (requires HarvestAPI token — may not work on free tier).
-    Fallback: DuckDuckGo search for LinkedIn company pages + public page scraping.
+    Hierarchy:
+    1. SerpApi (Google search) — most reliable, requires key
+    2. Apify actor — requires HarvestAPI token
+    3. DuckDuckGo + public page scraping — free but fragile
     """
 
     def __init__(self, actor_id: Optional[str] = None):
         self.apify = ApifyClient()
+        self.serpapi = SerpApiClient()
         self.actor_id = actor_id or DEFAULT_LINKEDIN_ACTOR
         self.client = httpx.AsyncClient(
             timeout=httpx.Timeout(30.0, connect=10.0),
@@ -48,7 +52,16 @@ class LinkedInSource:
         """Search for companies on LinkedIn."""
         logger.info(f"LinkedIn discovery: {query} in {city}")
 
-        # Try Apify actor first
+        # 1. Try SerpApi first (most reliable)
+        try:
+            if self.serpapi.api_key:
+                results = await self._search_serpapi(query, city, max_results)
+                if results:
+                    return results
+        except Exception as e:
+            logger.warning(f"LinkedIn SerpApi failed: {e}")
+
+        # 2. Try Apify actor
         try:
             if self.apify.api_key:
                 results = await self._search_apify(query, city, max_results)
@@ -57,13 +70,57 @@ class LinkedInSource:
         except Exception as e:
             logger.warning(f"LinkedIn Apify failed: {e}")
 
-        # Fallback: DuckDuckGo search for LinkedIn company pages
+        # 3. Fallback: DuckDuckGo search
         try:
             return await self._search_duckduckgo(query, city, max_results)
         except Exception as e:
             logger.warning(f"LinkedIn DuckDuckGo fallback failed: {e}")
 
         return []
+
+    async def _search_serpapi(self, query: str, city: str, max_results: int) -> List[Dict]:
+        """Search via SerpApi Google search for LinkedIn company pages."""
+        search_query = f'site:linkedin.com/company "{query}" "{city}"'
+        organic = await self.serpapi.search_google(
+            query=search_query,
+            num_results=min(max_results, 20),
+        )
+
+        leads = []
+        for result in organic:
+            link = result.get("link", "")
+            if "linkedin.com/company/" not in link:
+                continue
+
+            company_slug = link.split("linkedin.com/company/")[-1].split("/")[0].split("?")[0]
+            if not company_slug:
+                continue
+
+            # Use title and snippet from search result
+            title = result.get("title", "").replace(" | LinkedIn", "").strip()
+            snippet = result.get("snippet", "")
+
+            # Try to enrich with public page scrape
+            company_data = await self._scrape_linkedin_public(company_slug)
+            if company_data:
+                if not company_data.get("companyName"):
+                    company_data["companyName"] = title
+                if not company_data.get("about"):
+                    company_data["about"] = snippet
+                lead = self._normalize_company(company_data)
+            else:
+                # Minimal lead from search result only
+                lead = self._normalize_company({
+                    "companyName": title,
+                    "about": snippet,
+                    "linkedinUrl": link,
+                })
+
+            if lead:
+                leads.append(lead)
+
+        logger.info(f"LinkedIn (SerpApi) returned {len(leads)} leads")
+        return leads
 
     async def _search_apify(self, query: str, city: str, max_results: int) -> List[Dict]:
         """Search via Apify actor."""
@@ -115,7 +172,6 @@ class LinkedInSource:
             if not company_slug:
                 continue
 
-            # Try to scrape public LinkedIn page for basic info
             company_data = await self._scrape_linkedin_public(company_slug)
             if company_data:
                 lead = self._normalize_company(company_data)
@@ -135,7 +191,6 @@ class LinkedInSource:
 
             soup = BeautifulSoup(resp.text, "html.parser")
 
-            # Try to extract data from meta tags
             title_tag = soup.find("title")
             title = title_tag.get_text(strip=True) if title_tag else company_slug
             title = title.replace(" | LinkedIn", "").strip()
@@ -143,7 +198,7 @@ class LinkedInSource:
             desc_tag = soup.find("meta", attrs={"name": "description"})
             description = desc_tag.get("content") if desc_tag else None
 
-            # Look for JSON-LD or embedded data
+            # Look for JSON-LD
             scripts = soup.find_all("script", type="application/ld+json")
             for script in scripts:
                 try:
@@ -163,7 +218,6 @@ class LinkedInSource:
                 except Exception:
                     continue
 
-            # Fallback: return minimal data from title/meta
             return {
                 "companyName": title,
                 "about": description,
@@ -188,7 +242,6 @@ class LinkedInSource:
         if not name:
             return None
 
-        # Extract location
         location = company.get("locations", [])
         if isinstance(location, list) and location:
             loc = location[0]
@@ -200,19 +253,14 @@ class LinkedInSource:
             state = company.get("state", "")
             country = company.get("country", "US")
 
-        # Website
         website = company.get("companyUrl") or company.get("website")
         linkedin_url = company.get("linkedinUrl") or company.get("url")
-
-        # Industry / category
         industry = company.get("industry") or company.get("category")
 
-        # Description
         about = company.get("about") or company.get("headline") or company.get("specialties", "")
         if isinstance(about, list):
             about = ", ".join(about)
 
-        # Employee count
         employee_count = company.get("employeeCount") or company.get("employeesCount")
 
         return {
