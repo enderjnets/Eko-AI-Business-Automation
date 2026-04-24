@@ -45,8 +45,8 @@
 | pytest | ⚠️ Blocked | Python 3.14 incompatible with pydantic-core wheels |
 
 ### Next priorities (Fase 2)
-1. Fix Yelp (get Yelp Fusion API key → implement native client)
-2. Validate LinkedIn Apify actor input
+1. ✅ Fix Yelp — Fusion API client implemented. Needs `YELP_API_KEY` (free at yelp.com/developers)
+2. ✅ Fix LinkedIn — Apify primary + DuckDuckGo fallback implemented
 3. Implement Celery scheduled tasks (currently all `pass` stubs)
 4. Add SMS/Voice outreach channels
 5. Authentication system (JWT)
@@ -58,6 +58,7 @@
 ### API Keys configured locally
 - `APIFY_API_KEY`: ✅ Configured in `.env`
 - `PAPERCLIP_API_KEY`: ✅ Configured in `.env`
+- `YELP_API_KEY`: ❌ Not configured (free at https://www.yelp.com/developers/v3/manage_app)
 - `OUTSCRAPER_API_KEY`: ❌ Not configured
 - `OPENAI_API_KEY`: ❌ Not configured
 - `RESEND_API_KEY`: ❌ Not configured
