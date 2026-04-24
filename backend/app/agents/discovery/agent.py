@@ -2,6 +2,9 @@ from typing import List, Dict, Optional
 import logging
 
 from app.agents.discovery.sources.google_maps import GoogleMapsSource
+from app.agents.discovery.sources.yelp import YelpSource
+from app.agents.discovery.sources.linkedin import LinkedInSource
+from app.agents.discovery.sources.colorado_sos import ColoradoSOSSource
 from app.services.paperclip import on_discovery_complete
 
 logger = logging.getLogger(__name__)
@@ -13,16 +16,20 @@ class DiscoveryAgent:
     
     Currently supports:
     - Google Maps (via Outscraper)
+    - Yelp (web scraping)
+    - LinkedIn (via Apify)
+    - Colorado Secretary of State (Apify + scraping)
     
     Future sources:
-    - LinkedIn
-    - Yelp
-    - Colorado Secretary of State
     - Job boards
     """
     
+    
     def __init__(self):
         self.google_maps = GoogleMapsSource()
+        self.yelp = YelpSource()
+        self.linkedin = LinkedInSource()
+        self.colorado_sos = ColoradoSOSSource()
     
     async def discover(
         self,
@@ -66,7 +73,47 @@ class DiscoveryAgent:
             except Exception as e:
                 logger.error(f"Google Maps discovery failed: {e}")
         
-        # TODO: Add more sources (LinkedIn, Yelp, etc.)
+        if "yelp" in sources:
+            try:
+                yelp_leads = await self.yelp.search(
+                    query=query,
+                    city=city,
+                    state=state,
+                    radius_miles=radius_miles,
+                    max_results=max_results,
+                )
+                all_leads.extend(yelp_leads)
+                logger.info(f"Yelp returned {len(yelp_leads)} leads")
+            except Exception as e:
+                logger.error(f"Yelp discovery failed: {e}")
+        
+        if "linkedin" in sources:
+            try:
+                linkedin_leads = await self.linkedin.search(
+                    query=query,
+                    city=city,
+                    state=state,
+                    radius_miles=radius_miles,
+                    max_results=max_results,
+                )
+                all_leads.extend(linkedin_leads)
+                logger.info(f"LinkedIn returned {len(linkedin_leads)} leads")
+            except Exception as e:
+                logger.error(f"LinkedIn discovery failed: {e}")
+        
+        if "colorado_sos" in sources:
+            try:
+                sos_leads = await self.colorado_sos.search(
+                    query=query,
+                    city=city,
+                    state=state,
+                    radius_miles=radius_miles,
+                    max_results=max_results,
+                )
+                all_leads.extend(sos_leads)
+                logger.info(f"Colorado SOS returned {len(sos_leads)} leads")
+            except Exception as e:
+                logger.error(f"Colorado SOS discovery failed: {e}")
         
         # Deduplicate by business_name + city
         seen = set()

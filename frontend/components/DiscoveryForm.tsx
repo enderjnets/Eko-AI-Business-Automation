@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, MapPin, Star, Linkedin, Landmark } from "lucide-react";
 import { leadsApi } from "@/lib/api";
 
 interface DiscoveryFormProps {
@@ -13,8 +13,15 @@ export default function DiscoveryForm({ onSuccess }: DiscoveryFormProps) {
   const [city, setCity] = useState("Denver");
   const [state, setState] = useState("CO");
   const [maxResults, setMaxResults] = useState(50);
+  const [sources, setSources] = useState<string[]>(["google_maps"]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const toggleSource = (source: string) => {
+    setSources((prev) =>
+      prev.includes(source) ? prev.filter((s) => s !== source) : [...prev, source]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +36,7 @@ export default function DiscoveryForm({ onSuccess }: DiscoveryFormProps) {
         city,
         state,
         max_results: maxResults,
+        sources: sources.length > 0 ? sources : ["google_maps"],
       });
       onSuccess?.(res.data);
       setQuery("");
@@ -87,6 +95,36 @@ export default function DiscoveryForm({ onSuccess }: DiscoveryFormProps) {
           </div>
         </div>
 
+        <div>
+          <label className="block text-sm text-gray-400 mb-2">Fuentes</label>
+          <div className="flex gap-2">
+            <SourceToggle
+              label="Google Maps"
+              icon={<MapPin className="w-3 h-3" />}
+              active={sources.includes("google_maps")}
+              onClick={() => toggleSource("google_maps")}
+            />
+            <SourceToggle
+              label="Yelp"
+              icon={<Star className="w-3 h-3" />}
+              active={sources.includes("yelp")}
+              onClick={() => toggleSource("yelp")}
+            />
+            <SourceToggle
+              label="LinkedIn"
+              icon={<Linkedin className="w-3 h-3" />}
+              active={sources.includes("linkedin")}
+              onClick={() => toggleSource("linkedin")}
+            />
+            <SourceToggle
+              label="Colorado SOS"
+              icon={<Landmark className="w-3 h-3" />}
+              active={sources.includes("colorado_sos")}
+              onClick={() => toggleSource("colorado_sos")}
+            />
+          </div>
+        </div>
+
         {error && (
           <p className="text-sm text-red-400">{error}</p>
         )}
@@ -110,5 +148,32 @@ export default function DiscoveryForm({ onSuccess }: DiscoveryFormProps) {
         </button>
       </form>
     </div>
+  );
+}
+
+function SourceToggle({
+  label,
+  icon,
+  active,
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors border ${
+        active
+          ? "bg-eko-blue/20 border-eko-blue/40 text-eko-blue"
+          : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }

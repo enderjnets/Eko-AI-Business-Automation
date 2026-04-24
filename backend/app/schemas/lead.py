@@ -99,4 +99,12 @@ class DiscoveryRequest(BaseModel):
     state: Optional[str] = "CO"
     radius_miles: Optional[int] = Field(25, ge=1, le=100)
     max_results: Optional[int] = Field(50, ge=1, le=500)
+    sources: Optional[List[str]] = Field(["google_maps"], description="Sources to search: google_maps, yelp, linkedin, colorado_sos")
     campaign_id: Optional[int] = None
+
+
+class LeadSearchRequest(BaseModel):
+    query: str = Field(..., description="Semantic search query")
+    limit: Optional[int] = Field(20, ge=1, le=100)
+    status: Optional[LeadStatus] = None
+    min_score: Optional[float] = Field(None, ge=0, le=100)

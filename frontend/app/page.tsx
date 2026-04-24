@@ -24,6 +24,7 @@ export default function Dashboard() {
     avg_lead_score: 0,
   });
   const [discoveryResult, setDiscoveryResult] = useState<any>(null);
+  const [refreshLeads, setRefreshLeads] = useState(0);
 
   useEffect(() => {
     loadStats();
@@ -97,7 +98,7 @@ export default function Dashboard() {
               onSuccess={(data) => {
                 setDiscoveryResult(data);
                 loadStats();
-                window.location.reload();
+                setRefreshLeads((prev) => prev + 1);
               }}
             />
 
@@ -114,7 +115,7 @@ export default function Dashboard() {
           </div>
 
           <div className="lg:col-span-2">
-            <RecentLeads />
+            <RecentLeads refreshTrigger={refreshLeads} />
           </div>
         </div>
       </main>

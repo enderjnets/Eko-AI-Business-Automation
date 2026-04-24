@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Filter, Loader2, MapPin, Mail, Phone, Globe, Sparkles } from "lucide-react";
+import { Search, Filter, Loader2, MapPin, Mail, Phone, Globe, Sparkles, Brain } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { leadsApi } from "@/lib/api";
 
@@ -26,6 +26,7 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [semanticMode, setSemanticMode] = useState(false);
   const [enrichingId, setEnrichingId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -35,7 +36,12 @@ export default function LeadsPage() {
   const loadLeads = async () => {
     setLoading(true);
     try {
-      const res = await leadsApi.list({ status: status || undefined, search: search || undefined });
+      let res;
+      if (semanticMode && search.trim()) {
+        res = await leadsApi.search({ query: search.trim(), status: status || undefined });
+      } else {
+        res = await leadsApi.list({ status: status || undefined, search: search || undefined });
+      }
       setLeads(res.data.items || []);
     } catch (err) {
       console.error(err);
@@ -81,15 +87,34 @@ export default function LeadsPage() {
 
         <form onSubmit={handleSearch} className="flex gap-3 mb-6">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            {semanticMode ? (
+              <Brain className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-eko-green" />
+            ) : (
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            )}
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nombre..."
-              className="w-full rounded-lg border border-white/10 bg-white/5 pl-10 pr-4 py-2.5 text-sm focus:border-eko-blue focus:outline-none"
+              placeholder={semanticMode ? "Búsqueda semántica (ej: restaurantes con malas reseñas)..." : "Buscar por nombre..."}
+              className={`w-full rounded-lg border bg-white/5 pl-10 pr-4 py-2.5 text-sm focus:outline-none ${
+                semanticMode ? "border-eko-green/50 focus:border-eko-green focus:ring-1 focus:ring-eko-green" : "border-white/10 focus:border-eko-blue"
+              }`}
             />
           </div>
+          <button
+            type="button"
+            onClick={() => setSemanticMode((prev) => !prev)}
+            className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              semanticMode
+                ? "bg-eko-green/20 text-eko-green border border-eko-green/30"
+                : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10"
+            }`}
+            title="Toggle semantic search"
+          >
+            <Brain className="w-4 h-4" />
+            <span className="hidden sm:inline">{semanticMode ? "Semántica" : "Texto"}</span>
+          </button>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}

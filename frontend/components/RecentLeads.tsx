@@ -20,13 +20,17 @@ interface Lead {
   website?: string;
 }
 
-export default function RecentLeads() {
+interface RecentLeadsProps {
+  refreshTrigger?: number;
+}
+
+export default function RecentLeads({ refreshTrigger }: RecentLeadsProps) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadLeads();
-  }, []);
+  }, [refreshTrigger]);
 
   const loadLeads = async () => {
     try {

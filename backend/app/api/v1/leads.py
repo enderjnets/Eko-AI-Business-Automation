@@ -5,10 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
 from app.models.lead import Lead, LeadStatus
-from app.schemas.lead import LeadCreate, LeadUpdate, LeadResponse, LeadListResponse, DiscoveryRequest
+from app.schemas.lead import LeadCreate, LeadUpdate, LeadResponse, LeadListResponse, DiscoveryRequest, LeadSearchRequest
 from app.agents.discovery.agent import DiscoveryAgent
 from app.agents.research.agent import ResearchAgent
 from app.services.paperclip import on_lead_status_change, on_system_alert
+from app.utils.embedding import update_lead_embedding
+from app.utils.ai_client import generate_embedding
 
 router = APIRouter()
 
@@ -127,6 +129,13 @@ async def enrich_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(lead)
     
+    # Generate updated embedding with enriched data
+    try:
+        await update_lead_embedding(lead)
+        await db.commit()
+    except Exception:
+        pass
+    
     # Paperclip: log status change
     try:
         on_lead_status_change(
@@ -176,10 +185,66 @@ async def discover_leads(
     await db.commit()
     for lead in created_leads:
         await db.refresh(lead)
+        # Generate embedding for semantic search (non-blocking to response)
+        try:
+            await update_lead_embedding(lead)
+        except Exception:
+            pass
+    
+    # Save embeddings
+    if created_leads:
+        await db.commit()
     
     return LeadListResponse(
         total=len(created_leads),
         items=created_leads,
         page=1,
         page_size=len(created_leads),
+    )
+
+
+@router.post("/search", response_model=LeadListResponse)
+async def search_leads(
+    request: LeadSearchRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Semantic search over leads using vector similarity."""
+    if not request.query.strip():
+        raise HTTPException(status_code=400, detail="Query is required")
+
+    # Generate embedding for the search query
+    try:
+        query_embedding = await generate_embedding(request.query)
+    except Exception as e:
+        logger.error(f"Failed to generate query embedding: {e}")
+        raise HTTPException(status_code=500, detail="Embedding generation failed")
+
+    # Build query with cosine distance using pgvector
+    distance_expr = Lead.embedding.op("<=>")(query_embedding)
+    query = (
+        select(Lead, distance_expr.label("distance"))
+        .where(Lead.embedding.isnot(None))
+        .order_by(distance_expr)
+        .limit(request.limit)
+    )
+
+    if request.status:
+        query = query.where(Lead.status == request.status)
+    if request.min_score is not None:
+        query = query.where(Lead.total_score >= request.min_score)
+
+    result = await db.execute(query)
+    rows = result.all()
+
+    # Filter by similarity threshold (cosine distance < 0.5 means fairly similar)
+    items = []
+    for lead, distance in rows:
+        if distance < 0.5:
+            items.append(lead)
+
+    return LeadListResponse(
+        total=len(items),
+        items=items,
+        page=1,
+        page_size=len(items),
     )

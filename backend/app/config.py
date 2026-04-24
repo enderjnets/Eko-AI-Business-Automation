@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     MAX_CONTACT_ATTEMPTS: int = 5
     COOLDOWN_HOURS_BETWEEN_CONTACTS: int = 72
 
+    # CORS
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8000"
+
     # Paperclip — AI Company Control Plane
     PAPERCLIP_API_URL: str = "http://100.88.47.99:3100"
     PAPERCLIP_COMPANY_ID: str = "a5151f95-51cd-4d2d-a35b-7d7cb4f4102e"
