@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.api.v1 import leads, campaigns, emails, analytics, webhooks
+from app.api.v1 import leads, campaigns, emails, analytics, webhooks, crm
 from app.db.base import init_db
 
 settings = get_settings()
@@ -47,6 +47,7 @@ app.add_middleware(
 app.include_router(leads.router, prefix="/api/v1/leads", tags=["leads"])
 app.include_router(campaigns.router, prefix="/api/v1/campaigns", tags=["campaigns"])
 app.include_router(emails.router, prefix="/api/v1/emails", tags=["emails"])
+app.include_router(crm.router, prefix="/api/v1/crm", tags=["crm"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["webhooks"])
 

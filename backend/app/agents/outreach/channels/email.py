@@ -4,7 +4,7 @@ from typing import Optional
 import resend
 
 from app.config import get_settings
-from app.models.lead import Lead
+from app.models.lead import Lead, LeadStatus, Interaction
 from app.utils.ai_client import generate_completion
 from app.services.paperclip import on_email_sent, on_email_error
 
@@ -14,9 +14,31 @@ resend.api_key = settings.RESEND_API_KEY
 logger = logging.getLogger(__name__)
 
 
+# Email templates library
+EMAIL_TEMPLATES = {
+    "initial_outreach": {
+        "subject": "Quick question about {business_name}",
+        "context": "First contact introducing AI voice agents for small businesses",
+    },
+    "follow_up": {
+        "subject": "Following up — {business_name}",
+        "context": "Follow-up after no response to initial email",
+    },
+    "meeting_request": {
+        "subject": "15 min to show you something — {business_name}",
+        "context": "Requesting a short demo call",
+    },
+    "proposal": {
+        "subject": "Your AI automation proposal — {business_name}",
+        "context": "Sending pricing and service details",
+    },
+}
+
+
 class EmailOutreach:
     """
     Email outreach channel with AI-generated personalized content.
+    Integrates with Resend for delivery and tracks opens/clicks/bounces.
     """
     
     def __init__(self):
@@ -25,6 +47,7 @@ class EmailOutreach:
     async def generate_email(
         self,
         lead: Lead,
+        template_key: str = "initial_outreach",
         campaign_context: str = "",
         tone: str = "professional",
     ) -> dict:
@@ -32,9 +55,11 @@ class EmailOutreach:
         Generate a personalized email for a lead using AI.
         
         Returns:
-            Dict with subject and body
+            Dict with subject, body, personalization_notes
         """
-        system_prompt = f"""You are a expert sales copywriter for Eko AI Automation, 
+        template = EMAIL_TEMPLATES.get(template_key, EMAIL_TEMPLATES["initial_outreach"])
+        
+        system_prompt = f"""You are an expert sales copywriter for Eko AI Automation, 
 a company that provides AI Voice Agents and automation for small local businesses in Denver, CO.
 
 Your emails are:
@@ -44,10 +69,14 @@ Your emails are:
 - Written in {tone} tone
 - Include a soft call-to-action (reply or book a call)
 - NEVER generic or templated sounding
+- Include an unsubscribe link at the bottom
 
-The email should feel like it was written specifically for THIS business after research."""
+COMPLIANCE:
+- Include "[AI-generated message]" disclosure at the top
+- Include unsubscribe: "Reply STOP to opt out"
+- Do not make false claims"""
 
-        user_prompt = f"""Write a personalized outreach email to:
+        user_prompt = f"""Write a personalized outreach email using template: {template_key}
 
 Business: {lead.business_name}
 Category: {lead.category or 'Local business'}
@@ -59,8 +88,9 @@ What we know about them:
 - Pain points detected: {', '.join(lead.pain_points or []) or 'N/A'}
 - Trigger events: {', '.join(lead.trigger_events or []) or 'N/A'}
 - Review summary: {lead.review_summary or 'N/A'}
+- Urgency score: {lead.urgency_score or 'N/A'}
 
-Campaign context: {campaign_context or 'General outreach about AI voice agents for small businesses'}
+Campaign context: {campaign_context or template['context']}
 
 Our services:
 - AI Voice Agent that answers calls 24/7
@@ -73,6 +103,7 @@ Return ONLY a JSON object with:
 - subject: string (compelling, not salesy)
 - body: string (HTML email body, 3-4 paragraphs, personalized)
 - personalization_notes: string (what specific detail you used)
+- cta: string (the call-to-action used)
 """
 
         response = await generate_completion(
@@ -84,14 +115,32 @@ Return ONLY a JSON object with:
         
         import json
         try:
-            return json.loads(response)
+            result = json.loads(response)
+            # Add compliance footer
+            result["body"] = self._add_compliance_footer(result["body"], lead.id)
+            return result
         except json.JSONDecodeError:
             logger.error("Failed to parse email generation response")
             return {
-                "subject": f"Quick question about {lead.business_name}",
-                "body": f"<p>Hi there,</p><p>I noticed {lead.business_name} and wanted to reach out...</p>",
+                "subject": template["subject"].format(business_name=lead.business_name),
+                "body": self._add_compliance_footer(
+                    f"<p>Hi there,</p><p>I noticed {lead.business_name} and wanted to reach out...</p>",
+                    lead.id
+                ),
                 "personalization_notes": "Fallback template",
+                "cta": "Reply to learn more",
             }
+    
+    def _add_compliance_footer(self, body: str, lead_id: int) -> str:
+        """Add TCPA/CAN-SPAM compliance footer to email."""
+        footer = f"""
+<div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999;">
+  <p>[AI-generated message] — Eko AI Automation LLC, Denver, CO</p>
+  <p>You're receiving this because your business matches our service area.</p>
+  <p><a href="http://localhost:8000/api/v1/webhooks/unsubscribe?lead_id={lead_id}">Unsubscribe</a> | Reply STOP to opt out</p>
+</div>
+"""
+        return body + footer
     
     async def send(
         self,
@@ -101,24 +150,31 @@ Return ONLY a JSON object with:
         lead_id: Optional[int] = None,
         business_name: str = "",
         ai_generated: bool = True,
+        tags: Optional[list] = None,
     ) -> dict:
         """
         Send an email via Resend.
         
         Returns:
-            Resend API response
+            Resend API response with message_id
         """
         try:
-            params: resend.Emails.SendParams = {
+            email_tags = [{"name": "lead_id", "value": str(lead_id)}] if lead_id else []
+            if tags:
+                for tag in tags:
+                    email_tags.append({"name": tag, "value": "true"})
+            
+            params = {
                 "from": self.from_email,
                 "to": [to_email],
                 "subject": subject,
                 "html": body,
-                "tags": [{"name": "lead_id", "value": str(lead_id)}] if lead_id else [],
+                "tags": email_tags,
             }
             
             response = resend.Emails.send(params)
-            logger.info(f"Email sent to {to_email}: {response.get('id')}")
+            message_id = response.get("id")
+            logger.info(f"Email sent to {to_email}: {message_id}")
             
             # Paperclip: log email sent
             try:
@@ -132,7 +188,8 @@ Return ONLY a JSON object with:
             except Exception:
                 pass
             
-            return response
+            return {"id": message_id, "status": "sent"}
+            
         except Exception as e:
             logger.error(f"Failed to send email to {to_email}: {e}")
             
@@ -152,10 +209,15 @@ Return ONLY a JSON object with:
     async def generate_and_send(
         self,
         lead: Lead,
+        template_key: str = "initial_outreach",
         campaign_context: str = "",
     ) -> dict:
         """Generate a personalized email and send it."""
-        email_data = await self.generate_email(lead, campaign_context)
+        email_data = await self.generate_email(
+            lead=lead,
+            template_key=template_key,
+            campaign_context=campaign_context,
+        )
         
         response = await self.send(
             to_email=lead.email,
@@ -164,6 +226,37 @@ Return ONLY a JSON object with:
             lead_id=lead.id,
             business_name=lead.business_name,
             ai_generated=True,
+            tags=["ai_generated", template_key],
         )
         
-        return response
+        return {
+            **response,
+            "subject": email_data["subject"],
+            "personalization_notes": email_data.get("personalization_notes", ""),
+            "cta": email_data.get("cta", ""),
+        }
+    
+    async def send_sequence(
+        self,
+        lead: Lead,
+        sequence: list,
+    ) -> list:
+        """
+        Send a sequence of emails to a lead.
+        
+        Args:
+            lead: The lead to send to
+            sequence: List of dicts with {template_key, delay_days, campaign_context}
+        
+        Returns:
+            List of send results
+        """
+        results = []
+        for step in sequence:
+            result = await self.generate_and_send(
+                lead=lead,
+                template_key=step.get("template_key", "initial_outreach"),
+                campaign_context=step.get("campaign_context", ""),
+            )
+            results.append(result)
+        return results
