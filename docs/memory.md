@@ -58,7 +58,8 @@
 ### API Keys configured locally
 - `APIFY_API_KEY`: ✅ Configured in `.env`
 - `PAPERCLIP_API_KEY`: ✅ Configured in `.env`
-- `YELP_API_KEY`: ❌ Not configured (free at https://www.yelp.com/developers/v3/manage_app)
+- `YELP_API_KEY`: ✅ Configured (free tier)
+- `SERPAPI_API_KEY`: ✅ Configured (100 searches/month free)
 - `OUTSCRAPER_API_KEY`: ❌ Not configured
 - `OPENAI_API_KEY`: ❌ Not configured
 - `RESEND_API_KEY`: ❌ Not configured
