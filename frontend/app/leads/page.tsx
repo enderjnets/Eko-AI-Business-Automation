@@ -35,6 +35,28 @@ export default function LeadsPage() {
     loadLeads();
   }, [status]);
 
+  // Poll enrichment status every 30 seconds
+  useEffect(() => {
+    loadEnrichmentStatus();
+    const interval = setInterval(loadEnrichmentStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadEnrichmentStatus = async () => {
+    try {
+      const res = await leadsApi.getEnrichmentStatus();
+      const newStatus = res.data;
+      if (enrichmentStatus && newStatus.scored > enrichmentStatus.scored) {
+        setShowEnrichmentToast(true);
+        setTimeout(() => setShowEnrichmentToast(false), 5000);
+        loadLeads(); // refresh list
+      }
+      setEnrichmentStatus(newStatus);
+    } catch (err) {
+      // silently fail
+    }
+  };
+
   const loadLeads = async () => {
     setLoading(true);
     try {
@@ -79,6 +101,17 @@ export default function LeadsPage() {
   return (
     <div className="min-h-screen bg-eko-graphite">
       <Navbar />
+      {/* Enrichment toast notification */}
+      {showEnrichmentToast && (
+        <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-2">
+          <div className="rounded-lg bg-eko-green/90 backdrop-blur border border-eko-green/50 px-4 py-3 shadow-lg">
+            <p className="text-sm font-medium text-white flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Nuevos leads enriquecidos con AI
+            </p>
+          </div>
+        </div>
+      )}
       <main className="pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>

@@ -20,6 +20,30 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+
+
+@router.get("/enrichment-status", response_model=dict)
+async def enrichment_status(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return counts of leads by enrichment status."""
+    discovered = await db.scalar(
+        select(func.count()).select_from(Lead).where(Lead.status == LeadStatus.DISCOVERED)
+    )
+    enriched = await db.scalar(
+        select(func.count()).select_from(Lead).where(Lead.status == LeadStatus.ENRICHED)
+    )
+    scored = await db.scalar(
+        select(func.count()).select_from(Lead).where(Lead.status == LeadStatus.SCORED)
+    )
+    return {
+        "discovered": discovered,
+        "enriched": enriched,
+        "scored": scored,
+        "total": discovered + enriched + scored,
+    }
+
 @router.get("", response_model=LeadListResponse)
 async def list_leads(
     status: Optional[LeadStatus] = None,
