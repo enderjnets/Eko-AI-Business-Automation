@@ -43,7 +43,7 @@ class BookingResponse(BookingBase):
     lead_id: int
     status: BookingStatus
     cancellation_reason: Optional[str] = None
-    metadata: Optional[dict] = None
+    meta: Optional[dict] = None
     created_at: datetime
     updated_at: datetime
 

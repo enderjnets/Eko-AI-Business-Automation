@@ -57,7 +57,7 @@ class Campaign(Base):
     
     # Metadata
     created_by: Mapped[Optional[str]] = mapped_column(String(100))
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON)
+    meta: Mapped[Optional[dict]] = mapped_column(JSON)
     
     # Timestamps
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))

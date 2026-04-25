@@ -79,7 +79,7 @@ class SequenceEnrollmentResponse(SequenceEnrollmentBase):
     started_at: datetime
     completed_at: Optional[datetime] = None
     next_step_at: Optional[datetime] = None
-    metadata: Optional[dict] = None
+    meta: Optional[dict] = None
 
     class Config:
         from_attributes = True

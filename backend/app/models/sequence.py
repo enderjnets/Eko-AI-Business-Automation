@@ -102,7 +102,7 @@ class SequenceEnrollment(Base):
     next_step_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     # Metadata
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON)
+    meta: Mapped[Optional[dict]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     # Relationships
