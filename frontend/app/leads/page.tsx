@@ -14,6 +14,7 @@ interface Lead {
   email?: string;
   phone?: string;
   website?: string;
+  address?: string;
   status: string;
   urgency_score: number;
   fit_score: number;
@@ -172,14 +173,32 @@ export default function LeadsPage() {
                     <td className="px-4 py-3">
                       <span className="flex items-center gap-1 text-sm text-gray-400">
                         <MapPin className="w-3 h-3" />
-                        {lead.city}, {lead.state}
+                        {lead.address || `${lead.city}, ${lead.state}`}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        {lead.email && <Mail className="w-4 h-4 text-gray-500" />}
-                        {lead.phone && <Phone className="w-4 h-4 text-gray-500" />}
-                        {lead.website && <Globe className="w-4 h-4 text-gray-500" />}
+                      <div className="flex flex-col gap-1">
+                        {lead.phone && (
+                          <a href={`tel:${lead.phone}`} className="flex items-center gap-1 text-xs text-gray-400 hover:text-white">
+                            <Phone className="w-3 h-3" />
+                            {lead.phone}
+                          </a>
+                        )}
+                        {lead.email && (
+                          <a href={`mailto:${lead.email}`} className="flex items-center gap-1 text-xs text-gray-400 hover:text-white">
+                            <Mail className="w-3 h-3" />
+                            {lead.email}
+                          </a>
+                        )}
+                        {lead.website && (
+                          <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-eko-blue hover:underline">
+                            <Globe className="w-3 h-3" />
+                            Web
+                          </a>
+                        )}
+                        {!lead.phone && !lead.email && !lead.website && (
+                          <span className="text-xs text-gray-600">Sin datos de contacto</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3">

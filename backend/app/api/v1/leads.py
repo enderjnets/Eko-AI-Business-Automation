@@ -192,6 +192,7 @@ async def discover_leads(
         state=request.state,
         radius_miles=request.radius_miles,
         max_results=request.max_results,
+        sources=request.sources,
     )
     
     created_leads = []
