@@ -48,6 +48,14 @@ interface Lead {
   do_not_contact: boolean;
   notes: string;
   created_at: string;
+  // Extended enrichment
+  website_real?: string;
+  proposal_suggestion?: string;
+  services?: string[];
+  pricing_info?: string;
+  business_hours?: string;
+  about_text?: string;
+  team_names?: string[];
 }
 
 export default function LeadDetailPage() {
@@ -183,6 +191,14 @@ export default function LeadDetailPage() {
                     </a>
                   </div>
                 )}
+                {lead.website_real && lead.website_real !== lead.website && (
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Globe className="w-4 h-4 text-eko-blue" />
+                    <a href={lead.website_real} target="_blank" rel="noopener" className="hover:text-eko-blue truncate text-eko-blue">
+                      Official Website
+                    </a>
+                  </div>
+                )}
                 {(lead.city || lead.state) && (
                   <div className="flex items-center gap-2 text-sm text-gray-400">
                     <MapPin className="w-4 h-4" />
@@ -260,7 +276,74 @@ export default function LeadDetailPage() {
                     </div>
                   </div>
                 )}
-                
+
+                {/* Personalized Proposal */}
+                {lead.proposal_suggestion && (
+                  <div className="mb-4 p-4 rounded-lg bg-eko-blue/5 border border-eko-blue/20">
+                    <h4 className="text-xs text-eko-blue uppercase tracking-wider mb-2 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      AI-Generated Proposal
+                    </h4>
+                    <div className="text-sm text-gray-300 whitespace-pre-line leading-relaxed">
+                      {lead.proposal_suggestion}
+                    </div>
+                  </div>
+                )}
+
+                {/* Services */}
+                {lead.services?.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Services</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {lead.services.map((s, i) => (
+                        <span key={i} className="text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Business Hours & Pricing */}
+                {(lead.business_hours || lead.pricing_info) && (
+                  <div className="mb-4 grid grid-cols-2 gap-4">
+                    {lead.business_hours && (
+                      <div>
+                        <h4 className="text-xs text-gray-500 uppercase tracking-wider mb-1">Hours</h4>
+                        <p className="text-xs text-gray-400">{lead.business_hours}</p>
+                      </div>
+                    )}
+                    {lead.pricing_info && (
+                      <div>
+                        <h4 className="text-xs text-gray-500 uppercase tracking-wider mb-1">Pricing</h4>
+                        <p className="text-xs text-gray-400">{lead.pricing_info}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Team */}
+                {lead.team_names?.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Team / Owners</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {lead.team_names.map((n, i) => (
+                        <span key={i} className="text-xs px-2 py-1 rounded-full bg-white/5 text-gray-400">
+                          {n}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* About */}
+                {lead.about_text && (
+                  <div className="mb-4">
+                    <h4 className="text-xs text-gray-500 uppercase tracking-wider mb-1">About</h4>
+                    <p className="text-xs text-gray-400 leading-relaxed">{lead.about_text}</p>
+                  </div>
+                )}
+
                 {lead.tech_stack?.length > 0 && (
                   <div>
                     <h4 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Tech Stack</h4>
