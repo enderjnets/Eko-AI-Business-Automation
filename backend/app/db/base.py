@@ -36,4 +36,6 @@ async def get_db() -> AsyncSession:
 async def init_db():
     """Create all tables on startup. In production, use Alembic migrations."""
     async with engine.begin() as conn:
+        # Enable pgvector extension
+        await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
         await conn.run_sync(Base.metadata.create_all)
