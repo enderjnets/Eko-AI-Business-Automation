@@ -159,13 +159,29 @@ Raw Source Data: {lead.source_data or {}}
         )
 
         try:
+            # Try direct parse first
             result = json.loads(response)
+        except (json.JSONDecodeError, ValueError):
+            # Try to extract JSON block from markdown or reasoning text
+            import re
+            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            if json_match:
+                try:
+                    result = json.loads(json_match.group(0))
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.error(f"Failed to parse extracted JSON: {e}")
+                    result = None
+            else:
+                logger.error(f"No JSON block found in AI response")
+                result = None
+
+        if result:
             # Validate and clamp scores
             result["urgency_score"] = max(0, min(100, float(result.get("urgency_score", 0))))
             result["fit_score"] = max(0, min(100, float(result.get("fit_score", 0))))
             return result
-        except (json.JSONDecodeError, ValueError) as e:
-            logger.error(f"Failed to parse AI analysis JSON: {e}")
+
+        logger.error("AI analysis returned no valid JSON, using fallback")
             return {
                 "review_summary": "Analysis incomplete due to parsing error",
                 "trigger_events": [],

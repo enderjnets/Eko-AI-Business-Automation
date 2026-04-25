@@ -47,7 +47,12 @@ async def generate_completion(
     }
     
     if json_mode:
-        kwargs["response_format"] = {"type": "json_object"}
+        # Kimi Code API does not reliably support response_format json_object
+        # We add an explicit instruction instead
+        if settings.AI_PROVIDER == "kimi":
+            kwargs["messages"][0]["content"] += "\n\nIMPORTANT: Your response must be ONLY valid JSON. No markdown, no explanations, no reasoning outside the JSON."
+        else:
+            kwargs["response_format"] = {"type": "json_object"}
     
     response = await openai_client.chat.completions.create(**kwargs)
     

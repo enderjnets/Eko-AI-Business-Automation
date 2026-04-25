@@ -187,7 +187,12 @@ class WebsiteAnalyzer:
         emails = email_pattern.findall(text)
         if emails:
             # Filter out common false positives
-            blocked = ["example.com", "test@", "noreply", "no-reply", "domain.com", "email.com"]
+            blocked = [
+            "example.com", "test@", "noreply", "no-reply", "domain.com", "email.com",
+            "sentry", "wixpress", "wix.com", "support@wix", "@sentry.", "@wix.",
+            "@google.com", "@facebook.com", "@instagram.com", "@twitter.com",
+            "@linkedin.com", "@youtube.com", "@tiktok.com",
+        ]
             filtered = [
                 e for e in emails
                 if not any(b in e.lower() for b in blocked)
