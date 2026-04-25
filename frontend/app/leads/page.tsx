@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Search, Filter, Loader2, MapPin, Mail, Phone, Globe, Sparkles, Brain } from "lucide-react";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { leadsApi } from "@/lib/api";
 
@@ -164,7 +165,7 @@ export default function LeadsPage() {
                   <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-4 py-3">
                       <div>
-                        <p className="font-medium text-sm">{lead.business_name}</p>
+                        <Link href={`/leads/${lead.id}`} className="font-medium text-sm hover:text-eko-blue transition-colors">{lead.business_name}</Link>
                         {lead.category && (
                           <p className="text-xs text-gray-500">{lead.category}</p>
                         )}
