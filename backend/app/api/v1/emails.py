@@ -4,7 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
 from app.models.lead import Lead
+from app.models.user import User
 from app.agents.outreach.channels.email import EmailOutreach
+from app.core.security import get_current_user
 
 router = APIRouter()
 
@@ -15,6 +17,7 @@ async def send_email_to_lead(
     subject: str,
     body: str,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Send a personalized email to a lead."""
     result = await db.execute(select(Lead).where(Lead.id == lead_id))
@@ -44,6 +47,7 @@ async def generate_and_send_email(
     lead_id: int,
     campaign_context: str = "",
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Generate a personalized email using AI and send it."""
     result = await db.execute(select(Lead).where(Lead.id == lead_id))

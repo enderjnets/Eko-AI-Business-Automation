@@ -5,12 +5,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.base import get_db
 from app.models.lead import Lead, LeadStatus
 from app.models.campaign import Campaign
+from app.models.user import User
+from app.core.security import get_current_user
 
 router = APIRouter()
 
 
 @router.get("/pipeline")
-async def get_pipeline_summary(db: AsyncSession = Depends(get_db)):
+async def get_pipeline_summary(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Get counts of leads by status for pipeline visualization."""
     result = await db.execute(
         select(Lead.status, func.count(Lead.id))
@@ -32,7 +37,10 @@ async def get_pipeline_summary(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/performance")
-async def get_performance_metrics(db: AsyncSession = Depends(get_db)):
+async def get_performance_metrics(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Get key performance metrics."""
     total_leads = await db.scalar(select(func.count(Lead.id)))
     contacted = await db.scalar(

@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.4.0] — 2026-04-24
+
+### Auth System: JWT + Protected Routes + Multi-tenancy
+
+#### Backend
+- **User model** (`app/models/user.py`) with roles: `admin`, `manager`, `agent`
+- **JWT security** (`app/core/security.py`): password hashing (bcrypt), access/refresh tokens, `get_current_user` dependency, role-based guards (`get_current_admin`)
+- **Auth router** (`app/api/v1/auth.py`):
+  - `POST /auth/login` — JWT token pair
+  - `POST /auth/register` — Admin-only user creation
+  - `POST /auth/refresh` — Token refresh
+  - `GET /auth/me` — Current user profile
+  - `PATCH /auth/me` — Update profile
+  - `GET /auth/users` — List users (admin)
+  - `POST /auth/dev-login` — Development bypass (creates admin dev user)
+- **Protected routes**: All existing API endpoints now require Bearer token (`leads`, `campaigns`, `crm`, `sequences`, `emails`, `analytics`)
+- **Multi-tenancy**: Non-admin users only see leads they own or are assigned to; `owner_id` auto-assigned on lead creation/discovery
+
+#### Frontend
+- **Auth context** (`frontend/contexts/AuthContext.tsx`): login state, auto-redirect, token persistence in localStorage
+- **Login page** (`frontend/app/login/page.tsx`): email/password form + dev login button
+- **API client** (`frontend/lib/api.ts`): Axios interceptors inject Bearer token; auto-redirect to `/login` on 401
+- **Navbar** updated: displays current user name/role + logout button
+- **Route protection**: Unauthenticated users redirected to `/login`
+
+#### Tests
+- `tests/test_auth.py` — Password hashing, JWT encode/decode, token expiration, role-based access control, router endpoints
+
+---
+
 ## [0.3.0] — 2026-04-24
 
 ### Fase 2 Complete: Email Outreach + CRM Pipeline + Sequences

@@ -92,6 +92,9 @@ class Lead(Base):
     # Vector embedding for semantic search
     embedding: Mapped[Optional[list]] = mapped_column(Vector(1536))
     
+    # Ownership
+    owner_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), index=True, nullable=True)
+
     # Metadata
     assigned_to: Mapped[Optional[str]] = mapped_column(String(100))
     tags: Mapped[Optional[list]] = mapped_column(JSON)
@@ -112,6 +115,7 @@ class Lead(Base):
     campaigns: Mapped[List["Campaign"]] = relationship(
         "Campaign", secondary="campaign_leads", back_populates="leads"
     )
+    owner: Mapped[Optional["User"]] = relationship("User", back_populates="leads")
 
 
 class Interaction(Base):

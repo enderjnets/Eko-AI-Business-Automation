@@ -1,11 +1,13 @@
 "use client";
 
-import { Zap, BarChart3, Users, Mail, Settings, GitBranch } from "lucide-react";
+import { Zap, BarChart3, Users, Mail, Settings, GitBranch, LogOut, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   return (
     <nav className="glass fixed top-0 left-0 right-0 z-50 border-b border-white/5">
@@ -28,9 +30,30 @@ export default function Navbar() {
             <NavLink href="/settings" icon={<Settings className="w-4 h-4" />} label="Config" active={pathname === "/settings"} />
           </div>
           
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-eko-green animate-pulse" />
-            <span className="text-xs text-gray-400">System Online</span>
+          <div className="flex items-center gap-3">
+            {user ? (
+              <>
+                <div className="hidden sm:flex items-center gap-2 text-sm text-gray-400">
+                  <UserCircle className="w-4 h-4" />
+                  <span className="max-w-[120px] truncate">{user.full_name || user.email}</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-gray-500 capitalize">
+                    {user.role}
+                  </span>
+                </div>
+                <button
+                  onClick={logout}
+                  className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-eko-green animate-pulse" />
+                <span className="text-xs text-gray-400">System Online</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

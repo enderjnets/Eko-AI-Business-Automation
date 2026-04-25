@@ -5,8 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
 from app.models.campaign import Campaign, CampaignStatus
+from app.models.user import User
 from app.schemas.campaign import CampaignCreate, CampaignUpdate, CampaignResponse, CampaignLaunchRequest
 from app.services.paperclip import on_campaign_launched
+from app.core.security import get_current_user
 
 router = APIRouter()
 
@@ -17,6 +19,7 @@ async def list_campaigns(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     query = select(Campaign)
     if status:
@@ -30,7 +33,11 @@ async def list_campaigns(
 
 
 @router.get("/{campaign_id}", response_model=CampaignResponse)
-async def get_campaign(campaign_id: int, db: AsyncSession = Depends(get_db)):
+async def get_campaign(
+    campaign_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
     campaign = result.scalar_one_or_none()
     if not campaign:
@@ -40,7 +47,9 @@ async def get_campaign(campaign_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.post("", response_model=CampaignResponse, status_code=201)
 async def create_campaign(
-    data: CampaignCreate, db: AsyncSession = Depends(get_db)
+    data: CampaignCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     campaign = Campaign(**data.model_dump())
     db.add(campaign)
@@ -51,7 +60,10 @@ async def create_campaign(
 
 @router.patch("/{campaign_id}", response_model=CampaignResponse)
 async def update_campaign(
-    campaign_id: int, data: CampaignUpdate, db: AsyncSession = Depends(get_db)
+    campaign_id: int,
+    data: CampaignUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
     campaign = result.scalar_one_or_none()
@@ -68,7 +80,9 @@ async def update_campaign(
 
 @router.post("/{campaign_id}/launch", response_model=CampaignResponse)
 async def launch_campaign(
-    campaign_id: int, db: AsyncSession = Depends(get_db)
+    campaign_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
     campaign = result.scalar_one_or_none()
@@ -98,7 +112,9 @@ async def launch_campaign(
 
 @router.post("/{campaign_id}/pause", response_model=CampaignResponse)
 async def pause_campaign(
-    campaign_id: int, db: AsyncSession = Depends(get_db)
+    campaign_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
     campaign = result.scalar_one_or_none()

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.base import get_db
 from app.models.sequence import EmailSequence, SequenceStep, SequenceEnrollment, SequenceStatus, SequenceStepType
 from app.models.lead import Lead, LeadStatus
+from app.models.user import User
 from app.schemas.sequence import (
     EmailSequenceCreate,
     EmailSequenceUpdate,
@@ -19,6 +20,7 @@ from app.schemas.sequence import (
 )
 from app.agents.outreach.channels.email import EmailOutreach
 from app.services.paperclip import on_campaign_launched
+from app.core.security import get_current_user
 
 router = APIRouter()
 
@@ -27,6 +29,7 @@ router = APIRouter()
 async def list_sequences(
     status: Optional[SequenceStatus] = None,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     query = select(EmailSequence)
     if status:
@@ -37,7 +40,11 @@ async def list_sequences(
 
 
 @router.get("/{sequence_id}", response_model=EmailSequenceResponse)
-async def get_sequence(sequence_id: int, db: AsyncSession = Depends(get_db)):
+async def get_sequence(
+    sequence_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     result = await db.execute(select(EmailSequence).where(EmailSequence.id == sequence_id))
     seq = result.scalar_one_or_none()
     if not seq:
@@ -46,7 +53,11 @@ async def get_sequence(sequence_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("", response_model=EmailSequenceResponse, status_code=201)
-async def create_sequence(data: EmailSequenceCreate, db: AsyncSession = Depends(get_db)):
+async def create_sequence(
+    data: EmailSequenceCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     seq = EmailSequence(
         name=data.name,
         description=data.description,
@@ -69,7 +80,10 @@ async def create_sequence(data: EmailSequenceCreate, db: AsyncSession = Depends(
 
 @router.patch("/{sequence_id}", response_model=EmailSequenceResponse)
 async def update_sequence(
-    sequence_id: int, data: EmailSequenceUpdate, db: AsyncSession = Depends(get_db)
+    sequence_id: int,
+    data: EmailSequenceUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(select(EmailSequence).where(EmailSequence.id == sequence_id))
     seq = result.scalar_one_or_none()
@@ -86,7 +100,10 @@ async def update_sequence(
 
 @router.post("/{sequence_id}/steps", response_model=SequenceStepResponse, status_code=201)
 async def add_sequence_step(
-    sequence_id: int, data: SequenceStepCreate, db: AsyncSession = Depends(get_db)
+    sequence_id: int,
+    data: SequenceStepCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(select(EmailSequence).where(EmailSequence.id == sequence_id))
     seq = result.scalar_one_or_none()
@@ -102,7 +119,10 @@ async def add_sequence_step(
 
 @router.delete("/{sequence_id}/steps/{step_id}", status_code=204)
 async def delete_sequence_step(
-    sequence_id: int, step_id: int, db: AsyncSession = Depends(get_db)
+    sequence_id: int,
+    step_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(SequenceStep).where(
@@ -124,6 +144,7 @@ async def enroll_leads(
     sequence_id: int,
     lead_ids: List[int],
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Enroll leads into a sequence."""
     result = await db.execute(select(EmailSequence).where(EmailSequence.id == sequence_id))
@@ -176,6 +197,7 @@ async def execute_sequence(
     sequence_id: int,
     request: SequenceExecuteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Execute the next step of a sequence for enrolled leads."""
     result = await db.execute(select(EmailSequence).where(EmailSequence.id == sequence_id))

@@ -1,54 +1,49 @@
 # Project Memory — Eko AI Business Automation
 
 **Last updated**: 2026-04-24  
-**Current version**: 0.3.0  
-**Current phase**: Fase 2 ✅ Complete
+**Current version**: 0.4.0  
+**Current phase**: Auth ✅ Complete
 
 ---
 
 ## What was done (this session)
 
-### Fase 2: Email Outreach + CRM Pipeline + Sequences — COMPLETED
+### Auth System: JWT + Protected Routes + Multi-tenancy — COMPLETED
 
-#### Code changes
-- **Celery scheduled tasks** (4 tasks implemented, previously all `pass` stubs):
-  - `process_follow_ups` — Hourly auto-follow-up engine
-  - `enrich_pending_leads` — Every 30 min auto-enrichment
-  - `sync_dnc_registry` — Monthly bounce/DNC cleanup
-  - `generate_daily_report` — Daily 8am MT analytics report
-- **Email Sequences** (drip campaigns):
-  - New models: `EmailSequence`, `SequenceStep`, `SequenceEnrollment`
-  - New API: CRUD sequences, steps, enrollments, execute with dry-run
-  - Step types: email, wait, condition, sms, call
-- **Docker Compose**: Added `celery-beat` service, missing env vars
-- **Celery beat schedule**: All 4 tasks scheduled in `celery_app.py`
+#### Backend
+- **User model** with roles: `admin`, `manager`, `agent`
+- **JWT security**: bcrypt passwords, access/refresh tokens, `get_current_user`, `get_current_admin`
+- **Auth router**: login, register (admin-only), refresh, me, dev-login
+- **Protected routes**: All APIs now require Bearer token
+- **Multi-tenancy**: Non-admin users only see their own leads; `owner_id` auto-assigned
+
+#### Frontend
+- **Auth context**: login state, auto-redirect, localStorage tokens
+- **Login page**: email/password + dev login button
+- **API client**: Axios interceptors inject Bearer token; auto-redirect on 401
+- **Navbar**: shows user name/role + logout
 
 #### Tests
-- `tests/test_scheduled.py` — Celery task wrappers + async helpers
-- `tests/test_sequences.py` — Sequence schemas, models, API
-
-#### Infra changes
-- `docker-compose.yml`: Added `celery-beat`, `YELP_API_KEY`, `SERPAPI_API_KEY`, `PAPERCLIP_API_KEY`, `CORS_ORIGINS`
-- `celery_app.py`: Added `beat_schedule` configuration
+- `tests/test_auth.py` — Password hashing, JWT, RBAC, router endpoints
 
 #### Git
-- Version bumped: 0.2.0 → 0.3.0
+- Version bumped: 0.3.0 → 0.4.0
 - CHANGELOG.md updated
 
 #### Paperclip
-- Issue **EKO-16** created: `Fase 2 Complete — Email Outreach + CRM Pipeline + Sequences`
+- Issue **EKO-17** created: `Auth System — JWT + Protected Routes + Multi-tenancy`
 - Status: `done`
 
 ---
 
-## What was done (previous session)
+## Previous phases
+
+### Fase 2: Email Outreach + CRM Pipeline + Sequences — COMPLETED
+- 4 Celery scheduled tasks implemented
+- Email Sequences (drip campaigns) with models, API, dry-run
 
 ### Fase 1: Discovery + Research + Dashboard — COMPLETED
-
-- 4 discovery sources: Google Maps, Yelp, LinkedIn, Colorado SOS
-- Semantic search with pgvector + OpenAI embeddings
-- Frontend improvements: source toggles, semantic search, reactive refresh
-- `test_discovery.py` + `test_research.py`
+- 4 discovery sources, semantic search, multi-source UI
 
 ---
 
@@ -60,7 +55,8 @@
 | Colorado SOS | ✅ Working | Official Open Data API |
 | Yelp Fusion | ✅ Working | 500 req/day free tier |
 | LinkedIn (SerpApi) | ✅ Working | 100 searches/month free tier |
-| Google Maps | ⏳ Deferred | Outscraper requires payment. Deferred to later phase |
+| Auth system | ✅ Working | JWT + RBAC + protected routes |
+| Google Maps | ⏳ Deferred | Outscraper requires payment |
 | Docker | ⚠️ Down | Colima/Docker Desktop not running locally |
 | pytest | ⚠️ Blocked | Python 3.14 incompatible with pydantic-core wheels |
 | OpenAI API Key | ❌ Placeholder | Required for enrichment, embeddings, AI email gen |
@@ -69,8 +65,7 @@
 ### Next priorities (Fase 3)
 1. Voice AI integration (Retell / Vapi)
 2. Calendar integration (Cal.com webhooks already exist)
-3. Authentication system (JWT)
-4. Production deployment hardening
+3. Production deployment hardening
 
 ---
 

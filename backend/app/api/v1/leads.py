@@ -5,12 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
 from app.models.lead import Lead, LeadStatus
+from app.models.user import User
 from app.schemas.lead import LeadCreate, LeadUpdate, LeadResponse, LeadListResponse, DiscoveryRequest, LeadSearchRequest
 from app.agents.discovery.agent import DiscoveryAgent
 from app.agents.research.agent import ResearchAgent
 from app.services.paperclip import on_lead_status_change, on_system_alert
 from app.utils.embedding import update_lead_embedding
 from app.utils.ai_client import generate_embedding
+from app.core.security import get_current_user
 
 router = APIRouter()
 
@@ -23,10 +25,17 @@ async def list_leads(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """List leads with optional filtering."""
     query = select(Lead)
-    
+
+    # Non-admin users only see their own leads
+    if not current_user.is_superuser and current_user.role.value != "admin":
+        query = query.where(
+            (Lead.owner_id == current_user.id) | (Lead.assigned_to == current_user.email)
+        )
+
     if status:
         query = query.where(Lead.status == status)
     if city:
@@ -54,7 +63,11 @@ async def list_leads(
 
 
 @router.get("/{lead_id}", response_model=LeadResponse)
-async def get_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
+async def get_lead(
+    lead_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Get a single lead by ID."""
     result = await db.execute(select(Lead).where(Lead.id == lead_id))
     lead = result.scalar_one_or_none()
@@ -64,9 +77,13 @@ async def get_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("", response_model=LeadResponse, status_code=201)
-async def create_lead(lead_data: LeadCreate, db: AsyncSession = Depends(get_db)):
+async def create_lead(
+    lead_data: LeadCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Create a new lead manually."""
-    lead = Lead(**lead_data.model_dump())
+    lead = Lead(**lead_data.model_dump(), owner_id=current_user.id)
     db.add(lead)
     await db.commit()
     await db.refresh(lead)
@@ -75,7 +92,10 @@ async def create_lead(lead_data: LeadCreate, db: AsyncSession = Depends(get_db))
 
 @router.patch("/{lead_id}", response_model=LeadResponse)
 async def update_lead(
-    lead_id: int, lead_update: LeadUpdate, db: AsyncSession = Depends(get_db)
+    lead_id: int,
+    lead_update: LeadUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Update a lead."""
     result = await db.execute(select(Lead).where(Lead.id == lead_id))
@@ -92,7 +112,11 @@ async def update_lead(
 
 
 @router.delete("/{lead_id}", status_code=204)
-async def delete_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_lead(
+    lead_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Delete a lead."""
     result = await db.execute(select(Lead).where(Lead.id == lead_id))
     lead = result.scalar_one_or_none()
@@ -105,7 +129,11 @@ async def delete_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/{lead_id}/enrich", response_model=LeadResponse)
-async def enrich_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
+async def enrich_lead(
+    lead_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Run research agent to enrich a lead."""
     result = await db.execute(select(Lead).where(Lead.id == lead_id))
     lead = result.scalar_one_or_none()
@@ -152,7 +180,9 @@ async def enrich_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.post("/discover", response_model=LeadListResponse, status_code=201)
 async def discover_leads(
-    request: DiscoveryRequest, db: AsyncSession = Depends(get_db)
+    request: DiscoveryRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Run discovery agent to find new leads."""
     agent = DiscoveryAgent()
@@ -176,7 +206,7 @@ async def discover_leads(
         if existing.scalar_one_or_none():
             continue
         
-        lead = Lead(**lead_data)
+        lead = Lead(**lead_data, owner_id=current_user.id)
         if request.campaign_id:
             lead.source_data = {"campaign_id": request.campaign_id}
         db.add(lead)
@@ -207,6 +237,7 @@ async def discover_leads(
 async def search_leads(
     request: LeadSearchRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Semantic search over leads using vector similarity."""
     if not request.query.strip():

@@ -6,9 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
 from app.models.lead import Lead, LeadStatus, Interaction
+from app.models.user import User
 from app.schemas.lead import LeadUpdate, LeadResponse
 from app.agents.outreach.channels.email import EmailOutreach
 from app.services.paperclip import on_lead_status_change
+from app.core.security import get_current_user
 
 router = APIRouter()
 
@@ -57,6 +59,7 @@ async def transition_lead(
     new_status: LeadStatus,
     note: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Move a lead to a new pipeline stage.
@@ -120,6 +123,7 @@ async def contact_lead(
     custom_subject: Optional[str] = None,
     custom_body: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Contact a lead via specified channel.
@@ -200,6 +204,7 @@ async def schedule_follow_up(
     days: int = 3,
     note: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Schedule a follow-up for a lead."""
     result = await db.execute(select(Lead).where(Lead.id == lead_id))
@@ -225,7 +230,10 @@ async def schedule_follow_up(
 
 
 @router.get("/pipeline/summary")
-async def get_pipeline_summary(db: AsyncSession = Depends(get_db)):
+async def get_pipeline_summary(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Get pipeline summary with counts and conversion metrics."""
     result = await db.execute(
         select(Lead.status, func.count(Lead.id)).group_by(Lead.status)
@@ -255,6 +263,7 @@ async def get_pipeline_summary(db: AsyncSession = Depends(get_db)):
 async def get_pending_follow_ups(
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Get leads that need follow-up."""
     now = datetime.utcnow()
