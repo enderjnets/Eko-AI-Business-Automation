@@ -93,11 +93,11 @@ async def _process_follow_ups_async():
                     content=f"Auto follow-up #{follow_up_count + 1} sent",
                     email_status="sent",
                     email_message_id=response.get("id"),
-                    metadata={
+                    meta={
                         "auto_follow_up": True,
                         "follow_up_number": follow_up_count + 1,
                         "template": template_key,
-                    },
+                    }
                 )
                 db.add(interaction)
                 processed += 1
@@ -196,7 +196,7 @@ async def _sync_dnc_registry_async():
                     interaction_type="note",
                     direction="outbound",
                     content="Auto-marked as do-not-contact due to repeated bounces",
-                    metadata={"dnc_reason": "bounced", "bounce_count": 3},
+                    meta={"dnc_reason": "bounced", "bounce_count": 3},
                 )
                 db.add(interaction)
                 logger.info(f"DNC sync: marked lead {lead_id} as do-not-contact (bounced)")

@@ -144,7 +144,7 @@ async def create_booking(
                 start_time=data.start_time.isoformat(),
                 attendee_email=lead.email,
                 attendee_name=lead.business_name or "Unknown",
-                metadata={"lead_id": lead.id, "source": "eko_ai"},
+                meta={"lead_id": lead.id, "source": "eko_ai"},
             )
             if "error" not in cal_result:
                 booking.cal_com_booking_id = cal_result.get("id")
@@ -170,7 +170,7 @@ async def create_booking(
         direction="outbound",
         subject=f"Meeting scheduled: {booking.title}",
         content=data.notes or "Meeting booked via calendar",
-        metadata={"booking_id": booking.id, "start_time": booking.start_time.isoformat()},
+        meta={"booking_id": booking.id, "start_time": booking.start_time.isoformat()},
     )
     db.add(interaction)
 
@@ -295,7 +295,7 @@ async def send_booking_link(
         content="Booking link sent",
         email_status="sent",
         email_message_id=response.get("id"),
-        metadata={"booking_link": booking_link, "event_type_id": data.event_type_id},
+        meta={"booking_link": booking_link, "event_type_id": data.event_type_id},
     )
     db.add(interaction)
     await db.commit()

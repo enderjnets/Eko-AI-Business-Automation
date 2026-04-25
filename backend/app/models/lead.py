@@ -146,7 +146,7 @@ class Interaction(Base):
     ai_next_action: Mapped[Optional[str]] = mapped_column(Text)
     
     # Metadata
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON)
+    meta: Mapped[Optional[dict]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     
     # Relationships

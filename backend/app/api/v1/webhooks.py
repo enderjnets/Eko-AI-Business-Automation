@@ -41,7 +41,7 @@ async def resend_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 direction="inbound" if event_type in ["email.opened", "email.clicked"] else "outbound",
                 email_status=event_type.replace("email.", ""),
                 email_message_id=message_id,
-                metadata=payload,
+                meta=payload,
             )
             db.add(interaction)
             await db.commit()
@@ -69,7 +69,7 @@ async def calcom_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 interaction_type="meeting",
                 direction="inbound",
                 subject=f"Meeting {event_type}",
-                metadata=payload,
+                meta=payload,
             )
             db.add(interaction)
             

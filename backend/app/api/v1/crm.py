@@ -95,7 +95,7 @@ async def transition_lead(
         interaction_type="note",
         direction="outbound",
         content=note or f"Status changed from {old_status} to {new_status.value}",
-        metadata={"transition": True, "from": old_status, "to": new_status.value},
+        meta={"transition": True, "from": old_status, "to": new_status.value},
     )
     db.add(interaction)
     await db.commit()
@@ -220,7 +220,7 @@ async def schedule_follow_up(
         interaction_type="note",
         direction="outbound",
         content=note or f"Follow-up scheduled for {follow_up_date.isoformat()}",
-        metadata={"follow_up_scheduled": True, "days": days},
+        meta={"follow_up_scheduled": True, "days": days},
     )
     db.add(interaction)
     await db.commit()
@@ -334,7 +334,7 @@ async def send_booking_link_from_crm(
         content="Booking link sent from CRM",
         email_status="sent",
         email_message_id=response.get("id"),
-        metadata={"booking_link": booking_link, "event_type_id": event_type_id, "source": "crm"},
+        meta={"booking_link": booking_link, "event_type_id": event_type_id, "source": "crm"},
     )
     db.add(interaction)
     await db.commit()

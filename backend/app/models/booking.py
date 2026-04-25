@@ -49,7 +49,7 @@ class Booking(Base):
     cancellation_reason: Mapped[Optional[str]] = mapped_column(Text)
 
     # Metadata
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON)
+    meta: Mapped[Optional[dict]] = mapped_column(JSON)
     notes: Mapped[Optional[str]] = mapped_column(Text)
 
     # Timestamps
