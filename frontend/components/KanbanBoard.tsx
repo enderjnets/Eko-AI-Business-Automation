@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowRight, ArrowLeft, Send } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { crmApi, leadsApi } from "@/lib/api";
 
 const PIPELINE_STAGES = [
@@ -48,6 +49,168 @@ interface Lead {
   phone?: string;
 }
 
+const getScoreColor = (score: number) => {
+  if (score >= 70) return "text-eko-green";
+  if (score >= 50) return "text-gold";
+  if (score >= 30) return "text-orange-400";
+  return "text-gray-500";
+};
+
+const getValidNextStages = (status: string): string[] => {
+  return VALID_TRANSITIONS[status] || [];
+};
+
+const getValidPrevStages = (status: string): string[] => {
+  const prev: string[] = [];
+  for (const [from, toList] of Object.entries(VALID_TRANSITIONS)) {
+    if (toList.includes(status)) {
+      prev.push(from);
+    }
+  }
+  return prev;
+};
+
+interface KanbanColumnProps {
+  stage: (typeof PIPELINE_STAGES)[number];
+  stageLeads: Lead[];
+  onTransition: (lead: Lead, newStatus: string) => void;
+  onSendEmail: (lead: Lead) => void;
+  actionLoading: Record<number, boolean>;
+}
+
+function KanbanColumn({
+  stage,
+  stageLeads,
+  onTransition,
+  onSendEmail,
+  actionLoading,
+}: KanbanColumnProps) {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: stageLeads.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 96,
+    overscan: 5,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+
+  return (
+    <div className="w-72 flex-shrink-0 rounded-xl border border-white/5 bg-white/[0.02] flex flex-col max-h-[600px]">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${stage.color}`} />
+          <span className="text-sm font-medium">{stage.label}</span>
+        </div>
+        <span className="text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">
+          {stageLeads.length}
+        </span>
+      </div>
+
+      {/* Virtualized Lead List */}
+      <div
+        ref={parentRef}
+        className="p-3 overflow-y-auto flex-1"
+        style={{ contain: "strict" }}
+      >
+        {stageLeads.length === 0 ? (
+          <div className="text-center py-8 text-gray-600 text-xs">No leads</div>
+        ) : (
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: "100%",
+              position: "relative",
+            }}
+          >
+            {virtualItems.map((virtualItem) => {
+              const lead = stageLeads[virtualItem.index];
+              const validNext = getValidNextStages(lead.status);
+              const validPrev = getValidPrevStages(lead.status);
+              const isLoading = actionLoading[lead.id];
+
+              return (
+                <div
+                  key={lead.id}
+                  ref={virtualizer.measureElement}
+                  data-index={virtualItem.index}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                  className="px-1 py-1"
+                >
+                  <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 hover:bg-white/[0.05] transition-colors">
+                    <div className="flex items-start justify-between">
+                      <h4 className="font-medium text-sm pr-2">{lead.business_name}</h4>
+                      {lead.total_score > 0 ? (
+                        <span
+                          className={`text-xs font-bold flex-shrink-0 ${getScoreColor(lead.total_score)}`}
+                        >
+                          {Math.round(lead.total_score)}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-600 flex-shrink-0">—</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">{lead.city}</p>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1 mt-2 flex-wrap">
+                      {/* Backward transitions */}
+                      {validPrev.map((prevStatus) => (
+                        <button
+                          key={prevStatus}
+                          onClick={() => onTransition(lead, prevStatus)}
+                          disabled={isLoading}
+                          className="p-1 rounded hover:bg-white/10 text-gray-500 disabled:opacity-50"
+                          title={`Mover a ${PIPELINE_STAGES.find((s) => s.key === prevStatus)?.label}`}
+                        >
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                        </button>
+                      ))}
+
+                      {/* Send email */}
+                      {lead.email && validNext.length > 0 && (
+                        <button
+                          onClick={() => onSendEmail(lead)}
+                          disabled={isLoading}
+                          className="p-1 rounded hover:bg-white/10 text-eko-blue disabled:opacity-50"
+                          title="Enviar email"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      {/* Forward transitions */}
+                      {validNext.map((nextStatus) => (
+                        <button
+                          key={nextStatus}
+                          onClick={() => onTransition(lead, nextStatus)}
+                          disabled={isLoading}
+                          className="p-1 rounded hover:bg-white/10 text-gray-500 disabled:opacity-50"
+                          title={`Mover a ${PIPELINE_STAGES.find((s) => s.key === nextStatus)?.label}`}
+                        >
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function KanbanBoard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,8 +222,10 @@ export default function KanbanBoard() {
 
   const loadLeads = async () => {
     try {
-      // Load all leads without page limit
-      const res = await leadsApi.list({ page_size: 5000 });
+      // Cap at 2000 leads — virtualizer handles rendering, but we keep
+      // network payload reasonable. For larger datasets we should move
+      // to server-side filtering by status.
+      const res = await leadsApi.list({ page_size: 2000 });
       setLeads(res.data.items || []);
     } catch (err) {
       console.error(err);
@@ -69,7 +234,7 @@ export default function KanbanBoard() {
     }
   };
 
-  const transitionLead = async (lead: Lead, newStatus: string) => {
+  const transitionLead = useCallback(async (lead: Lead, newStatus: string) => {
     setActionLoading((prev) => ({ ...prev, [lead.id]: true }));
     try {
       await crmApi.transition(lead.id, newStatus);
@@ -80,9 +245,9 @@ export default function KanbanBoard() {
     } finally {
       setActionLoading((prev) => ({ ...prev, [lead.id]: false }));
     }
-  };
+  }, []);
 
-  const sendEmail = async (lead: Lead) => {
+  const sendEmail = useCallback(async (lead: Lead) => {
     setActionLoading((prev) => ({ ...prev, [lead.id]: true }));
     try {
       await crmApi.contact(lead.id, "email", "initial_outreach");
@@ -92,28 +257,7 @@ export default function KanbanBoard() {
     } finally {
       setActionLoading((prev) => ({ ...prev, [lead.id]: false }));
     }
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 70) return "text-eko-green";
-    if (score >= 50) return "text-gold";
-    if (score >= 30) return "text-orange-400";
-    return "text-gray-500";
-  };
-
-  const getValidNextStages = (status: string): string[] => {
-    return VALID_TRANSITIONS[status] || [];
-  };
-
-  const getValidPrevStages = (status: string): string[] => {
-    const prev: string[] = [];
-    for (const [from, toList] of Object.entries(VALID_TRANSITIONS)) {
-      if (toList.includes(status)) {
-        prev.push(from);
-      }
-    }
-    return prev;
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -130,96 +274,14 @@ export default function KanbanBoard() {
           const stageLeads = leads.filter((l) => l.status === stage.key);
 
           return (
-            <div
+            <KanbanColumn
               key={stage.key}
-              className="w-72 flex-shrink-0 rounded-xl border border-white/5 bg-white/[0.02]"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${stage.color}`} />
-                  <span className="text-sm font-medium">{stage.label}</span>
-                </div>
-                <span className="text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">
-                  {stageLeads.length}
-                </span>
-              </div>
-
-              {/* Leads */}
-              <div className="p-3 space-y-2 max-h-[600px] overflow-y-auto">
-                {stageLeads.map((lead) => {
-                  const validNext = getValidNextStages(lead.status);
-                  const validPrev = getValidPrevStages(lead.status);
-                  const isLoading = actionLoading[lead.id];
-
-                  return (
-                    <div
-                      key={lead.id}
-                      className="rounded-lg border border-white/5 bg-white/[0.03] p-3 hover:bg-white/[0.05] transition-colors"
-                    >
-                      <div className="flex items-start justify-between">
-                        <h4 className="font-medium text-sm">{lead.business_name}</h4>
-                        {lead.total_score > 0 ? (
-                          <span className={`text-xs font-bold ${getScoreColor(lead.total_score)}`}>
-                            {Math.round(lead.total_score)}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-gray-600">—</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-0.5">{lead.city}</p>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-1 mt-2 flex-wrap">
-                        {/* Backward transitions */}
-                        {validPrev.map((prevStatus) => (
-                          <button
-                            key={prevStatus}
-                            onClick={() => transitionLead(lead, prevStatus)}
-                            disabled={isLoading}
-                            className="p-1 rounded hover:bg-white/10 text-gray-500 disabled:opacity-50"
-                            title={`Mover a ${PIPELINE_STAGES.find((s) => s.key === prevStatus)?.label}`}
-                          >
-                            <ArrowLeft className="w-3.5 h-3.5" />
-                          </button>
-                        ))}
-
-                        {/* Send email */}
-                        {lead.email && validNext.length > 0 && (
-                          <button
-                            onClick={() => sendEmail(lead)}
-                            disabled={isLoading}
-                            className="p-1 rounded hover:bg-white/10 text-eko-blue disabled:opacity-50"
-                            title="Enviar email"
-                          >
-                            <Send className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-
-                        {/* Forward transitions */}
-                        {validNext.map((nextStatus) => (
-                          <button
-                            key={nextStatus}
-                            onClick={() => transitionLead(lead, nextStatus)}
-                            disabled={isLoading}
-                            className="p-1 rounded hover:bg-white/10 text-gray-500 disabled:opacity-50"
-                            title={`Mover a ${PIPELINE_STAGES.find((s) => s.key === nextStatus)?.label}`}
-                          >
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {stageLeads.length === 0 && (
-                  <div className="text-center py-8 text-gray-600 text-xs">
-                    No leads
-                  </div>
-                )}
-              </div>
-            </div>
+              stage={stage}
+              stageLeads={stageLeads}
+              onTransition={transitionLead}
+              onSendEmail={sendEmail}
+              actionLoading={actionLoading}
+            />
           );
         })}
       </div>
