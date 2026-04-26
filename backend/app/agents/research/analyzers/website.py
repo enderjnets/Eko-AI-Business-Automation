@@ -38,6 +38,19 @@ class WebsiteAnalyzer:
         if not url.startswith("http"):
             url = f"https://{url}"
 
+        url_lower = url.lower()
+
+        # Skip PDFs entirely
+        if url_lower.endswith(".pdf") or ".pdf?" in url_lower or ".pdf#" in url_lower:
+            logger.warning(f"Skipping PDF URL: {url}")
+            return {"error": "PDF documents are not supported", "url": url}
+
+        # Skip government domains
+        domain = url.split("/")[2].lower().replace("www.", "")
+        if domain.endswith(".gov") or domain.endswith(".mil") or ".gov." in domain:
+            logger.warning(f"Skipping government URL: {url}")
+            return {"error": "Government websites are not supported", "url": url}
+
         try:
             response = await self.client.get(url)
             response.raise_for_status()

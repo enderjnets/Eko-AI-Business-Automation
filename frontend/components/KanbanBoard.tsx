@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowRight, ArrowLeft, Mail, Phone, Calendar, Send } from "lucide-react";
+import { ArrowRight, ArrowLeft, Send } from "lucide-react";
 import { crmApi, leadsApi } from "@/lib/api";
 
 const PIPELINE_STAGES = [
@@ -15,7 +15,27 @@ const PIPELINE_STAGES = [
   { key: "negotiating", label: "Negociando", color: "bg-rose-500" },
   { key: "closed_won", label: "Ganados", color: "bg-eko-green" },
   { key: "closed_lost", label: "Perdidos", color: "bg-red-500" },
+  { key: "active", label: "Activos", color: "bg-emerald-500" },
+  { key: "at_risk", label: "En Riesgo", color: "bg-amber-500" },
+  { key: "churned", label: "Churned", color: "bg-stone-500" },
 ];
+
+// Valid transitions mirroring backend VALID_TRANSITIONS
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  discovered: ["enriched", "contacted"],
+  enriched: ["scored", "contacted"],
+  scored: ["contacted", "closed_lost"],
+  contacted: ["engaged", "closed_lost"],
+  engaged: ["meeting_booked", "proposal_sent", "closed_lost"],
+  meeting_booked: ["proposal_sent", "negotiating", "closed_won", "closed_lost"],
+  proposal_sent: ["negotiating", "closed_won", "closed_lost"],
+  negotiating: ["closed_won", "closed_lost"],
+  closed_won: ["active"],
+  closed_lost: ["discovered"],
+  active: ["at_risk"],
+  at_risk: ["churned", "active"],
+  churned: [],
+};
 
 interface Lead {
   id: number;
@@ -31,8 +51,7 @@ interface Lead {
 export default function KanbanBoard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     loadLeads();
@@ -40,7 +59,8 @@ export default function KanbanBoard() {
 
   const loadLeads = async () => {
     try {
-      const res = await leadsApi.list({ page_size: 100 });
+      // Load all leads without page limit
+      const res = await leadsApi.list({ page_size: 5000 });
       setLeads(res.data.items || []);
     } catch (err) {
       console.error(err);
@@ -49,34 +69,28 @@ export default function KanbanBoard() {
     }
   };
 
-  const moveLead = async (lead: Lead, direction: "forward" | "backward") => {
-    const currentIndex = PIPELINE_STAGES.findIndex((s) => s.key === lead.status);
-    const newIndex = direction === "forward" ? currentIndex + 1 : currentIndex - 1;
-    
-    if (newIndex < 0 || newIndex >= PIPELINE_STAGES.length) return;
-    
-    const newStatus = PIPELINE_STAGES[newIndex].key;
-    setActionLoading(true);
-    
+  const transitionLead = async (lead: Lead, newStatus: string) => {
+    setActionLoading((prev) => ({ ...prev, [lead.id]: true }));
     try {
       await crmApi.transition(lead.id, newStatus);
       loadLeads();
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error("Transition failed:", err);
+      alert(err.response?.data?.detail || "Transición no permitida");
     } finally {
-      setActionLoading(false);
+      setActionLoading((prev) => ({ ...prev, [lead.id]: false }));
     }
   };
 
   const sendEmail = async (lead: Lead) => {
-    setActionLoading(true);
+    setActionLoading((prev) => ({ ...prev, [lead.id]: true }));
     try {
       await crmApi.contact(lead.id, "email", "initial_outreach");
       loadLeads();
     } catch (err) {
       console.error(err);
     } finally {
-      setActionLoading(false);
+      setActionLoading((prev) => ({ ...prev, [lead.id]: false }));
     }
   };
 
@@ -85,6 +99,20 @@ export default function KanbanBoard() {
     if (score >= 50) return "text-gold";
     if (score >= 30) return "text-orange-400";
     return "text-gray-500";
+  };
+
+  const getValidNextStages = (status: string): string[] => {
+    return VALID_TRANSITIONS[status] || [];
+  };
+
+  const getValidPrevStages = (status: string): string[] => {
+    const prev: string[] = [];
+    for (const [from, toList] of Object.entries(VALID_TRANSITIONS)) {
+      if (toList.includes(status)) {
+        prev.push(from);
+      }
+    }
+    return prev;
   };
 
   if (loading) {
@@ -100,7 +128,7 @@ export default function KanbanBoard() {
       <div className="flex gap-4 min-w-max pb-4">
         {PIPELINE_STAGES.map((stage) => {
           const stageLeads = leads.filter((l) => l.status === stage.key);
-          
+
           return (
             <div
               key={stage.key}
@@ -116,61 +144,75 @@ export default function KanbanBoard() {
                   {stageLeads.length}
                 </span>
               </div>
-              
+
               {/* Leads */}
               <div className="p-3 space-y-2 max-h-[600px] overflow-y-auto">
-                {stageLeads.map((lead) => (
-                  <div
-                    key={lead.id}
-                    className="rounded-lg border border-white/5 bg-white/[0.03] p-3 hover:bg-white/[0.05] transition-colors cursor-pointer"
-                    onClick={() => setSelectedLead(lead)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <h4 className="font-medium text-sm">{lead.business_name}</h4>
-                      {lead.total_score > 0 && (
-                        <span className={`text-xs font-bold ${getScoreColor(lead.total_score)}`}>
-                          {Math.round(lead.total_score)}
-                        </span>
-                      )}
+                {stageLeads.map((lead) => {
+                  const validNext = getValidNextStages(lead.status);
+                  const validPrev = getValidPrevStages(lead.status);
+                  const isLoading = actionLoading[lead.id];
+
+                  return (
+                    <div
+                      key={lead.id}
+                      className="rounded-lg border border-white/5 bg-white/[0.03] p-3 hover:bg-white/[0.05] transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <h4 className="font-medium text-sm">{lead.business_name}</h4>
+                        {lead.total_score > 0 ? (
+                          <span className={`text-xs font-bold ${getScoreColor(lead.total_score)}`}>
+                            {Math.round(lead.total_score)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-600">—</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">{lead.city}</p>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 mt-2 flex-wrap">
+                        {/* Backward transitions */}
+                        {validPrev.map((prevStatus) => (
+                          <button
+                            key={prevStatus}
+                            onClick={() => transitionLead(lead, prevStatus)}
+                            disabled={isLoading}
+                            className="p-1 rounded hover:bg-white/10 text-gray-500 disabled:opacity-50"
+                            title={`Mover a ${PIPELINE_STAGES.find((s) => s.key === prevStatus)?.label}`}
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                          </button>
+                        ))}
+
+                        {/* Send email */}
+                        {lead.email && validNext.length > 0 && (
+                          <button
+                            onClick={() => sendEmail(lead)}
+                            disabled={isLoading}
+                            className="p-1 rounded hover:bg-white/10 text-eko-blue disabled:opacity-50"
+                            title="Enviar email"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        {/* Forward transitions */}
+                        {validNext.map((nextStatus) => (
+                          <button
+                            key={nextStatus}
+                            onClick={() => transitionLead(lead, nextStatus)}
+                            disabled={isLoading}
+                            className="p-1 rounded hover:bg-white/10 text-gray-500 disabled:opacity-50"
+                            title={`Mover a ${PIPELINE_STAGES.find((s) => s.key === nextStatus)?.label}`}
+                          >
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{lead.city}</p>
-                    
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 mt-2">
-                      {stage.key !== "discovered" && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); moveLead(lead, "backward"); }}
-                          disabled={actionLoading}
-                          className="p-1 rounded hover:bg-white/10 text-gray-500 disabled:opacity-50"
-                        >
-                          <ArrowLeft className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      
-                      {lead.email && stage.key !== "closed_won" && stage.key !== "closed_lost" && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); sendEmail(lead); }}
-                          disabled={actionLoading}
-                          className="p-1 rounded hover:bg-white/10 text-eko-blue disabled:opacity-50"
-                          title="Send email"
-                        >
-                          <Send className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      
-                      {stage.key !== "closed_won" && stage.key !== "closed_lost" && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); moveLead(lead, "forward"); }}
-                          disabled={actionLoading}
-                          className="p-1 rounded hover:bg-white/10 text-gray-500 disabled:opacity-50"
-                        >
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                
+                  );
+                })}
+
                 {stageLeads.length === 0 && (
                   <div className="text-center py-8 text-gray-600 text-xs">
                     No leads

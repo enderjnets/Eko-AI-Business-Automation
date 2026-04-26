@@ -46,6 +46,7 @@ async def _check_contact_rate_limit(lead: Lead, db: AsyncSession) -> bool:
         .where(and_(
             Interaction.lead_id == lead.id,
             Interaction.interaction_type == "email",
+            Interaction.direction == "outbound",
             Interaction.created_at >= today_start,
         ))
     )
@@ -166,6 +167,21 @@ async def contact_lead(
                 lead=lead,
                 template_key=template or "initial_outreach",
             )
+        
+        # Record interaction
+        interaction = Interaction(
+            lead_id=lead.id,
+            interaction_type="email",
+            direction="outbound",
+            content=custom_body or f"Email sent via {template or 'initial_outreach'}",
+            meta={
+                "channel": channel,
+                "template": template,
+                "ai_generated": not (custom_subject and custom_body),
+                "message_id": response.get("id"),
+            },
+        )
+        db.add(interaction)
         
         # Update status
         if lead.status in [LeadStatus.DISCOVERED, LeadStatus.ENRICHED, LeadStatus.SCORED]:

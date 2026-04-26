@@ -152,7 +152,7 @@ async def _enrich_pending_leads_async():
                     setattr(lead, field, value)
 
                 old_status = lead.status.value
-                if lead.urgency_score and lead.fit_score:
+                if lead.urgency_score is not None and lead.fit_score is not None:
                     lead.total_score = (lead.urgency_score + lead.fit_score) / 2
                     lead.status = LeadStatus.SCORED
                 else:

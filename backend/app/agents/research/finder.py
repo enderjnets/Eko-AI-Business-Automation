@@ -37,6 +37,39 @@ _BLOCKED_DOMAINS = [
     "thumbtack.com",
     "porch.com",
     "homeadvisor.com",
+    # Government and irrelevant domains
+    ".gov",
+    ".mil",
+    ".edu",
+    "irs.gov",
+    "sos.state",
+    "county.",
+    "state.",
+]
+
+# URL patterns that should be blocked anywhere in the URL
+_BLOCKED_URL_PATTERNS = [
+    ".pdf",
+    ".gov/",
+    ".mil/",
+]
+
+# Business status keywords from Secretary of State data
+_STATUS_KEYWORDS = [
+    "dissolved",
+    "delinquent",
+    "good standing",
+    "revoked",
+    "withdrawn",
+    "suspended",
+    "merged",
+    "converted",
+    "inactive",
+    "terminated",
+    "forfeited",
+    "expired",
+    "cancelled",
+    "canceled",
 ]
 
 
@@ -48,12 +81,32 @@ class WebsiteFinder:
         self.serpapi_key = settings.SERPAPI_API_KEY
         self.client = httpx.AsyncClient(timeout=15.0, follow_redirects=True)
 
+    def _clean_business_name(self, business_name: str) -> str:
+        """
+        Remove status suffixes from business names (e.g. Colorado SOS data).
+        Strips anything after the first comma if the remainder contains status words.
+        """
+        if "," not in business_name:
+            return business_name.strip()
+
+        parts = business_name.split(",", 1)
+        name_part = parts[0].strip()
+        suffix_part = parts[1].lower()
+
+        # If suffix contains any status keyword, drop it entirely
+        if any(keyword in suffix_part for keyword in _STATUS_KEYWORDS):
+            return name_part
+
+        # Otherwise return the original (trimmed)
+        return business_name.strip()
+
     async def find_website(self, business_name: str, city: str, state: str) -> Optional[str]:
         """
         Search for the real business website.
         Returns the best matching URL or None.
         """
-        query = f'"{business_name}" {city} {state}'
+        cleaned_name = self._clean_business_name(business_name)
+        query = f'"{cleaned_name}" {city} {state}'
 
         # Try SerpApi if available
         if self.serpapi_key:
@@ -113,6 +166,19 @@ class WebsiteFinder:
 
         return self._pick_best_url(results, business_name)
 
+    def _is_blocked_url(self, url: str) -> bool:
+        """Check if a URL matches blocked domain or pattern lists."""
+        url_lower = url.lower()
+        domain = url.split("/")[2].lower().replace("www.", "")
+
+        if any(blocked in domain for blocked in _BLOCKED_DOMAINS):
+            return True
+
+        if any(pattern in url_lower for pattern in _BLOCKED_URL_PATTERNS):
+            return True
+
+        return False
+
     def _pick_best_url(self, results: list, business_name: str) -> Optional[str]:
         """Pick the best URL from search results, filtering out directories."""
         business_lower = business_name.lower()
@@ -123,13 +189,11 @@ class WebsiteFinder:
             if not url.startswith("http"):
                 continue
 
-            domain = url.split("/")[2].lower().replace("www.", "")
-
-            # Skip blocked domains
-            if any(blocked in domain for blocked in _BLOCKED_DOMAINS):
+            if self._is_blocked_url(url):
                 continue
 
             # Prefer URLs that match business name words
+            domain = url.split("/")[2].lower().replace("www.", "")
             domain_words = re.findall(r"\w+", domain)
             match_score = sum(1 for w in words if w in domain_words)
 
@@ -145,8 +209,7 @@ class WebsiteFinder:
             url = result.get("link") or result.get("url", "")
             if not url.startswith("http"):
                 continue
-            domain = url.split("/")[2].lower().replace("www.", "")
-            if not any(blocked in domain for blocked in _BLOCKED_DOMAINS):
+            if not self._is_blocked_url(url):
                 return url
 
         return None

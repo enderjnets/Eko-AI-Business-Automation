@@ -1,5 +1,68 @@
 # Changelog
 
+## [0.6.0] — 2026-04-25
+
+### Enrichment Pipeline Hardening
+
+#### Backend
+- **Celery worker fix** — Resolved `InvalidRequestError` by creating `app/models/__init__.py` and importing all models in `celery_app.py` before app initialization
+- **Commit-per-lead enrichment** — Both scheduled `enrich_pending_leads` (every 30 min) and manual `enrich-all` endpoint now commit after each individual lead, enabling real-time UI progress tracking
+- **Kimi JSON parsing** — Replaced fragile greedy regex with robust `_extract_json()` in `ResearchAgent`:
+  - Fast path: direct `json.loads()` for clean responses
+  - Markdown stripping: unwraps ` ```json ... ``` ` code blocks
+  - Brace counting with string/escape awareness: finds balanced `{}` pairs while respecting JSON string literals
+  - Eliminates fallback 50/50 scores from truncated or malformed JSON
+- **WebsiteFinder hardening** (`app/agents/research/analyzers/website.py`):
+  - Blocks URLs ending in `.pdf`, containing `.gov/`, or `.mil/` to avoid wasting enrichment cycles on government/military documents
+  - Prevents CO SOS delinquent records from triggering irrelevant `.gov` PDF scrapes
+- **Yelp Fusion pagination** — Added offset pagination so requesting >50 results (up to 200) correctly chains multiple API calls (50 per call) instead of silently capping
+- **Discovery deduplication** — Fixed `AttributeError: 'NoneType' object has no attribute 'lower'` when LinkedIn or Colorado SOS return leads with null `city` or `business_name`
+- **DiscoveryResponse schema** (`app/schemas/lead.py`) — New `DiscoveryResponse` with `total_found`, `new_leads`, `duplicates_skipped`, `items`. Updated `POST /discover` endpoint to return this instead of `LeadListResponse`, fixing 500 validation errors
+- **Cal.com auth fix** (`app/services/cal_com.py`) — Switched from Bearer header to query param (`?apiKey=`) for Cal.com API compatibility
+- **Email unsubscribe URL** (`app/agents/outreach/channels/email.py`) — Fixed hardcoded `localhost` unsubscribe link
+- **AI client hardening** (`app/utils/ai_client.py`) — Added explicit "Your response must be ONLY valid JSON" instruction to Kimi prompts when `json_mode=True`
+- **Docker Compose** — Added `KIMI_API_KEY`, `KIMI_BASE_URL`, `KIMI_MODEL`, `KIMI_EMBEDDING_MODEL`, `OPENAI_BASE_URL`, `OPENAI_MODEL`, `OPENAI_EMBEDDING_MODEL`, `CAL_COM_API_KEY` to all services
+
+#### Frontend
+- **Leads pagination** (`frontend/app/leads/page.tsx`) — Added page state with Previous/Next buttons, 100 leads per page
+- **Enrichment progress bar** — Real-time progress indicator with polling every 10s, showing processed count, pending count, and percentage
+- **DiscoveryForm dropdowns** (`frontend/components/DiscoveryForm.tsx`) — Converted city, state, and max_results to `<select>` menus:
+  - 30 Colorado cities pre-populated
+  - All 50 US states + DC
+  - max_results options: 10, 25, 50, 100, 200
+- **Discovery fetch workaround** — Replaced axios with native `fetch()` for `/discover` POST to avoid axios preflight CORS "Network Error" when selecting multiple sources
+- **API URL consistency** — Replaced hardcoded `http://10.0.0.240:8001` fetch calls in `leads/page.tsx` with relative `/api/v1/...` paths (Next.js rewrites)
+
+#### Infrastructure / DevEx
+- **Frontend Dockerfile** — `NEXT_PUBLIC_API_URL` set to `http://10.0.0.240:8001`
+- **Backend config** — `KIMI_BASE_URL` default updated to `https://api.kimi.com/coding/v1`, `KIMI_MODEL` default to `kimi-for-coding`
+- **Lead model** — Added missing fields: `review_summary`, `trigger_events`, `pain_points`, `scoring_reason`, `proposal_suggestion`
+
+---
+
+## [0.6.1] — 2026-04-25
+
+### Pipeline Fix — Complete Visibility + Valid Transitions + Interaction Tracking
+
+#### Backend
+- **Score 0 validity** (`app/tasks/scheduled.py`, `app/api/v1/leads.py`) — Changed `if lead.urgency_score and lead.fit_score:` to `is not None` checks in 3 places. Defunct businesses with 0/0 scores now correctly transition to `SCORED` instead of getting stuck in `ENRICHED`
+- **PATCH transition validation** (`app/api/v1/leads.py`) — `update_lead` endpoint now validates status changes against `VALID_TRANSITIONS` from CRM router. Prevents jumping `discovered` → `closed_won`. Also records an `Interaction` with transition metadata
+- **Rate limiter fix** (`app/api/v1/crm.py`) — `_check_contact_rate_limit` now filters `direction="outbound"` so inbound email clicks/opens don't falsely count against the daily limit
+- **CRM email interactions** (`app/api/v1/crm.py`) — `contact_lead` now creates an `Interaction` record with channel, template, AI-generated flag, and message_id before committing
+
+#### Frontend
+- **KanbanBoard: 13 complete stages** (`frontend/components/KanbanBoard.tsx`) — Added missing `active`, `at_risk`, `churned` stages. Customer lifecycle leads no longer disappear from the pipeline
+- **Valid transition arrows** — Replaced broken index-based movement with explicit valid-transition buttons. Backward/forward arrows only appear for transitions allowed by the backend state machine
+- **Load all leads** — `page_size: 9999` ensures the Kanban shows every lead regardless of total count
+- **User feedback on errors** — Invalid transitions now show an `alert()` with the backend message instead of failing silently in console
+
+#### Pipeline Empty Kanban Fix (v0.6.1-hotfix)
+- **page_size limit** (`app/api/v1/leads.py`) — Increased from 100 to 5000. KanbanBoard requesting 9999 caused 422 validation error, leaving pipeline completely empty.
+- **Email validation** (`app/schemas/lead.py`) — Changed `EmailStr` to `str` in `LeadBase`. Discovery sources (CO SOS, Yelp) produced corrupt emails like `K@48G9-.BYBGNPTUT` that caused Pydantic `ValidationError` and 500 errors on large fetches.
+- **KanbanBoard sync** (`frontend/components/KanbanBoard.tsx`) — `page_size` adjusted from 9999 to 5000 to match backend limit.
+
+---
+
 ## [0.5.1] — 2026-04-24
 
 ### Fixed: AI Provider Routing (Kimi Integration)

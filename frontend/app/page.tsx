@@ -14,6 +14,7 @@ import PipelineBoard from "@/components/PipelineBoard";
 import DiscoveryForm from "@/components/DiscoveryForm";
 import RecentLeads from "@/components/RecentLeads";
 import { analyticsApi } from "@/lib/api";
+import VersionBadge from "@/components/VersionBadge";
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -119,6 +120,8 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      <VersionBadge />
     </div>
   );
 }

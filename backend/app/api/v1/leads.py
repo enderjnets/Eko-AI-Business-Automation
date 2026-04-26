@@ -5,7 +5,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
-from app.models.lead import Lead, LeadStatus
+from app.models.lead import Lead, LeadStatus, Interaction
 from app.models.user import User
 from app.schemas.lead import LeadCreate, LeadUpdate, LeadResponse, LeadListResponse, DiscoveryRequest, LeadSearchRequest
 from app.agents.discovery.agent import DiscoveryAgent
@@ -14,6 +14,7 @@ from app.services.paperclip import on_lead_status_change, on_system_alert
 from app.utils.embedding import update_lead_embedding
 from app.utils.ai_client import generate_embedding
 from app.core.security import get_current_user
+from app.api.v1.crm import VALID_TRANSITIONS
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ async def list_leads(
     city: Optional[str] = None,
     search: Optional[str] = None,
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(20, ge=1, le=5000),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -130,7 +131,31 @@ async def update_lead(
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     
-    for field, value in lead_update.model_dump(exclude_unset=True).items():
+    update_data = lead_update.model_dump(exclude_unset=True)
+    
+    # Validate status transitions if status is being updated
+    if "status" in update_data:
+        new_status = update_data["status"]
+        if isinstance(new_status, str):
+            new_status = LeadStatus(new_status)
+        allowed = VALID_TRANSITIONS.get(lead.status, [])
+        if new_status not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid transition from {lead.status.value} to {new_status.value}. Allowed: {[s.value for s in allowed]}"
+            )
+        # Record the transition as an interaction
+        old_status = lead.status.value
+        interaction = Interaction(
+            lead_id=lead.id,
+            interaction_type="note",
+            direction="outbound",
+            content=f"Status changed from {old_status} to {new_status.value}",
+            meta={"transition": True, "from": old_status, "to": new_status.value, "source": "api_patch"},
+        )
+        db.add(interaction)
+    
+    for field, value in update_data.items():
         setattr(lead, field, value)
     
     await db.commit()
@@ -175,7 +200,7 @@ async def enrich_lead(
         setattr(lead, field, value)
     
     old_status = lead.status.value
-    if lead.urgency_score and lead.fit_score:
+    if lead.urgency_score is not None and lead.fit_score is not None:
         lead.total_score = (lead.urgency_score + lead.fit_score) / 2
         lead.status = LeadStatus.SCORED
     else:
@@ -344,7 +369,7 @@ async def _enrich_leads_batch(leads: list, db: AsyncSession):
             for field, value in enriched.model_dump(exclude_unset=True).items():
                 setattr(lead, field, value)
 
-            if lead.urgency_score and lead.fit_score:
+            if lead.urgency_score is not None and lead.fit_score is not None:
                 lead.total_score = (lead.urgency_score + lead.fit_score) / 2
                 lead.status = LeadStatus.SCORED
             else:

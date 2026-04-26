@@ -251,11 +251,11 @@ export default function LeadDetailPage() {
               <div className="rounded-xl border border-white/5 bg-white/[0.02] p-6">
                 <h3 className="font-medium mb-4">Research Insights</h3>
                 
-                {lead.pain_points?.length > 0 && (
+                {(lead.pain_points?.length ?? 0) > 0 && (
                   <div className="mb-4">
                     <h4 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Pain Points</h4>
                     <div className="flex flex-wrap gap-2">
-                      {lead.pain_points.map((p, i) => (
+                      {(lead.pain_points || []).map((p, i) => (
                         <span key={i} className="text-xs px-2 py-1 rounded-full bg-red-500/10 text-red-400">
                           {p}
                         </span>
@@ -264,11 +264,11 @@ export default function LeadDetailPage() {
                   </div>
                 )}
                 
-                {lead.trigger_events?.length > 0 && (
+                {(lead.trigger_events?.length ?? 0) > 0 && (
                   <div className="mb-4">
                     <h4 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Trigger Events</h4>
                     <div className="flex flex-wrap gap-2">
-                      {lead.trigger_events.map((t, i) => (
+                      {(lead.trigger_events || []).map((t, i) => (
                         <span key={i} className="text-xs px-2 py-1 rounded-full bg-gold/10 text-gold">
                           {t}
                         </span>
@@ -291,11 +291,11 @@ export default function LeadDetailPage() {
                 )}
 
                 {/* Services */}
-                {lead.services?.length > 0 && (
+                {(lead.services?.length ?? 0) > 0 && (
                   <div className="mb-4">
                     <h4 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Services</h4>
                     <div className="flex flex-wrap gap-2">
-                      {lead.services.map((s, i) => (
+                      {(lead.services || []).map((s, i) => (
                         <span key={i} className="text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400">
                           {s}
                         </span>
@@ -323,11 +323,11 @@ export default function LeadDetailPage() {
                 )}
 
                 {/* Team */}
-                {lead.team_names?.length > 0 && (
+                {(lead.team_names?.length ?? 0) > 0 && (
                   <div className="mb-4">
                     <h4 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Team / Owners</h4>
                     <div className="flex flex-wrap gap-2">
-                      {lead.team_names.map((n, i) => (
+                      {(lead.team_names || []).map((n, i) => (
                         <span key={i} className="text-xs px-2 py-1 rounded-full bg-white/5 text-gray-400">
                           {n}
                         </span>
@@ -344,11 +344,11 @@ export default function LeadDetailPage() {
                   </div>
                 )}
 
-                {lead.tech_stack?.length > 0 && (
+                {(lead.tech_stack?.length ?? 0) > 0 && (
                   <div>
                     <h4 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Tech Stack</h4>
                     <div className="flex flex-wrap gap-2">
-                      {lead.tech_stack.map((t, i) => (
+                      {(lead.tech_stack || []).map((t, i) => (
                         <span key={i} className="text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-400">
                           {t}
                         </span>

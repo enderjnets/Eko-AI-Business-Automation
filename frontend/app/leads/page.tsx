@@ -33,21 +33,27 @@ export default function LeadsPage() {
   const [enrichmentStatus, setEnrichmentStatus] = useState<any>(null);
   const [showEnrichmentToast, setShowEnrichmentToast] = useState(false);
   const [bulkEnriching, setBulkEnriching] = useState(false);
+  const [totalLeads, setTotalLeads] = useState(0);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     loadLeads();
   }, [status]);
 
   useEffect(() => {
+    loadLeads();
+  }, [page]);
+
+  useEffect(() => {
     loadEnrichmentStatus();
-    const interval = setInterval(loadEnrichmentStatus, 30000);
+    const interval = setInterval(loadEnrichmentStatus, 10000);
     return () => clearInterval(interval);
   }, []);
 
   const loadEnrichmentStatus = async () => {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : "";
-      const res = await fetch("http://10.0.0.240:8001/api/v1/leads/enrichment-status", {
+      const res = await fetch("/api/v1/leads/enrichment-status", {
         headers: { Authorization: `Bearer ${token}` }
       });
       const newStatus = await res.json();
@@ -69,9 +75,10 @@ export default function LeadsPage() {
       if (semanticMode && search.trim()) {
         res = await leadsApi.search({ query: search.trim(), status: status || undefined });
       } else {
-        res = await leadsApi.list({ status: status || undefined, search: search || undefined });
+        res = await leadsApi.list({ status: status || undefined, search: search || undefined, page_size: 100, page });
       }
       setLeads(res.data.items || []);
+      setTotalLeads(res.data.total || 0);
     } catch (err) {
       console.error(err);
     } finally {
@@ -185,7 +192,7 @@ export default function LeadsPage() {
                 setBulkEnriching(true);
                 try {
                   const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : "";
-                  const res = await fetch("http://10.0.0.240:8001/api/v1/leads/enrich-all", {
+                  const res = await fetch("/api/v1/leads/enrich-all", {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
                   });
@@ -215,6 +222,39 @@ export default function LeadsPage() {
             </div>
           )}
         </div>
+
+        {/* Progress bar */}
+        {enrichmentStatus && enrichmentStatus.total > 0 && (
+          <div className="mb-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-xs text-gray-400">
+                <span className="text-eko-green font-medium">{enrichmentStatus.scored + enrichmentStatus.enriched}</span> procesados &middot;{" "}
+                <span className="text-gray-500">{enrichmentStatus.discovered}</span> pendientes
+              </div>
+              <div className="text-xs text-eko-green font-medium">
+                {Math.round(((enrichmentStatus.scored + enrichmentStatus.enriched) / enrichmentStatus.total) * 100)}%
+              </div>
+            </div>
+            <div className="w-full bg-white/10 rounded-full h-2.5 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-eko-green to-eko-blue h-2.5 rounded-full transition-all duration-700 ease-out"
+                style={{
+                  width: `${Math.round(((enrichmentStatus.scored + enrichmentStatus.enriched) / enrichmentStatus.total) * 100)}%`
+                }}
+              />
+            </div>
+            <div className="flex justify-between text-xs mt-1.5 text-gray-500">
+              <span>Progreso de enriquecimiento</span>
+              <span>{enrichmentStatus.scored} con score &middot; {enrichmentStatus.enriched} enriquecidos</span>
+            </div>
+          </div>
+        )}
+
+        {leads.length > 0 && (
+          <div className="mt-3 text-xs text-gray-500 text-right">
+            Mostrando {leads.length} de {totalLeads} leads
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -294,7 +334,7 @@ export default function LeadsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {lead.status === "discovered" && (
+                      {(lead.status === "discovered" || lead.status === "enriched") && (
                         <button
                           onClick={() => handleEnrich(lead.id)}
                           disabled={enrichingId === lead.id}
@@ -305,7 +345,7 @@ export default function LeadsPage() {
                           ) : (
                             <Sparkles className="w-3 h-3" />
                           )}
-                          Enriquecer
+                          {lead.status === "enriched" ? "Re-enriquecer" : "Enriquecer"}
                         </button>
                       )}
                     </td>
@@ -315,6 +355,32 @@ export default function LeadsPage() {
             </table>
           </div>
         )}
+
+        {/* Pagination */}
+        {totalLeads > 0 && (
+          <div className="flex items-center justify-between mt-4 px-2">
+            <div className="text-xs text-gray-500">
+              Página {page} de {Math.ceil(totalLeads / 100)}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Anterior
+              </button>
+              <button
+                onClick={() => setPage((p) => Math.min(Math.ceil(totalLeads / 100), p + 1))}
+                disabled={page >= Math.ceil(totalLeads / 100)}
+                className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Siguiente →
+              </button>
+            </div>
+          </div>
+        )}
+
       </main>
     </div>
   );
