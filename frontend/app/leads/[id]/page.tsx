@@ -113,6 +113,9 @@ export default function LeadDetailPage() {
     negotiating: "bg-rose-500",
     closed_won: "bg-eko-green",
     closed_lost: "bg-red-500",
+    active: "bg-emerald-500",
+    at_risk: "bg-amber-500",
+    churned: "bg-stone-500",
   };
 
   if (loading) {
@@ -425,6 +428,9 @@ export default function LeadDetailPage() {
                   { key: "negotiating", label: "Negotiating" },
                   { key: "closed_won", label: "Closed Won" },
                   { key: "closed_lost", label: "Closed Lost" },
+                  { key: "active", label: "Active" },
+                  { key: "at_risk", label: "At Risk" },
+                  { key: "churned", label: "Churned" },
                 ].map((stage) => (
                   <button
                     key={stage.key}
