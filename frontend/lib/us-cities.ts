@@ -24,6 +24,9 @@ export const CITIES_BY_STATE: Record<string, string[]> = {
     "Denver", "Colorado Springs", "Aurora", "Fort Collins", "Lakewood",
     "Thornton", "Westminster", "Pueblo", "Centennial", "Boulder",
     "Greeley", "Longmont", "Loveland", "Broomfield", "Grand Junction",
+    "Highlands Ranch", "Parker", "Castle Rock", "Littleton", "Englewood",
+    "Arvada", "Brighton", "Commerce City", "Wheat Ridge", "Greenwood Village",
+    "Lafayette", "Louisville", "Golden", "Durango", "Montrose",
   ],
   Connecticut: [
     "Bridgeport", "New Haven", "Hartford", "Stamford", "Waterbury",
