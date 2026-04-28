@@ -219,7 +219,7 @@ const KanbanColumn = memo(function KanbanColumn({
       <div
         ref={parentRef}
         className="p-3 overflow-y-auto flex-1"
-        style={{ contain: "strict" }}
+        style={{ contain: "layout paint" }}
         onScroll={onScroll}
       >
         {error ? (
@@ -244,7 +244,7 @@ const KanbanColumn = memo(function KanbanColumn({
               const lead = stageLeads[virtualItem.index];
               return (
                 <div
-                  key={lead.id}
+                  key={virtualItem.key}
                   ref={virtualizer.measureElement}
                   data-index={virtualItem.index}
                   style={{

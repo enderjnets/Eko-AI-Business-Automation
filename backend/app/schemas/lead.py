@@ -9,7 +9,7 @@ class LeadBase(BaseModel):
     business_name: str = Field(..., min_length=1, max_length=255)
     category: Optional[str] = None
     description: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
     website: Optional[str] = None
     address: Optional[str] = None
@@ -21,6 +21,7 @@ class LeadBase(BaseModel):
 
 
 class LeadCreate(LeadBase):
+    email: Optional[EmailStr] = None
     source: LeadSource = LeadSource.MANUAL
     source_data: Optional[dict] = None
     tags: Optional[list] = None
@@ -30,7 +31,7 @@ class LeadCreate(LeadBase):
 class LeadUpdate(BaseModel):
     business_name: Optional[str] = None
     category: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
     website: Optional[str] = None
     address: Optional[str] = None
