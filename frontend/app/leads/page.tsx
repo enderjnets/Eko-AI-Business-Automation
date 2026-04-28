@@ -46,6 +46,21 @@ const HQ_COORDS_KEY = "eko_hq_coords";
 
 type SortMode = "score" | "distance" | "score_distance";
 
+// Sanitize website URLs to prevent XSS via javascript: protocol
+function sanitizeUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  const trimmed = url.trim();
+  // Allow http:, https:, mailto:, tel:
+  if (/^(https?:|mailto:|tel:)/i.test(trimmed)) {
+    return trimmed;
+  }
+  // If it looks like a domain without protocol, prepend https://
+  if (/^[a-z0-9][\w\-\.]*\.[a-z]{2,}/i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+  return undefined;
+}
+
 // Client-side Haversine (km)
 function haversineKm(lat1: number, lng1: number, lat2?: number, lng2?: number): number | null {
   if (lat2 == null || lng2 == null) return null;
@@ -86,12 +101,24 @@ export default function LeadsPage() {
   const [semanticMode, setSemanticMode] = useState(false);
   const [enrichingId, setEnrichingId] = useState<number | null>(null);
   const [enrichmentStatus, setEnrichmentStatus] = useState<any>(null);
+  const enrichmentStatusRef = useRef(enrichmentStatus);
+  useEffect(() => { enrichmentStatusRef.current = enrichmentStatus; }, [enrichmentStatus]);
   const [showEnrichmentToast, setShowEnrichmentToast] = useState(false);
   const [bulkEnriching, setBulkEnriching] = useState(false);
   const [totalLeads, setTotalLeads] = useState(0);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortMode>("score_distance");
   const [error, setError] = useState<string | null>(null);
+
+  // Advanced filters
+  const [minScore, setMinScore] = useState<string>("");
+  const [maxScore, setMaxScore] = useState<string>("");
+  const [filterCity, setFilterCity] = useState<string>("");
+  const [filterCategory, setFilterCategory] = useState<string>("");
+  const [hasEmail, setHasEmail] = useState<boolean | null>(null);
+  const [hasPhone, setHasPhone] = useState<boolean | null>(null);
+  const [hasWebsite, setHasWebsite] = useState<boolean | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Headquarters
   const [hqAddress, setHqAddress] = useState(DEFAULT_HQ_ADDRESS);
@@ -106,6 +133,8 @@ export default function LeadsPage() {
   const [suggestLoading, setSuggestLoading] = useState(false);
   const autocompleteRef = useRef<HTMLDivElement>(null);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const filterDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Load HQ from localStorage
   useEffect(() => {
@@ -131,17 +160,16 @@ export default function LeadsPage() {
     }
   }, []);
 
-  // Fetch leads
+  // Fetch leads — debounce advanced filter changes to avoid firing on every keystroke
   useEffect(() => {
-    loadLeads();
-  }, [status, page, sortBy, hqCoords, search, semanticMode]);
-
-  // Enrichment polling
-  useEffect(() => {
-    loadEnrichmentStatus();
-    const interval = setInterval(loadEnrichmentStatus, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+    filterDebounceRef.current = setTimeout(() => {
+      loadLeads();
+    }, 300);
+    return () => {
+      if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+    };
+  }, [status, page, sortBy, hqCoords, search, semanticMode, minScore, maxScore, filterCity, filterCategory, hasEmail, hasPhone, hasWebsite]);
 
   // Close autocomplete on outside click
   useEffect(() => {
@@ -179,62 +207,46 @@ export default function LeadsPage() {
     };
   }, [search, semanticMode]);
 
-  const loadEnrichmentStatus = async () => {
+  const loadEnrichmentStatus = useCallback(async () => {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : "";
       const res = await fetch("/api/v1/leads/enrichment-status", {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) {
+        console.warn("enrichment-status failed:", res.status);
+        return;
+      }
       const newStatus = await res.json();
-      if (enrichmentStatus && newStatus.scored > enrichmentStatus.scored) {
+      const prev = enrichmentStatusRef.current;
+      if (prev && newStatus.scored > prev.scored) {
         setShowEnrichmentToast(true);
         setTimeout(() => setShowEnrichmentToast(false), 5000);
         loadLeads();
       }
       setEnrichmentStatus(newStatus);
-    } catch {
-      // silently fail
+    } catch (err) {
+      console.warn("enrichment-status error:", err);
     }
-  };
+  }, []);
+
+  // Enrichment polling
+  useEffect(() => {
+    loadEnrichmentStatus();
+    const interval = setInterval(loadEnrichmentStatus, 10000);
+    return () => clearInterval(interval);
+  }, [loadEnrichmentStatus]);
 
   const applyClientSort = useCallback(
     (items: Lead[]): Lead[] => {
       if (!items.length) return items;
       const arr = [...items];
 
-      if (sortBy === "score") {
-        arr.sort((a, b) => (b.total_score || 0) - (a.total_score || 0));
-        return arr;
-      }
+      // Only apply client-side sort when backend did NOT do geo-sorting
+      // (i.e. when hqCoords exists, backend handles all geo sorts)
+      if (hqCoords) return arr;
 
-      if (sortBy === "distance" && hqCoords) {
-        arr.forEach((l) => {
-          l.distance_km = haversineKm(hqCoords.lat, hqCoords.lng, l.latitude, l.longitude) ?? undefined;
-        });
-        arr.sort((a, b) => {
-          const da = a.distance_km ?? Infinity;
-          const db = b.distance_km ?? Infinity;
-          if (da !== db) return da - db;
-          return (b.total_score || 0) - (a.total_score || 0);
-        });
-        return arr;
-      }
-
-      if (sortBy === "score_distance" && hqCoords) {
-        arr.forEach((l) => {
-          l.distance_km = haversineKm(hqCoords.lat, hqCoords.lng, l.latitude, l.longitude) ?? undefined;
-        });
-        arr.sort((a, b) => {
-          const scoreDiff = (b.total_score || 0) - (a.total_score || 0);
-          if (scoreDiff !== 0) return scoreDiff;
-          const da = a.distance_km ?? Infinity;
-          const db = b.distance_km ?? Infinity;
-          return da - db;
-        });
-        return arr;
-      }
-
-      if (sortBy === "score_distance") {
+      if (sortBy === "score" || sortBy === "score_distance") {
         arr.sort((a, b) => (b.total_score || 0) - (a.total_score || 0));
         return arr;
       }
@@ -245,6 +257,13 @@ export default function LeadsPage() {
   );
 
   const loadLeads = useCallback(async () => {
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     setError(null);
     try {
@@ -256,13 +275,19 @@ export default function LeadsPage() {
         items = res.data.items || [];
         total = items.length;
       } else {
-        const needsClientSort = sortBy !== "score" || !hqCoords;
         const params: any = {
           status: status || undefined,
           search: search || undefined,
-          page_size: needsClientSort ? 500 : 100,
-          page: needsClientSort ? 1 : page,
+          page_size: 100,
+          page: page,
           sort_by: sortBy,
+          min_score: minScore ? parseFloat(minScore) : undefined,
+          max_score: maxScore ? parseFloat(maxScore) : undefined,
+          city: filterCity || undefined,
+          category: filterCategory || undefined,
+          has_email: hasEmail ?? undefined,
+          has_phone: hasPhone ?? undefined,
+          has_website: hasWebsite ?? undefined,
         };
         if (hqCoords && sortBy !== "score") {
           params.lat = hqCoords.lat;
@@ -272,24 +297,26 @@ export default function LeadsPage() {
         items = res.data.items || [];
         total = res.data.total || 0;
 
-        if (needsClientSort) {
+        // Only apply client-side sort when backend didn't do geo-sort
+        if (!hqCoords) {
           items = applyClientSort(items);
-          const pageSize = 100;
-          const start = (page - 1) * pageSize;
-          const end = start + pageSize;
-          items = items.slice(start, end);
         }
       }
 
-      setLeads(items);
-      setTotalLeads(total);
+      if (!controller.signal.aborted) {
+        setLeads(items);
+        setTotalLeads(total);
+      }
     } catch (err: any) {
+      if (err.name === "CanceledError" || err.name === "AbortError") return;
       console.error(err);
       setError(err.response?.data?.detail || "Error cargando leads");
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
-  }, [search, status, page, sortBy, hqCoords, semanticMode, applyClientSort]);
+  }, [search, status, page, sortBy, hqCoords, semanticMode, applyClientSort, minScore, maxScore, filterCity, filterCategory, hasEmail, hasPhone, hasWebsite]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -298,13 +325,18 @@ export default function LeadsPage() {
     loadLeads();
   };
 
+  const [enrichError, setEnrichError] = useState<string | null>(null);
+
   const handleEnrich = async (id: number) => {
     setEnrichingId(id);
+    setEnrichError(null);
     try {
       await leadsApi.enrich(id);
       loadLeads();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setEnrichError(err.response?.data?.detail || "Error enriqueciendo lead");
+      setTimeout(() => setEnrichError(null), 5000);
     } finally {
       setEnrichingId(null);
     }
@@ -351,6 +383,13 @@ export default function LeadsPage() {
               <Sparkles className="w-4 h-4" />
               Nuevos leads enriquecidos con AI
             </p>
+          </div>
+        </div>
+      )}
+      {enrichError && (
+        <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-2">
+          <div className="rounded-lg bg-red-500/90 backdrop-blur border border-red-400/50 px-4 py-3 shadow-lg">
+            <p className="text-sm font-medium text-white">{enrichError}</p>
           </div>
         </div>
       )}
@@ -492,6 +531,113 @@ export default function LeadsPage() {
           </button>
         </form>
 
+        {/* Advanced Filters Toggle */}
+        <div className="flex items-center gap-2 mb-3">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((prev) => !prev)}
+            className="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors"
+          >
+            <Filter className="w-3 h-3" />
+            {showAdvanced ? "Ocultar filtros avanzados" : "Filtros avanzados"}
+          </button>
+        </div>
+
+        {/* Advanced Filters Panel */}
+        {showAdvanced && (
+          <div className="mb-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Score mínimo</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={minScore}
+                onChange={(e) => { setMinScore(e.target.value); setPage(1); }}
+                placeholder="0"
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Score máximo</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={maxScore}
+                onChange={(e) => { setMaxScore(e.target.value); setPage(1); }}
+                placeholder="100"
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Ciudad</label>
+              <input
+                type="text"
+                value={filterCity}
+                onChange={(e) => { setFilterCity(e.target.value); setPage(1); }}
+                placeholder="Ej: Denver"
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Categoría</label>
+              <input
+                type="text"
+                value={filterCategory}
+                onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
+                placeholder="Ej: Dental"
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
+              />
+            </div>
+            <div className="sm:col-span-2 lg:col-span-4 flex flex-wrap gap-3">
+              <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasEmail === true}
+                  onChange={(e) => { setHasEmail(e.target.checked ? true : null); setPage(1); }}
+                  className="rounded border-white/20 bg-white/5"
+                />
+                Tiene email
+              </label>
+              <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasPhone === true}
+                  onChange={(e) => { setHasPhone(e.target.checked ? true : null); setPage(1); }}
+                  className="rounded border-white/20 bg-white/5"
+                />
+                Tiene teléfono
+              </label>
+              <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasWebsite === true}
+                  onChange={(e) => { setHasWebsite(e.target.checked ? true : null); setPage(1); }}
+                  className="rounded border-white/20 bg-white/5"
+                />
+                Tiene web
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setMinScore("");
+                  setMaxScore("");
+                  setFilterCity("");
+                  setFilterCategory("");
+                  setHasEmail(null);
+                  setHasPhone(null);
+                  setHasWebsite(null);
+                  setPage(1);
+                }}
+                className="text-xs text-gray-500 hover:text-white transition-colors ml-auto"
+              >
+                Limpiar filtros
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Bulk enrich */}
         <div className="flex items-center justify-between mb-4">
           {enrichmentStatus && enrichmentStatus.discovered > 0 && (
@@ -526,34 +672,43 @@ export default function LeadsPage() {
           )}
           {enrichmentStatus && (
             <div className="text-xs text-gray-500">
-              {enrichmentStatus.scored} enriquecidos · {enrichmentStatus.discovered} pendientes
+              {enrichmentStatus.scored ?? 0} scored · {enrichmentStatus.enriched ?? 0} enriched · {enrichmentStatus.discovered ?? 0} to discover
             </div>
           )}
         </div>
 
         {/* Progress bar */}
-        {enrichmentStatus && enrichmentStatus.total > 0 && (
+        {enrichmentStatus && (enrichmentStatus.discovered > 0 || enrichmentStatus.enriched > 0) && (
           <div className="mb-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-xs text-gray-400">
-                <span className="text-eko-green font-medium">{enrichmentStatus.scored + enrichmentStatus.enriched}</span> procesados &middot;{" "}
-                <span className="text-gray-500">{enrichmentStatus.discovered}</span> pendientes
+                <span className="text-eko-green font-medium">{(enrichmentStatus.scored ?? 0) + (enrichmentStatus.enriched ?? 0)}</span> processed &middot;{" "}
+                <span className="text-gray-500">{enrichmentStatus.discovered ?? 0}</span> pending
+                {" "}·{" "}
+                <span className="text-gray-500">{enrichmentStatus.pipeline_total ?? enrichmentStatus.total}</span> pipeline
               </div>
               <div className="text-xs text-eko-green font-medium">
-                {Math.round(((enrichmentStatus.scored + enrichmentStatus.enriched) / enrichmentStatus.total) * 100)}%
+                {(() => {
+                  const denom = enrichmentStatus.pipeline_total ?? enrichmentStatus.total ?? 1;
+                  const pct = Math.round((((enrichmentStatus.scored ?? 0) + (enrichmentStatus.enriched ?? 0)) / denom) * 100);
+                  return `${pct}%`;
+                })()}
               </div>
             </div>
             <div className="w-full bg-white/10 rounded-full h-2.5 overflow-hidden">
               <div
                 className="bg-gradient-to-r from-eko-green to-eko-blue h-2.5 rounded-full transition-all duration-700 ease-out"
                 style={{
-                  width: `${Math.round(((enrichmentStatus.scored + enrichmentStatus.enriched) / enrichmentStatus.total) * 100)}%`,
+                  width: `${(() => {
+                    const denom = enrichmentStatus.pipeline_total ?? enrichmentStatus.total ?? 1;
+                    return Math.round((((enrichmentStatus.scored ?? 0) + (enrichmentStatus.enriched ?? 0)) / denom) * 100);
+                  })()}%`,
                 }}
               />
             </div>
             <div className="flex justify-between text-xs mt-1.5 text-gray-500">
-              <span>Progreso de enriquecimiento</span>
-              <span>{enrichmentStatus.scored} con score &middot; {enrichmentStatus.enriched} enriquecidos</span>
+              <span>Enrichment progress</span>
+              <span>{enrichmentStatus.scored ?? 0} with score &middot; {enrichmentStatus.enriched ?? 0} enriched &middot; {enrichmentStatus.discovered ?? 0} to discover</span>
             </div>
           </div>
         )}
@@ -626,12 +781,15 @@ export default function LeadsPage() {
                             {lead.email}
                           </a>
                         )}
-                        {lead.website && (
-                          <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-eko-blue hover:underline">
-                            <Globe className="w-3 h-3" />
-                            Web
-                          </a>
-                        )}
+                        {(() => {
+                          const safeUrl = sanitizeUrl(lead.website);
+                          return safeUrl ? (
+                            <a href={safeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-eko-blue hover:underline">
+                              <Globe className="w-3 h-3" />
+                              Web
+                            </a>
+                          ) : null;
+                        })()}
                         {!lead.phone && !lead.email && !lead.website && (
                           <span className="text-xs text-gray-600">Sin datos de contacto</span>
                         )}
@@ -648,7 +806,7 @@ export default function LeadsPage() {
                     </td>
                     {hqCoords && sortBy !== "score" && (
                       <td className="px-4 py-3">
-                        {lead.distance_km !== undefined && lead.distance_km !== null ? (
+                        {typeof lead.distance_km === "number" && !Number.isNaN(lead.distance_km) ? (
                           <span className="flex items-center gap-1 text-xs text-gray-400">
                             <Navigation className="w-3 h-3 text-eko-blue" />
                             {lead.distance_km < 1

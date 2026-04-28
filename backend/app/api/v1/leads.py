@@ -2,7 +2,7 @@ import logging
 import math
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
-from sqlalchemy import select, func
+from sqlalchemy import select, func, Integer, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
@@ -29,21 +29,24 @@ async def enrichment_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Return counts of leads by enrichment status."""
-    discovered = await db.scalar(
-        select(func.count()).select_from(Lead).where(Lead.status == LeadStatus.DISCOVERED.name)
-    )
-    enriched = await db.scalar(
-        select(func.count()).select_from(Lead).where(Lead.status == LeadStatus.ENRICHED.name)
-    )
-    scored = await db.scalar(
-        select(func.count()).select_from(Lead).where(Lead.status == LeadStatus.SCORED.name)
+    """Return counts of leads by all statuses."""
+    counts = {}
+    for s in LeadStatus:
+        counts[s.value] = await db.scalar(
+            select(func.count()).select_from(Lead).where(Lead.status == s)
+        )
+    pipeline_total = (
+        counts.get(LeadStatus.DISCOVERED.value, 0)
+        + counts.get(LeadStatus.ENRICHED.value, 0)
+        + counts.get(LeadStatus.SCORED.value, 0)
     )
     return {
-        "discovered": discovered,
-        "enriched": enriched,
-        "scored": scored,
-        "total": discovered + enriched + scored,
+        "counts": counts,
+        "discovered": counts.get(LeadStatus.DISCOVERED.value, 0),
+        "enriched": counts.get(LeadStatus.ENRICHED.value, 0),
+        "scored": counts.get(LeadStatus.SCORED.value, 0),
+        "total": sum(counts.values()),
+        "pipeline_total": pipeline_total,
     }
 
 def _haversine_km(lat1: float, lng1: float, lat2: Optional[float], lng2: Optional[float]) -> Optional[float]:
@@ -69,6 +72,12 @@ async def list_leads(
     lat: Optional[float] = Query(None, description="Reference latitude for distance sorting"),
     lng: Optional[float] = Query(None, description="Reference longitude for distance sorting"),
     sort_by: str = Query("score", enum=["score", "distance", "score_distance"]),
+    min_score: Optional[float] = Query(None, ge=0, le=100, description="Minimum total score filter"),
+    max_score: Optional[float] = Query(None, ge=0, le=100, description="Maximum total score filter"),
+    has_email: Optional[bool] = Query(None, description="Filter leads with email"),
+    has_phone: Optional[bool] = Query(None, description="Filter leads with phone"),
+    has_website: Optional[bool] = Query(None, description="Filter leads with website"),
+    category: Optional[str] = Query(None, description="Filter by business category"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -82,54 +91,93 @@ async def list_leads(
         )
 
     if status:
-        query = query.where(Lead.status == status.name)
+        query = query.where(Lead.status == status)
     if city:
         query = query.where(Lead.city.ilike(f"%{city}%"))
     if search:
         query = query.where(Lead.business_name.ilike(f"%{search}%"))
+    if category:
+        query = query.where(Lead.category.ilike(f"%{category}%"))
+    if min_score is not None:
+        query = query.where(func.coalesce(Lead.total_score, 0) >= min_score)
+    if max_score is not None:
+        query = query.where(func.coalesce(Lead.total_score, 0) <= max_score)
+    if has_email is True:
+        query = query.where(Lead.email.isnot(None) & (Lead.email != ''))
+    elif has_email is False:
+        query = query.where((Lead.email.is_(None)) | (Lead.email == ''))
+    if has_phone is True:
+        query = query.where(Lead.phone.isnot(None) & (Lead.phone != ''))
+    elif has_phone is False:
+        query = query.where((Lead.phone.is_(None)) | (Lead.phone == ''))
+    if has_website is True:
+        query = query.where(Lead.website.isnot(None) & (Lead.website != ''))
+    elif has_website is False:
+        query = query.where((Lead.website.is_(None)) | (Lead.website == ''))
 
     # Count total before pagination / sorting
     count_query = select(func.count()).select_from(query.subquery())
     total = await db.scalar(count_query) or 0
 
-    # Determine if we need to fetch all items for Python-side geo sorting
-    needs_geo_sort = lat is not None and lng is not None and sort_by in ("distance", "score_distance")
+    # Contactability score expression (reused for geo and non-geo sorts)
+    contact_score = (
+        func.coalesce(func.nullif(Lead.email, '').isnot(None).cast(Integer), 0) +
+        func.coalesce(func.nullif(Lead.phone, '').isnot(None).cast(Integer), 0) +
+        case(
+            (Lead.website.isnot(None) & (Lead.website != '') & ~Lead.website.ilike('%yelp.com%'), 1),
+            else_=0
+        )
+    )
 
+    # Geo-sorting: use SQL-side Haversine distance for deterministic, scalable ordering
+    needs_geo_sort = lat is not None and lng is not None and sort_by in ("distance", "score_distance")
     if needs_geo_sort:
-        # Fetch all filtered leads (capped at 2000 for performance)
-        query = query.limit(2000)
+        lat_rad = func.radians(lat)
+        lng_rad = func.radians(lng)
+        lead_lat_rad = func.radians(Lead.latitude)
+        lead_lng_rad = func.radians(Lead.longitude)
+        dlat = lead_lat_rad - lat_rad
+        dlng = lead_lng_rad - lng_rad
+        a = (
+            func.pow(func.sin(dlat / 2), 2) +
+            func.cos(lat_rad) * func.cos(lead_lat_rad) * func.pow(func.sin(dlng / 2), 2)
+        )
+        c = 2 * func.asin(func.sqrt(func.least(1.0, func.greatest(0.0, a))))
+        distance_expr = (6371.0 * c).label("distance_km")
+
+        # Only leads with coordinates can be distance-sorted
+        query = query.where(Lead.latitude.isnot(None) & Lead.longitude.isnot(None))
+
+        if sort_by == "distance":
+            query = query.order_by(distance_expr.asc())
+        elif sort_by == "score_distance":
+            query = query.order_by(
+                contact_score.desc(),
+                func.coalesce(Lead.total_score, 0).desc(),
+                distance_expr.asc(),
+            )
+
+        query = query.offset((page - 1) * page_size).limit(page_size)
         result = await db.execute(query)
         leads = list(result.scalars().all())
 
-        # Compute distance for each lead
+        # Compute distance_km on the small paginated result set for serialization
         for lead in leads:
             lead.distance_km = _haversine_km(lat, lng, lead.latitude, lead.longitude)
 
-        # Sort
-        if sort_by == "distance":
-            leads.sort(key=lambda l: (l.distance_km if l.distance_km is not None else float("inf"), - (l.total_score or 0)))
-        elif sort_by == "score_distance":
-            # Primary: higher score first; Secondary: closer distance first
-            leads.sort(key=lambda l: (- (l.total_score or 0), l.distance_km if l.distance_km is not None else float("inf")))
-
-        # Python-side pagination
-        start = (page - 1) * page_size
-        end = start + page_size
-        paginated_leads = leads[start:end]
-
         return LeadListResponse(
             total=total,
-            items=paginated_leads,
+            items=leads,
             page=page,
             page_size=page_size,
         )
 
     # Standard SQL-side sorting (no geo reference)
     if sort_by == "score":
-        query = query.order_by(func.coalesce(Lead.total_score, 0).desc(), Lead.created_at.desc())
+        query = query.order_by(contact_score.desc(), func.coalesce(Lead.total_score, 0).desc(), Lead.created_at.desc())
     elif sort_by == "score_distance" and (lat is None or lng is None):
         # Fallback to score-only if lat/lng missing
-        query = query.order_by(func.coalesce(Lead.total_score, 0).desc(), Lead.created_at.desc())
+        query = query.order_by(contact_score.desc(), func.coalesce(Lead.total_score, 0).desc(), Lead.created_at.desc())
     else:
         query = query.order_by(Lead.created_at.desc())
 
@@ -169,6 +217,23 @@ async def autocomplete_lead_names(
     return list(result.scalars().all())
 
 
+def _check_lead_access(lead: Lead, current_user: User):
+    """Raise 403 if the user is not authorized to access this lead.
+    Admins/superusers can access any lead. Users can access leads they own
+    or that are assigned to them. Public leads (owner_id is None) are visible
+    to all authenticated users.
+    """
+    if current_user.is_superuser or current_user.role.value == "admin":
+        return
+    if lead.owner_id is None:
+        return
+    if lead.owner_id == current_user.id:
+        return
+    if lead.assigned_to and lead.assigned_to == current_user.email:
+        return
+    raise HTTPException(status_code=403, detail="Not authorized to access this lead")
+
+
 @router.get("/{lead_id}", response_model=LeadResponse)
 async def get_lead(
     lead_id: int,
@@ -180,6 +245,7 @@ async def get_lead(
     lead = result.scalar_one_or_none()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
+    _check_lead_access(lead, current_user)
     return lead
 
 
@@ -209,9 +275,10 @@ async def update_lead(
     lead = result.scalar_one_or_none()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-    
+    _check_lead_access(lead, current_user)
+
     update_data = lead_update.model_dump(exclude_unset=True)
-    
+
     # Validate status transitions if status is being updated
     if "status" in update_data:
         new_status = update_data["status"]
@@ -233,10 +300,13 @@ async def update_lead(
             meta={"transition": True, "from": old_status, "to": new_status.value, "source": "api_patch"},
         )
         db.add(interaction)
-    
+
+    # Whitelist allowed fields to prevent accidental dynamic attribute creation
+    allowed_fields = {c.name for c in Lead.__table__.columns}
     for field, value in update_data.items():
-        setattr(lead, field, value)
-    
+        if field in allowed_fields:
+            setattr(lead, field, value)
+
     await db.commit()
     await db.refresh(lead)
     return lead
@@ -253,7 +323,8 @@ async def delete_lead(
     lead = result.scalar_one_or_none()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-    
+    _check_lead_access(lead, current_user)
+
     await db.delete(lead)
     await db.commit()
     return None
@@ -270,7 +341,8 @@ async def enrich_lead(
     lead = result.scalar_one_or_none()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-    
+    _check_lead_access(lead, current_user)
+
     research_agent = ResearchAgent()
     enriched = await research_agent.enrich(lead)
     
@@ -358,9 +430,9 @@ async def discover_leads(
         await db.commit()
     
     return {
-        "total_found": len(leads_data),
-        "new_leads": len(created_leads),
-        "duplicates_skipped": len(leads_data) - len(created_leads),
+        "total": len(created_leads),
+        "page": 1,
+        "page_size": len(created_leads),
         "items": created_leads,
     }
 
@@ -387,23 +459,25 @@ async def search_leads(
     query = (
         select(Lead, distance_expr.label("distance"))
         .where(Lead.embedding.isnot(None))
+        .where(distance_expr < 0.5)  # Filter in SQL, not Python
         .order_by(distance_expr)
         .limit(request.limit)
     )
 
+    # Ownership filter
+    if not current_user.is_superuser and current_user.role.value != "admin":
+        query = query.where(
+            (Lead.owner_id == current_user.id) | (Lead.assigned_to == current_user.email) | (Lead.owner_id.is_(None))
+        )
+
     if request.status:
-        query = query.where(Lead.status == request.status.name)
+        query = query.where(Lead.status == request.status)
     if request.min_score is not None:
         query = query.where(Lead.total_score >= request.min_score)
 
     result = await db.execute(query)
     rows = result.all()
-
-    # Filter by similarity threshold (cosine distance < 0.5 means fairly similar)
-    items = []
-    for lead, distance in rows:
-        if distance < 0.5:
-            items.append(lead)
+    items = [lead for lead, distance in rows]
 
     return LeadListResponse(
         total=len(items),
@@ -420,50 +494,63 @@ async def enrich_all_leads(
     current_user: User = Depends(get_current_user),
 ):
     """Enqueue enrichment for all discovered/enriched leads without a real website analyzed."""
-    result = await db.execute(
-        select(Lead).where(
-            Lead.status.in_([LeadStatus.DISCOVERED, LeadStatus.ENRICHED])
-        )
+    query = select(Lead.id).where(
+        Lead.status.in_([LeadStatus.DISCOVERED, LeadStatus.ENRICHED])
     )
-    leads = result.scalars().all()
+    # Ownership filter
+    if not current_user.is_superuser and current_user.role.value != "admin":
+        query = query.where(
+            (Lead.owner_id == current_user.id) | (Lead.assigned_to == current_user.email) | (Lead.owner_id.is_(None))
+        )
+    result = await db.execute(query)
+    lead_ids = [row[0] for row in result.all()]
 
     # Run in background so the HTTP request returns immediately
-    background_tasks.add_task(_enrich_leads_batch, leads, db)
+    # Pass only IDs — the background task opens its own fresh session
+    background_tasks.add_task(_enrich_leads_batch, lead_ids)
 
     return {
-        "message": f"Enrichment started for {len(leads)} leads in the background",
-        "total": len(leads),
+        "message": f"Enrichment started for {len(lead_ids)} leads in the background",
+        "total": len(lead_ids),
     }
 
 
-async def _enrich_leads_batch(leads: list, db: AsyncSession):
-    """Background task: enrich a batch of leads."""
-    agent = ResearchAgent()
-    enriched_count = 0
-    failed_count = 0
+async def _enrich_leads_batch(lead_ids: list[int]):
+    """Background task: enrich a batch of leads. Opens its own DB session."""
+    from app.db.base import AsyncSessionLocal
 
-    for lead in leads:
-        try:
-            enriched = await agent.enrich(lead)
-            for field, value in enriched.model_dump(exclude_unset=True).items():
-                setattr(lead, field, value)
+    async with AsyncSessionLocal() as db:
+        agent = ResearchAgent()
+        enriched_count = 0
+        failed_count = 0
 
-            if lead.urgency_score is not None and lead.fit_score is not None:
-                lead.total_score = (lead.urgency_score + lead.fit_score) / 2
-                lead.status = LeadStatus.SCORED
-            else:
-                lead.status = LeadStatus.ENRICHED
-
-            # Update embedding
+        for lead_id in lead_ids:
             try:
-                await update_lead_embedding(lead)
-            except Exception:
-                pass
+                result = await db.execute(select(Lead).where(Lead.id == lead_id))
+                lead = result.scalar_one_or_none()
+                if not lead:
+                    continue
 
-            enriched_count += 1
-        except Exception as e:
-            logger.error(f"Failed to enrich lead {lead.id} ({lead.business_name}): {e}")
-            failed_count += 1
+                enriched = await agent.enrich(lead)
+                for field, value in enriched.model_dump(exclude_unset=True).items():
+                    setattr(lead, field, value)
 
-    await db.commit()
+                if lead.urgency_score is not None and lead.fit_score is not None:
+                    lead.total_score = (lead.urgency_score + lead.fit_score) / 2
+                    lead.status = LeadStatus.SCORED
+                else:
+                    lead.status = LeadStatus.ENRICHED
+
+                # Update embedding
+                try:
+                    await update_lead_embedding(lead)
+                except Exception:
+                    pass
+
+                enriched_count += 1
+            except Exception as e:
+                logger.error(f"Failed to enrich lead {lead_id}: {e}")
+                failed_count += 1
+
+        await db.commit()
     logger.info(f"Batch enrichment complete: {enriched_count} enriched, {failed_count} failed")
