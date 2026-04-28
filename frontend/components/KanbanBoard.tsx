@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useCallback, memo, useState } from "react";
-import { ArrowRight, ArrowLeft, Send, Loader2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Send, Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useQueryClient } from "@tanstack/react-query";
 import { crmApi } from "@/lib/api";
@@ -285,10 +285,14 @@ const KanbanColumn = memo(function KanbanColumn({
 export default function KanbanBoard() {
   const queryClient = useQueryClient();
   const [actionLoading, setActionLoading] = useState<Record<number, boolean>>({});
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [transitionError, setTransitionError] = useState<string | null>(null);
 
   const transitionLead = useCallback(
     async (lead: Lead, newStatus: string) => {
       setActionLoading((prev) => ({ ...prev, [lead.id]: true }));
+      setTransitionError(null);
       try {
         await crmApi.transition(lead.id, newStatus);
         // Invalidate both source and destination columns
@@ -300,7 +304,9 @@ export default function KanbanBoard() {
         });
       } catch (err: any) {
         console.error("Transition failed:", err);
-        alert(err.response?.data?.detail || "Transición no permitida");
+        const msg = err.response?.data?.detail || "Transición no permitida";
+        setTransitionError(msg);
+        setTimeout(() => setTransitionError(null), 5000);
       } finally {
         setActionLoading((prev) => ({ ...prev, [lead.id]: false }));
       }
@@ -308,16 +314,22 @@ export default function KanbanBoard() {
     [queryClient]
   );
 
+  const [emailError, setEmailError] = useState<string | null>(null);
+
   const sendEmail = useCallback(
     async (lead: Lead) => {
       setActionLoading((prev) => ({ ...prev, [lead.id]: true }));
+      setEmailError(null);
       try {
         await crmApi.contact(lead.id, "email", "initial_outreach");
         await queryClient.invalidateQueries({
           queryKey: ["leads", "kanban", lead.status],
         });
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
+        const msg = err.response?.data?.detail || "Error enviando email";
+        setEmailError(msg);
+        setTimeout(() => setEmailError(null), 5000);
       } finally {
         setActionLoading((prev) => ({ ...prev, [lead.id]: false }));
       }
@@ -325,18 +337,55 @@ export default function KanbanBoard() {
     [queryClient]
   );
 
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ["leads", "kanban"] });
+    setIsRefreshing(false);
+  }, [queryClient]);
+
   return (
-    <div className="overflow-x-auto">
-      <div className="flex gap-4 min-w-max pb-4">
-        {PIPELINE_STAGES.map((stage) => (
-          <KanbanColumn
-            key={stage.key}
-            stage={stage}
-            onTransition={transitionLead}
-            onSendEmail={sendEmail}
-            actionLoading={actionLoading}
-          />
-        ))}
+    <div className="relative">
+      {/* Error toasts */}
+      {transitionError && (
+        <div className="fixed top-20 right-4 z-50">
+          <div className="rounded-lg bg-red-500/90 backdrop-blur border border-red-400/50 px-4 py-3 shadow-lg">
+            <p className="text-sm font-medium text-white">{transitionError}</p>
+          </div>
+        </div>
+      )}
+      {emailError && (
+        <div className="fixed top-20 right-4 z-50">
+          <div className="rounded-lg bg-red-500/90 backdrop-blur border border-red-400/50 px-4 py-3 shadow-lg">
+            <p className="text-sm font-medium text-white">{emailError}</p>
+          </div>
+        </div>
+      )}
+      <div className="flex items-center justify-end mb-4">
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-gray-300 hover:bg-white/10 disabled:opacity-50 transition-colors"
+        >
+          {isRefreshing ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="w-3.5 h-3.5" />
+          )}
+          Refrescar pipeline
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <div className="flex gap-4 min-w-max pb-4">
+          {PIPELINE_STAGES.map((stage) => (
+            <KanbanColumn
+              key={stage.key}
+              stage={stage}
+              onTransition={transitionLead}
+              onSendEmail={sendEmail}
+              actionLoading={actionLoading}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

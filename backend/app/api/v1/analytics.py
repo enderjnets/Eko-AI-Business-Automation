@@ -45,12 +45,12 @@ async def get_performance_metrics(
     total_leads = await db.scalar(select(func.count(Lead.id)))
     contacted = await db.scalar(
         select(func.count(Lead.id)).where(Lead.status.in_([
-            LeadStatus.CONTACTED.name, LeadStatus.ENGAGED.name, LeadStatus.MEETING_BOOKED.name,
-            LeadStatus.PROPOSAL_SENT.name, LeadStatus.NEGOTIATING.name, LeadStatus.CLOSED_WON.name,
+            LeadStatus.CONTACTED, LeadStatus.ENGAGED, LeadStatus.MEETING_BOOKED,
+            LeadStatus.PROPOSAL_SENT, LeadStatus.NEGOTIATING, LeadStatus.CLOSED_WON,
         ]))
     )
     closed_won = await db.scalar(
-        select(func.count(Lead.id)).where(Lead.status == LeadStatus.CLOSED_WON.name)
+        select(func.count(Lead.id)).where(Lead.status == LeadStatus.CLOSED_WON)
     )
     avg_score = await db.scalar(
         select(func.avg(Lead.total_score)).where(Lead.total_score.isnot(None))

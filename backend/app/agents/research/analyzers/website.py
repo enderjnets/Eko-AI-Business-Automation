@@ -25,6 +25,9 @@ class WebsiteAnalyzer:
             },
         )
 
+    async def close(self):
+        await self.client.aclose()
+
     async def analyze(self, url: str) -> Dict:
         """
         Fetch and analyze a website.

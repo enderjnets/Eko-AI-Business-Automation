@@ -66,13 +66,21 @@ async def transition_lead(
     Move a lead to a new pipeline stage.
     Validates that the transition is allowed.
     """
-    result = await db.execute(select(Lead).where(Lead.id == lead_id))
+    result = await db.execute(
+        select(Lead).where(Lead.id == lead_id).with_for_update()
+    )
     lead = result.scalar_one_or_none()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-    
+
+    # Authorization check
+    if not current_user.is_superuser and current_user.role.value != "admin":
+        if lead.owner_id is not None and lead.owner_id != current_user.id:
+            if lead.assigned_to != current_user.email:
+                raise HTTPException(status_code=403, detail="Not authorized to modify this lead")
+
     current_status = lead.status
-    
+
     # Validate transition
     allowed = VALID_TRANSITIONS.get(current_status, [])
     if new_status not in allowed:
@@ -80,7 +88,7 @@ async def transition_lead(
             status_code=400,
             detail=f"Invalid transition from {current_status.value} to {new_status.value}. Allowed: {[s.value for s in allowed]}"
         )
-    
+
     old_status = lead.status.value
     lead.status = new_status
     

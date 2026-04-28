@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.signals import worker_process_init
 from celery.schedules import crontab
 from app.config import get_settings
 
@@ -12,6 +13,17 @@ celery_app = Celery(
         "app.tasks.scheduled",
     ],
 )
+
+
+@worker_process_init.connect
+def init_worker_process(**kwargs):
+    """Recreate the SQLAlchemy engine in each forked worker process.
+    This prevents 'Future attached to a different loop' errors because
+    asyncpg connections created in the parent process are not safe to use
+    in forked children.
+    """
+    from app.db.base import recreate_engine
+    recreate_engine()
 
 celery_app.conf.update(
     task_serializer="json",
@@ -39,6 +51,14 @@ celery_app.conf.update(
         "generate-daily-report": {
             "task": "app.tasks.scheduled.generate_daily_report",
             "schedule": crontab(hour=8, minute=0),  # 8am MT
+        },
+        "backup-database-daily": {
+            "task": "app.tasks.scheduled.backup_database",
+            "schedule": crontab(hour=3, minute=0),  # 3am MT
+        },
+        "backup-processed-leads-every-2h": {
+            "task": "app.tasks.scheduled.backup_processed_leads",
+            "schedule": 7200.0,  # every 2 hours
         },
     },
 )

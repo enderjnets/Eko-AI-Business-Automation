@@ -81,6 +81,9 @@ class WebsiteFinder:
         self.serpapi_key = settings.SERPAPI_API_KEY
         self.client = httpx.AsyncClient(timeout=15.0, follow_redirects=True)
 
+    async def close(self):
+        await self.client.aclose()
+
     def _clean_business_name(self, business_name: str) -> str:
         """
         Remove status suffixes from business names (e.g. Colorado SOS data).
@@ -127,6 +130,15 @@ class WebsiteFinder:
         except Exception as e:
             logger.warning(f"DuckDuckGo search failed: {e}")
 
+        # Final fallback: pattern-match common domain patterns
+        try:
+            url = await self._pattern_search(cleaned_name, city, state)
+            if url:
+                logger.info(f"WebsiteFinder: found {url} for {business_name} via pattern match")
+                return url
+        except Exception as e:
+            logger.warning(f"Pattern search failed: {e}")
+
         return None
 
     async def _search_serpapi(self, query: str, business_name: str) -> Optional[str]:
@@ -165,6 +177,69 @@ class WebsiteFinder:
             results.append({"link": href, "title": title})
 
         return self._pick_best_url(results, business_name)
+
+    async def _pattern_search(self, business_name: str, city: str, state: str) -> Optional[str]:
+        """Try common domain patterns based on business name."""
+        import re
+
+        # Clean business name for domain generation
+        clean = re.sub(r"[^\w\s]", "", business_name.lower())
+        clean = re.sub(r"\b(llc|inc|corp|ltd|co|company|llp|plc)\b", "", clean)
+        clean = re.sub(r"\s+", " ", clean).strip()
+
+        words = clean.split()
+        if not words:
+            return None
+
+        # Generate domain candidates
+        name_joined = "".join(words)
+        name_dashed = "-".join(words)
+        city_clean = re.sub(r"[^\w]", "", city.lower())
+
+        candidates = [
+            f"https://www.{name_joined}.com",
+            f"https://{name_joined}.com",
+            f"https://www.{name_dashed}.com",
+            f"https://{name_dashed}.com",
+        ]
+
+        # Add city variants if city is short enough
+        if city_clean and len(city_clean) <= 15:
+            candidates.extend([
+                f"https://www.{name_joined}{city_clean}.com",
+                f"https://{name_joined}{city_clean}.com",
+                f"https://www.{name_dashed}-{city_clean}.com",
+                f"https://{name_dashed}-{city_clean}.com",
+            ])
+
+        # Try each candidate
+        for url in candidates:
+            try:
+                resp = await self.client.head(url, timeout=5.0, follow_redirects=True)
+                if resp.status_code == 200:
+                    # Verify title matches business name
+                    page = await self.client.get(url, timeout=8.0, follow_redirects=True)
+                    if page.status_code == 200:
+                        title_match = False
+                        from bs4 import BeautifulSoup
+                        soup = BeautifulSoup(page.text, "html.parser")
+                        title = soup.title.string.lower() if soup.title else ""
+                        business_words = [w for w in words if len(w) > 2]
+                        matches = sum(1 for w in business_words if w in title)
+                        if matches >= max(1, len(business_words) // 2):
+                            title_match = True
+                        # Also accept if domain itself is a strong match
+                        if not title_match:
+                            domain_words = re.findall(r"\w+", url.split("/")[2].replace("www.", ""))
+                            domain_match = sum(1 for w in business_words if w in domain_words)
+                            if domain_match >= max(1, len(business_words) // 2):
+                                title_match = True
+                        if title_match:
+                            return url
+            except Exception:
+                continue
+
+        return None
 
     def _is_blocked_url(self, url: str) -> bool:
         """Check if a URL matches blocked domain or pattern lists."""

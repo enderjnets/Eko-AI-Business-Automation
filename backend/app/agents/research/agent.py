@@ -97,6 +97,16 @@ class ResearchAgent:
             )
         except Exception:
             pass
+        finally:
+            # Clean up HTTP clients to avoid connection leaks
+            try:
+                await self.website_finder.close()
+            except Exception:
+                pass
+            try:
+                await self.website_analyzer.close()
+            except Exception:
+                pass
 
         return enrichment
 

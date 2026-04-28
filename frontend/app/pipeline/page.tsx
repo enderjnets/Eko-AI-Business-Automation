@@ -11,7 +11,7 @@ export default function PipelinePage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold font-display">Sales Pipeline</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Drag leads through stages or use arrows to move them
+            Use arrows to move leads through stages
           </p>
         </div>
         

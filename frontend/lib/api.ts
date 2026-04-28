@@ -51,7 +51,7 @@ export const authApi = {
 
 // Leads API
 export const leadsApi = {
-  list: (params?: { status?: string; city?: string; search?: string; page?: number; page_size?: number; lat?: number; lng?: number; sort_by?: string }) =>
+  list: (params?: { status?: string; city?: string; search?: string; page?: number; page_size?: number; lat?: number; lng?: number; sort_by?: string; min_score?: number; max_score?: number; has_email?: boolean; has_phone?: boolean; has_website?: boolean; category?: string }) =>
     api.get("/leads", { params }),
   get: (id: number) => api.get(`/leads/${id}`),
   create: (data: any) => api.post("/leads", data),

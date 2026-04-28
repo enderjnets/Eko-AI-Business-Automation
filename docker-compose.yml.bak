@@ -13,7 +13,6 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    command: postgres -c max_connections=200
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eko} -d ${POSTGRES_DB:-eko_ai}"]
       interval: 5s
@@ -52,13 +51,6 @@ services:
       - KIMI_BASE_URL=${KIMI_BASE_URL:-https://api.kimi.com/coding/v1}
       - KIMI_MODEL=${KIMI_MODEL:-kimi-for-coding}
       - KIMI_EMBEDDING_MODEL=${KIMI_EMBEDDING_MODEL:-moonshot-v1-embedding-1024}
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5-coder:14b}
-      - OLLAMA_EMBEDDING_MODEL=${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
-      - MINIMAX_API_KEY=${MINIMAX_API_KEY}
-      - MINIMAX_BASE_URL=${MINIMAX_BASE_URL:-https://api.minimax.io/v1}
-      - MINIMAX_MODEL=${MINIMAX_MODEL:-MiniMax-M2.7}
-      - MINIMAX_EMBEDDING_MODEL=${MINIMAX_EMBEDDING_MODEL:-embedding-001}
       - RESEND_API_KEY=${RESEND_API_KEY}
       - OUTSCRAPER_API_KEY=${OUTSCRAPER_API_KEY}
       - YELP_API_KEY=${YELP_API_KEY}
@@ -72,7 +64,6 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-      - ./backups:/app/backups
     depends_on:
       db:
         condition: service_healthy
@@ -84,7 +75,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    # container_name: eko-celery (removed for scaling)
+    container_name: eko-celery
     restart: unless-stopped
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-eko}:${POSTGRES_PASSWORD:-eko_dev_pass}@db:5432/${POSTGRES_DB:-eko_ai}
@@ -98,13 +89,6 @@ services:
       - KIMI_BASE_URL=${KIMI_BASE_URL:-https://api.kimi.com/coding/v1}
       - KIMI_MODEL=${KIMI_MODEL:-kimi-for-coding}
       - KIMI_EMBEDDING_MODEL=${KIMI_EMBEDDING_MODEL:-moonshot-v1-embedding-1024}
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5-coder:14b}
-      - OLLAMA_EMBEDDING_MODEL=${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
-      - MINIMAX_API_KEY=${MINIMAX_API_KEY}
-      - MINIMAX_BASE_URL=${MINIMAX_BASE_URL:-https://api.minimax.io/v1}
-      - MINIMAX_MODEL=${MINIMAX_MODEL:-MiniMax-M2.7}
-      - MINIMAX_EMBEDDING_MODEL=${MINIMAX_EMBEDDING_MODEL:-embedding-001}
       - RESEND_API_KEY=${RESEND_API_KEY}
       - OUTSCRAPER_API_KEY=${OUTSCRAPER_API_KEY}
       - YELP_API_KEY=${YELP_API_KEY}
@@ -116,13 +100,12 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-development}
     volumes:
       - ./backend:/app
-      - ./backups:/app/backups
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: celery -A app.tasks.celery_app worker --loglevel=info --pool=solo
+    command: celery -A app.tasks.celery_app worker --loglevel=info
 
   celery-beat:
     build:
@@ -142,13 +125,6 @@ services:
       - KIMI_BASE_URL=${KIMI_BASE_URL:-https://api.kimi.com/coding/v1}
       - KIMI_MODEL=${KIMI_MODEL:-kimi-for-coding}
       - KIMI_EMBEDDING_MODEL=${KIMI_EMBEDDING_MODEL:-moonshot-v1-embedding-1024}
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5-coder:14b}
-      - OLLAMA_EMBEDDING_MODEL=${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
-      - MINIMAX_API_KEY=${MINIMAX_API_KEY}
-      - MINIMAX_BASE_URL=${MINIMAX_BASE_URL:-https://api.minimax.io/v1}
-      - MINIMAX_MODEL=${MINIMAX_MODEL:-MiniMax-M2.7}
-      - MINIMAX_EMBEDDING_MODEL=${MINIMAX_EMBEDDING_MODEL:-embedding-001}
       - RESEND_API_KEY=${RESEND_API_KEY}
       - OUTSCRAPER_API_KEY=${OUTSCRAPER_API_KEY}
       - YELP_API_KEY=${YELP_API_KEY}
@@ -160,7 +136,6 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-development}
     volumes:
       - ./backend:/app
-      - ./backups:/app/backups
     depends_on:
       db:
         condition: service_healthy
@@ -180,6 +155,7 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend:/app
+      - /app/node_modules
     environment:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     depends_on:

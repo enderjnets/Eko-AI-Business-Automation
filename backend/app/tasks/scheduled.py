@@ -6,6 +6,7 @@ from sqlalchemy import select, and_, func
 
 from app.tasks.celery_app import celery_app
 from app.db.base import AsyncSessionLocal
+from app.models.user import User
 from app.models.lead import Lead, LeadStatus, Interaction
 from app.models.campaign import Campaign, CampaignLead
 from app.agents.outreach.channels.email import EmailOutreach
@@ -124,14 +125,14 @@ async def _process_follow_ups_async():
         return {"processed": processed, "skipped": skipped, "errors": errors}
 
 
-async def _enrich_pending_leads_async():
+async def _enrich_pending_leads_async(batch_size: int = 100):
     """Auto-enrich newly discovered leads that haven't been enriched yet."""
     async with AsyncSessionLocal() as db:
         result = await db.execute(
             select(Lead)
-            .where(Lead.status == LeadStatus.DISCOVERED.name)
+            .where(Lead.status == LeadStatus.DISCOVERED)
             .where(Lead.do_not_contact == False)
-            .limit(20)
+            .limit(batch_size)
         )
         leads = result.scalars().all()
 
@@ -256,7 +257,7 @@ async def _generate_daily_report_async():
         # Meetings booked
         meetings_booked = await db.scalar(
             select(func.count(Lead.id))
-            .where(Lead.status == LeadStatus.MEETING_BOOKED.name)
+            .where(Lead.status == LeadStatus.MEETING_BOOKED)
         )
 
         # Conversion rate
@@ -316,6 +317,97 @@ async def _generate_daily_report_async():
 
 
 # ---------------------------------------------------------------------------
+# Backup helpers
+# ---------------------------------------------------------------------------
+
+import json
+import os
+import subprocess
+from datetime import datetime
+
+BACKUP_DIR = "/app/backups"
+
+
+def _ensure_backup_dir():
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+
+
+async def _backup_database_async():
+    """Create a pg_dump backup of the entire database."""
+    _ensure_backup_dir()
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    filename = f"eko_ai_backup_{timestamp}.sql"
+    filepath = os.path.join(BACKUP_DIR, filename)
+
+    # Get DB connection details from environment
+    db_url = os.environ.get("DATABASE_URL", "postgresql+asyncpg://eko:eko_dev_pass@db:5432/eko_ai")
+    # Parse asyncpg URL to psycopg2 format for pg_dump
+    # e.g. postgresql+asyncpg://eko:eko_dev_pass@db:5432/eko_ai -> postgresql://eko:eko_dev_pass@db:5432/eko_ai
+    pg_url = db_url.replace("+asyncpg", "")
+
+    try:
+        result = subprocess.run(
+            ["pg_dump", "--no-owner", "--no-privileges", "-f", filepath, pg_url],
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        if result.returncode == 0:
+            logger.info(f"Database backup saved: {filepath}")
+            return {"success": True, "file": filename, "path": filepath}
+        else:
+            logger.error(f"pg_dump failed: {result.stderr}")
+            return {"success": False, "error": result.stderr}
+    except Exception as e:
+        logger.error(f"Database backup failed: {e}")
+        return {"success": False, "error": str(e)}
+
+
+async def _backup_processed_leads_async():
+    """Export leads with status != DISCOVERED to JSON (enriched, scored, contacted, etc.)."""
+    _ensure_backup_dir()
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    filename = f"processed_leads_{timestamp}.json"
+    filepath = os.path.join(BACKUP_DIR, filename)
+
+    async with AsyncSessionLocal() as db:
+        # Use raw SQL to avoid ORM mapper dependency issues
+        from sqlalchemy import text
+        result = await db.execute(
+            text("""
+                SELECT id, business_name, category, description, email, phone, website,
+                       address, city, state, zip_code, country, latitude, longitude,
+                       source, status, tech_stack, social_profiles, review_summary,
+                       trigger_events, pain_points, urgency_score, fit_score, total_score,
+                       scoring_reason, website_real, services, pricing_info, business_hours,
+                       about_text, team_names, proposal_suggestion, assigned_to, tags, notes,
+                       created_at, updated_at
+                FROM leads
+                WHERE status != 'DISCOVERED'
+                ORDER BY updated_at DESC
+            """)
+        )
+        rows = result.mappings().all()
+
+        leads_data = []
+        for row in rows:
+            lead_dict = {k: (v.isoformat() if hasattr(v, 'isoformat') else v) for k, v in dict(row).items()}
+            leads_data.append(lead_dict)
+
+        backup = {
+            "exported_at": datetime.utcnow().isoformat(),
+            "total_processed_leads": len(leads_data),
+            "leads": leads_data,
+        }
+
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(backup, f, ensure_ascii=False, indent=2)
+
+        logger.info(f"Processed leads backup saved: {filepath} ({len(leads_data)} leads)")
+        return {"success": True, "file": filename, "count": len(leads_data), "path": filepath}
+
+
+# ---------------------------------------------------------------------------
 # Celery tasks
 # ---------------------------------------------------------------------------
 
@@ -369,3 +461,80 @@ def generate_daily_report():
     except Exception as e:
         logger.error(f"[Celery] Daily report failed: {e}")
         raise
+
+
+@celery_app.task
+def backup_database():
+    """Scheduled task: Backup entire database with pg_dump. Runs daily at 3am MT."""
+    logger.info("[Celery] Running database backup...")
+    try:
+        result = asyncio.run(_backup_database_async())
+        logger.info(f"[Celery] Database backup complete: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"[Celery] Database backup failed: {e}")
+        raise
+
+
+@celery_app.task
+def backup_processed_leads():
+    """Scheduled task: Export processed leads (enriched, scored, etc.) to JSON. Runs every 2 hours."""
+    logger.info("[Celery] Running processed leads backup...")
+    try:
+        result = asyncio.run(_backup_processed_leads_async())
+        logger.info(f"[Celery] Processed leads backup complete: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"[Celery] Processed leads backup failed: {e}")
+        raise
+
+
+# Persistent event loop per worker process (solo pool) to avoid
+# "Future attached to a different loop" when asyncpg connections are reused.
+_worker_loop = None
+
+
+def _get_worker_loop():
+    global _worker_loop
+    if _worker_loop is None or _worker_loop.is_closed():
+        _worker_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(_worker_loop)
+    return _worker_loop
+
+
+@celery_app.task
+def enrich_single_lead(lead_id: int):
+    """Enrich a single lead by ID."""
+    loop = _get_worker_loop()
+    loop.run_until_complete(_enrich_single_lead_async(lead_id))
+
+
+async def _enrich_single_lead_async(lead_id: int):
+    """Async helper to enrich one lead."""
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(Lead).where(Lead.id == lead_id))
+        lead = result.scalar_one_or_none()
+        if not lead:
+            logger.warning(f"Lead {lead_id} not found")
+            return
+        if lead.status != LeadStatus.DISCOVERED:
+            logger.info(f"Lead {lead_id} already processed (status={lead.status})")
+            return
+
+        try:
+            agent = ResearchAgent()
+            enrichment = await agent.enrich(lead)
+
+            for field, value in enrichment.model_dump(exclude_unset=True).items():
+                setattr(lead, field, value)
+
+            if lead.urgency_score is not None and lead.fit_score is not None:
+                lead.total_score = (lead.urgency_score + lead.fit_score) / 2
+                lead.status = LeadStatus.SCORED
+            else:
+                lead.status = LeadStatus.ENRICHED
+
+            await db.commit()
+            logger.info(f"Enriched lead {lead_id} '{lead.business_name}' → {lead.status.value}")
+        except Exception as e:
+            logger.warning(f"Failed to enrich lead {lead_id}: {e}")

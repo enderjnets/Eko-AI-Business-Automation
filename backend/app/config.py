@@ -24,20 +24,31 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # API Keys
-    # AI Provider (OpenAI or Kimi/Moonshot)
-    AI_PROVIDER: str = "kimi"  # "openai" or "kimi"
-    
+    # AI Provider (openai, kimi, or ollama)
+    AI_PROVIDER: str = "kimi"
+
     # OpenAI settings
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = "https://api.openai.com/v1"
     OPENAI_MODEL: str = "gpt-4o"
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
-    
+
     # Kimi (Kimi Code API) settings
     KIMI_API_KEY: str = ""
     KIMI_BASE_URL: str = "https://api.kimi.com/coding/v1"
     KIMI_MODEL: str = "kimi-for-coding"
     KIMI_EMBEDDING_MODEL: str = "moonshot-v1-embedding-1024"
+
+    # Ollama (local) settings
+    OLLAMA_BASE_URL: str = "http://host.docker.internal:11434/v1"
+    OLLAMA_MODEL: str = "qwen2.5-coder:14b"
+    OLLAMA_EMBEDDING_MODEL: str = "nomic-embed-text"
+
+    # MiniMax settings
+    MINIMAX_API_KEY: str = ""
+    MINIMAX_BASE_URL: str = "https://api.minimax.io/v1"
+    MINIMAX_MODEL: str = "MiniMax-M2.7"
+    MINIMAX_EMBEDDING_MODEL: str = "embedding-001"
 
     RESEND_API_KEY: str = ""
     RESEND_FROM_EMAIL: str = "Eko AI <eko@ekoai.com>"
