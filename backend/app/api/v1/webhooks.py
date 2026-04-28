@@ -344,19 +344,41 @@ async def _handle_conversation_update(call_data, lead, interaction, db):
 # ---------------------------------------------------------------------------
 
 async def _verify_resend_signature(payload_bytes: bytes, signature_header: str) -> bool:
-    """Verify Resend webhook signature using HMAC-SHA256."""
+    """Verify Resend webhook signature using HMAC-SHA256.
+    
+    Resend sends: Resend-Signature: t=<timestamp>,v=<signature>
+    Expected signature: HMAC-SHA256(secret, '<timestamp>.<payload>')
+    """
     secret = settings.RESEND_WEBHOOK_SECRET
     if not secret:
         logger.warning("RESEND_WEBHOOK_SECRET not set, skipping signature verification")
         return True
     
     try:
+        # Parse the signature header: "t=1712345678,v=abc123..."
+        parts = {}
+        for part in signature_header.split(","):
+            if "=" in part:
+                key, value = part.split("=", 1)
+                parts[key.strip()] = value.strip()
+        
+        timestamp = parts.get("t", "")
+        received_signature = parts.get("v", "")
+        
+        if not timestamp or not received_signature:
+            logger.warning(f"Invalid signature header format: {signature_header}")
+            return False
+        
+        # Construct signed payload: "<timestamp>.<json_body>"
+        signed_payload = f"{timestamp}.".encode("utf-8") + payload_bytes
+        
         expected_signature = hmac.new(
             secret.encode("utf-8"),
-            payload_bytes,
+            signed_payload,
             hashlib.sha256,
         ).hexdigest()
-        return hmac.compare_digest(expected_signature, signature_header)
+        
+        return hmac.compare_digest(expected_signature, received_signature)
     except Exception as e:
         logger.error(f"Error verifying webhook signature: {e}")
         return False
