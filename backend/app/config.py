@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     MINIMAX_EMBEDDING_MODEL: str = "embedding-001"
 
     RESEND_API_KEY: str = ""
-    RESEND_FROM_EMAIL: str = "Eko AI <eko@ekoai.com>"
+    RESEND_FROM_EMAIL: str = "Eko AI <contact@biz.ekoaiautomation.com>"
     RESEND_WEBHOOK_SECRET: str = ""
     RESEND_INBOUND_DOMAIN: str = "biz.ekoaiautomation.com"
     AUTO_CREATE_LEAD_FROM_INBOUND: bool = True
