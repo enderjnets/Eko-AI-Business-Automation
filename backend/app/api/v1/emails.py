@@ -456,3 +456,54 @@ async def get_email_conversation(
             for i in conversation
         ],
     }
+
+
+# ---------------------------------------------------------------------------
+# Delete endpoints
+# ---------------------------------------------------------------------------
+
+class BulkDeleteRequest(BaseModel):
+    ids: list[int]
+
+
+@router.delete("/{interaction_id}")
+async def delete_email(
+    interaction_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a single inbound email interaction."""
+    result = await db.execute(
+        select(Interaction).where(Interaction.id == interaction_id)
+    )
+    interaction = result.scalar_one_or_none()
+    if not interaction:
+        raise HTTPException(status_code=404, detail="Email not found")
+    
+    await db.delete(interaction)
+    await db.commit()
+    return {"status": "deleted", "id": interaction_id}
+
+
+@router.delete("/bulk/delete")
+async def bulk_delete_emails(
+    data: BulkDeleteRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete multiple inbound email interactions."""
+    if not data.ids:
+        return {"status": "deleted", "count": 0}
+    
+    result = await db.execute(
+        select(Interaction).where(Interaction.id.in_(data.ids))
+    )
+    interactions = result.scalars().all()
+    deleted_count = 0
+    
+    for interaction in interactions:
+        await db.delete(interaction)
+        deleted_count += 1
+    
+    await db.commit()
+    return {"status": "deleted", "count": deleted_count, "ids": data.ids}

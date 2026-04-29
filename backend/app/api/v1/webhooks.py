@@ -353,6 +353,9 @@ async def _verify_svix_signature(payload_bytes: bytes, svix_id: str, svix_timest
       svix-signature: v1,<base64_hmac>
     
     Signed content: "<timestamp>.<id>.<json_body>"
+    
+    Svix secret format: whsec_<base64_encoded_secret>
+    The secret must be base64-decoded after removing the whsec_ prefix.
     """
     secret = settings.RESEND_WEBHOOK_SECRET
     if not secret:
@@ -367,11 +370,16 @@ async def _verify_svix_signature(payload_bytes: bytes, svix_id: str, svix_timest
         
         received_sig = svix_signature[3:]  # Remove "v1," prefix
         
+        # Decode Svix secret: whsec_<base64_secret> → binary secret
+        secret_bytes = secret.encode("utf-8")
+        if secret.startswith("whsec_"):
+            secret_bytes = base64.b64decode(secret[6:])  # Remove "whsec_" and decode base64
+        
         # Construct signed content: "<timestamp>.<id>.<json_body>"
         signed_content = f"{svix_timestamp}.{svix_id}.".encode("utf-8") + payload_bytes
         
         expected_sig = hmac.new(
-            secret.encode("utf-8"),
+            secret_bytes,
             signed_content,
             hashlib.sha256,
         ).digest()

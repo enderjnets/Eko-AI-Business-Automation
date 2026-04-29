@@ -21,6 +21,7 @@ import {
   X,
   Edit3,
   ArrowLeft,
+  Trash2,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { emailsApi } from "@/lib/api";
@@ -68,6 +69,11 @@ export default function InboxPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [markingRead, setMarkingRead] = useState<number | null>(null);
   const [simulating, setSimulating] = useState(false);
+
+  // Delete state
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // AI Reply state
   const [showReplyModal, setShowReplyModal] = useState(false);
@@ -246,6 +252,64 @@ export default function InboxPage() {
 
   const unreadCount = items.filter((i) => !i.read).length;
 
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === items.length && items.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(items.map((i) => i.id)));
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("¿Eliminar este email permanentemente?")) return;
+    setDeletingIds((prev) => new Set(prev).add(id));
+    try {
+      await emailsApi.delete(id);
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      if (expandedId === id) setExpandedId(null);
+    } catch (err) {
+      console.error(err);
+      alert("Error eliminando email");
+    } finally {
+      setDeletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`¿Eliminar ${selectedIds.size} email${selectedIds.size > 1 ? "s" : ""} permanentemente?`)) return;
+    setBulkDeleting(true);
+    try {
+      await emailsApi.bulkDelete(Array.from(selectedIds));
+      setItems((prev) => prev.filter((item) => !selectedIds.has(item.id)));
+      setSelectedIds(new Set());
+      setExpandedId(null);
+    } catch (err) {
+      console.error(err);
+      alert("Error eliminando emails");
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-eko-graphite">
       <Navbar />
@@ -274,6 +338,27 @@ export default function InboxPage() {
             Simular reply
           </button>
         </div>
+
+        {/* Bulk actions bar */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center justify-between mb-4 p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
+            <span className="text-sm text-gray-300">
+              {selectedIds.size} seleccionado{selectedIds.size > 1 ? "s" : ""}
+            </span>
+            <button
+              onClick={handleBulkDelete}
+              disabled={bulkDeleting}
+              className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm"
+            >
+              {bulkDeleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              Eliminar
+            </button>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1 mb-6 w-fit">
@@ -330,6 +415,13 @@ export default function InboxPage() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(item.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={() => toggleSelect(item.id)}
+                            className="w-4 h-4 rounded border-white/20 bg-white/5 text-eko-blue focus:ring-eko-blue cursor-pointer"
+                          />
                           {!item.read && (
                             <span className="w-2 h-2 rounded-full bg-eko-blue" />
                           )}
@@ -375,6 +467,21 @@ export default function InboxPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(item.id);
+                          }}
+                          disabled={deletingIds.has(item.id)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          title="Eliminar"
+                        >
+                          {deletingIds.has(item.id) ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
                         {!item.read && (
                           <button
                             onClick={(e) => {
@@ -461,6 +568,18 @@ export default function InboxPage() {
                         >
                           <Wand2 className="w-4 h-4" />
                           Responder con IA
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deletingIds.has(item.id)}
+                          className="flex items-center gap-2 px-4 py-2 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-sm"
+                        >
+                          {deletingIds.has(item.id) ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                          Eliminar
                         </button>
                       </div>
 

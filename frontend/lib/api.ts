@@ -116,6 +116,10 @@ export const emailsApi = {
     api.post(`/emails/${interactionId}/send-reply`, data),
   conversation: (interactionId: number) =>
     api.get(`/emails/${interactionId}/conversation`),
+  delete: (interactionId: number) =>
+    api.delete(`/emails/${interactionId}`),
+  bulkDelete: (ids: number[]) =>
+    api.delete("/emails/bulk/delete", { data: { ids } }),
 };
 
 // Sequences API
