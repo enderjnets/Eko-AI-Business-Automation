@@ -65,13 +65,13 @@ Análisis AI del email:
         "friendly": "Amigable y cercano. Como si hablaras con un conocido.",
         "assertive": "Asertivo y directo. Ve al grano con confianza.",
         "consultative": "Consultivo. Haz preguntas, ofrece valor, no vendas directamente.",
-    }.get(tone, tone_guidance["professional"])
+    }.get(tone, "Profesional y cordial. Usa lenguaje de negocios formal pero cercano.")
 
     length_guidance = {
         "short": "Máximo 3-4 oraciones. Breve y directo.",
         "medium": "Máximo 2-3 párrafos cortos. Balanceado.",
         "long": "3-4 párrafos con detalle. Incluye ejemplos o propuesta de siguiente paso.",
-    }.get(max_length, length_guidance["medium"])
+    }.get(max_length, "Máximo 2-3 párrafos cortos. Balanceado.")
 
     custom = f"\nInstrucciones adicionales: {custom_instructions}\n" if custom_instructions else ""
 
