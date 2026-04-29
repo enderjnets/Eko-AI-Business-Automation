@@ -174,12 +174,16 @@ Return ONLY a JSON object with:
         tags: Optional[list] = None,
         campaign_id: Optional[int] = None,
         attachments: Optional[list] = None,
+        in_reply_to: Optional[str] = None,
+        references: Optional[list] = None,
     ) -> dict:
         """
         Send an email via Resend with tracking pixel embedded.
         
         Args:
             attachments: List of dicts with {filename, content_base64}
+            in_reply_to: SMTP Message-ID of the original email (for threading)
+            references: List of SMTP Message-IDs for thread continuity
         
         Returns:
             Resend API response with message_id
@@ -206,6 +210,14 @@ Return ONLY a JSON object with:
                 "html": tracking_body,
                 "tags": email_tags,
             }
+            
+            # Add threading headers for email clients (Gmail, Outlook)
+            if in_reply_to:
+                params["headers"] = params.get("headers", {})
+                params["headers"]["In-Reply-To"] = in_reply_to
+                if references:
+                    existing_refs = " ".join(references)
+                    params["headers"]["References"] = existing_refs
             
             # Add attachments if provided
             if attachments:

@@ -459,6 +459,7 @@ async def resend_inbound_webhook(request: Request, db: AsyncSession = Depends(ge
     
     data = payload.get("data", {})
     email_id = data.get("email_id")
+    smtp_message_id = data.get("message_id", "")  # SMTP Message-ID for threading
     from_email_raw = data.get("from", "")
     to_emails = data.get("to", [])
     subject = data.get("subject", "")
@@ -558,6 +559,7 @@ async def resend_inbound_webhook(request: Request, db: AsyncSession = Depends(ge
     # Create interaction
     meta = {
         "email_id": email_id,
+        "smtp_message_id": smtp_message_id,
         "from": from_email_raw,
         "to": to_emails,
         "inbound": True,

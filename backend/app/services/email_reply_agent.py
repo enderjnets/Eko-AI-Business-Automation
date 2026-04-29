@@ -179,14 +179,14 @@ async def get_conversation_history(
     limit: int = 10,
 ) -> List[Interaction]:
     """Get recent email interactions for a lead."""
-    from sqlalchemy import select, desc
+    from sqlalchemy import select, asc
     from app.models.lead import Interaction
     
     result = await db.execute(
         select(Interaction)
         .where(Interaction.lead_id == lead_id)
         .where(Interaction.interaction_type == "email")
-        .order_by(desc(Interaction.created_at))
+        .order_by(asc(Interaction.created_at))
         .limit(limit)
     )
     return result.scalars().all()

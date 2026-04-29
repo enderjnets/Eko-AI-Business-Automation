@@ -408,6 +408,10 @@ async def send_email_reply(
     if lead.do_not_contact:
         raise HTTPException(status_code=400, detail="Lead is marked as do-not-contact")
     
+    # Get SMTP Message-ID for threading
+    meta_in = interaction.meta or {}
+    smtp_message_id = meta_in.get("smtp_message_id")
+    
     message_id = None
     if data.send_email:
         email_outreach = EmailOutreach()
@@ -416,6 +420,7 @@ async def send_email_reply(
             subject=data.subject,
             body=data.body,
             lead_id=lead.id,
+            in_reply_to=smtp_message_id,
         )
         message_id = response.get("id")
     
@@ -429,6 +434,7 @@ async def send_email_reply(
         email_message_id=message_id,
         meta={
             "reply_to": interaction_id,
+            "in_reply_to": smtp_message_id,
             "sent_by_user": current_user.id,
             "sent_at": datetime.utcnow().isoformat(),
             "ai_generated": (interaction.meta or {}).get("ai_reply") is not None,
@@ -485,6 +491,10 @@ async def send_quick_reply(
     if lead.do_not_contact:
         raise HTTPException(status_code=400, detail="Lead is marked as do-not-contact")
     
+    # Get SMTP Message-ID for threading
+    meta_in = interaction.meta or {}
+    smtp_message_id = meta_in.get("smtp_message_id")
+    
     # Send via Resend
     email_outreach = EmailOutreach()
     response = await email_outreach.send(
@@ -492,6 +502,7 @@ async def send_quick_reply(
         subject=data.subject,
         body=data.body,
         lead_id=lead.id,
+        in_reply_to=smtp_message_id,
     )
     message_id = response.get("id")
     
@@ -505,6 +516,7 @@ async def send_quick_reply(
         email_message_id=message_id,
         meta={
             "reply_to": interaction_id,
+            "in_reply_to": smtp_message_id,
             "sent_by_user": current_user.id,
             "sent_at": datetime.utcnow().isoformat(),
             "ai_generated": False,
