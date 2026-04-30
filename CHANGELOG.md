@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.6.1] — 2026-04-29
+
+### Full Sales Cycle Demo — X3nails & Spa / Margie
+
+#### Voice & Inbound
+- **VAPI inbound assistant** (`vapi_client.py`) — Created "Eva" assistant with Rachel voice, Claude Sonnet, Deepgram nova-2 transcriber, `book_demo` function tool, bound to `+1-256-364-1727`
+- **VAPI webhooks** (`webhooks.py`) — `tool-calls` creates Booking + notifies Ender; `end-of-call-report` logs call data + sends rich summary email + Telegram alert
+- **Outbound calls** (`voice_agent.py`) — `POST /voice-agent/calls` with custom assistant, first message auto-generation
+
+#### Email & Auto-Reply
+- **Demo invite template** (`templates/emails/demo_invite.py`) — Professional HTML with VAPI phone CTA + booking link CTA
+- **Ender notification template** (`templates/emails/ender_notification.py`) — Rich HTML with lead snapshot, pain points, transcript, recording link, calendar link
+- **Auto-reply AI** (`email_reply_agent.py`) — Generates contextual English replies with both phone number (`+1-256-364-1727`) and `/book-demo` link CTAs
+- **Svix webhook fix** (`webhooks.py`) — Replaced custom signature verification with `standardwebhooks` library; fixed signed content format (`id.timestamp.body`)
+- **Resend inbound processing** (`webhooks.py`) — Full inbound email webhook with AI intent analysis, auto-reply, status transitions
+
+#### Booking & Calendar
+- **Public booking page** (`main.py`) — `/book-demo` serves inline HTML form with date picker, time slots (9:00–16:30 MT), prefills via query params
+- **Calendar links** (`utils/calendar_links.py`) — Google Calendar `.ics` generator for "Add to Calendar" buttons
+- **Booking endpoint fix** (`calendar.py`) — Added missing `Interaction` import for `/book-demo` POST
+
+#### Notifications
+- **Eko Rog Telegram notifier** (`services/eko_rog_notifier.py`) — Sends booking/call alerts to `@EkoBit_Rog_bot`
+- **Sales brief generator** (`services/sales_brief_generator.py`) — AI-generated sales brief on booking creation
+
+#### Infrastructure
+- **Docker Compose** — Added `APP_URL`, `FRONTEND_URL`, `ENVIRONMENT`, `CORS_ORIGINS`, `VAPI_*`, `TELEGRAM_*`, `AUTO_REPLY_ENABLED` env vars to all services
+- **Config** (`config.py`) — Added `AUTO_REPLY_ENABLED`, VAPI IDs, Telegram config, notification email
+- **Frontend build** — `NEXT_PUBLIC_API_URL` set to `https://ender-rog.tail25dc73.ts.net`
+
+---
+
 ## [0.6.0] — 2026-04-25
 
 ### Enrichment Pipeline Hardening
