@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     RESEND_WEBHOOK_SECRET: str = ""
     RESEND_INBOUND_DOMAIN: str = "biz.ekoaiautomation.com"
     AUTO_CREATE_LEAD_FROM_INBOUND: bool = True
+    AUTO_REPLY_ENABLED: bool = True
 
     OUTSCRAPER_API_KEY: str = ""
     APIFY_API_KEY: str = ""
@@ -64,7 +65,11 @@ class Settings(BaseSettings):
 
     # Phase 3: Voice
     RETELL_API_KEY: str = ""
-    VAPI_API_KEY: str = ""
+    VAPI_API_KEY: str = "f361bb66-8274-403a-8c0c-b984d7dd1cee"
+    VAPI_PHONE_NUMBER_ID: str = "81c18484-e0eb-4dd1-933c-a2a922427b07"
+    VAPI_INBOUND_PHONE_NUMBER: str = "+1-256-364-1727"
+    VAPI_BLACK_VOLT_ASSISTANT_ID: str = "b7bc5bc2-5e54-4e40-8cf9-63a06f478aa3"
+    VAPI_EKO_ASSISTANT_ID: str = "8c2de53b-3979-4e15-8824-757b749b27c3"
 
     # Phase 2: Calendar
     CAL_COM_API_KEY: str = ""
@@ -77,6 +82,13 @@ class Settings(BaseSettings):
 
     # Frontend URL for proposal links
     FRONTEND_URL: str = "http://localhost:3001"
+
+    # Notifications
+    ENDER_NOTIFICATION_EMAIL: str = "ender@ekoaiautomation.com"
+
+    # Eko Rog Telegram Notifications
+    TELEGRAM_BOT_TOKEN: str = "8264195169:AAG94XS7lPHh_L7DBvTNVKSR_4geB_WEju0"
+    TELEGRAM_CHAT_ID: str = "771213858"
 
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://localhost:8000"

@@ -59,7 +59,20 @@ services:
       - MINIMAX_BASE_URL=${MINIMAX_BASE_URL:-https://api.minimax.io/v1}
       - MINIMAX_MODEL=${MINIMAX_MODEL:-MiniMax-M2.7}
       - MINIMAX_EMBEDDING_MODEL=${MINIMAX_EMBEDDING_MODEL:-embedding-001}
-      - RESEND_API_KEY=${RESEND_API_KEY}
+      - APP_URL=${APP_URL:-http://localhost:8000}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3001}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      - VAPI_API_KEY=${VAPI_API_KEY}
+      - VAPI_PHONE_NUMBER_ID=${VAPI_PHONE_NUMBER_ID}
+      - VAPI_INBOUND_PHONE_NUMBER=${VAPI_INBOUND_PHONE_NUMBER}
+      - VAPI_EKO_ASSISTANT_ID=${VAPI_EKO_ASSISTANT_ID}
+      - VAPI_BLACK_VOLT_ASSISTANT_ID=${VAPI_BLACK_VOLT_ASSISTANT_ID}
+      - ENDER_NOTIFICATION_EMAIL=${ENDER_NOTIFICATION_EMAIL:-ender@ekoaiautomation.com}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - AUTO_REPLY_ENABLED=${AUTO_REPLY_ENABLED:-true}
+      - RESEND_API_KEY=re_Qbrjg694_FHQiPzdpVVyYKSq7T7pBk8Pm
       - RESEND_WEBHOOK_SECRET=${RESEND_WEBHOOK_SECRET}
       - RESEND_INBOUND_DOMAIN=${RESEND_INBOUND_DOMAIN:-biz.ekoaiautomation.com}
       - AUTO_CREATE_LEAD_FROM_INBOUND=${AUTO_CREATE_LEAD_FROM_INBOUND:-true}
@@ -108,7 +121,20 @@ services:
       - MINIMAX_BASE_URL=${MINIMAX_BASE_URL:-https://api.minimax.io/v1}
       - MINIMAX_MODEL=${MINIMAX_MODEL:-MiniMax-M2.7}
       - MINIMAX_EMBEDDING_MODEL=${MINIMAX_EMBEDDING_MODEL:-embedding-001}
-      - RESEND_API_KEY=${RESEND_API_KEY}
+      - APP_URL=${APP_URL:-http://localhost:8000}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3001}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      - VAPI_API_KEY=${VAPI_API_KEY}
+      - VAPI_PHONE_NUMBER_ID=${VAPI_PHONE_NUMBER_ID}
+      - VAPI_INBOUND_PHONE_NUMBER=${VAPI_INBOUND_PHONE_NUMBER}
+      - VAPI_EKO_ASSISTANT_ID=${VAPI_EKO_ASSISTANT_ID}
+      - VAPI_BLACK_VOLT_ASSISTANT_ID=${VAPI_BLACK_VOLT_ASSISTANT_ID}
+      - ENDER_NOTIFICATION_EMAIL=${ENDER_NOTIFICATION_EMAIL:-ender@ekoaiautomation.com}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - AUTO_REPLY_ENABLED=${AUTO_REPLY_ENABLED:-true}
+      - RESEND_API_KEY=re_Qbrjg694_FHQiPzdpVVyYKSq7T7pBk8Pm
       - RESEND_WEBHOOK_SECRET=${RESEND_WEBHOOK_SECRET}
       - RESEND_INBOUND_DOMAIN=${RESEND_INBOUND_DOMAIN:-biz.ekoaiautomation.com}
       - AUTO_CREATE_LEAD_FROM_INBOUND=${AUTO_CREATE_LEAD_FROM_INBOUND:-true}
@@ -155,7 +181,20 @@ services:
       - MINIMAX_BASE_URL=${MINIMAX_BASE_URL:-https://api.minimax.io/v1}
       - MINIMAX_MODEL=${MINIMAX_MODEL:-MiniMax-M2.7}
       - MINIMAX_EMBEDDING_MODEL=${MINIMAX_EMBEDDING_MODEL:-embedding-001}
-      - RESEND_API_KEY=${RESEND_API_KEY}
+      - APP_URL=${APP_URL:-http://localhost:8000}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3001}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      - VAPI_API_KEY=${VAPI_API_KEY}
+      - VAPI_PHONE_NUMBER_ID=${VAPI_PHONE_NUMBER_ID}
+      - VAPI_INBOUND_PHONE_NUMBER=${VAPI_INBOUND_PHONE_NUMBER}
+      - VAPI_EKO_ASSISTANT_ID=${VAPI_EKO_ASSISTANT_ID}
+      - VAPI_BLACK_VOLT_ASSISTANT_ID=${VAPI_BLACK_VOLT_ASSISTANT_ID}
+      - ENDER_NOTIFICATION_EMAIL=${ENDER_NOTIFICATION_EMAIL:-ender@ekoaiautomation.com}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - AUTO_REPLY_ENABLED=${AUTO_REPLY_ENABLED:-true}
+      - RESEND_API_KEY=re_Qbrjg694_FHQiPzdpVVyYKSq7T7pBk8Pm
       - RESEND_WEBHOOK_SECRET=${RESEND_WEBHOOK_SECRET}
       - RESEND_INBOUND_DOMAIN=${RESEND_INBOUND_DOMAIN:-biz.ekoaiautomation.com}
       - AUTO_CREATE_LEAD_FROM_INBOUND=${AUTO_CREATE_LEAD_FROM_INBOUND:-true}
@@ -182,7 +221,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        - NEXT_PUBLIC_API_URL=https://ender-rog.tail25dc73.ts.net
     container_name: eko-frontend
     restart: unless-stopped
     ports:
@@ -190,7 +229,7 @@ services:
     volumes:
       - ./frontend:/app
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - NEXT_PUBLIC_API_URL=https://ender-rog.tail25dc73.ts.net
     depends_on:
       - backend
 

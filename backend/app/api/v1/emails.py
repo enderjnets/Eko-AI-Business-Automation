@@ -355,6 +355,8 @@ async def generate_ai_email_reply(
         "tone": reply["tone"],
         "confidence": reply["confidence"],
         "suggested_next_action": reply["suggested_next_action"],
+        "suggested_meeting": reply.get("suggested_meeting", False),
+        "booking_link": reply.get("booking_link"),
         "generated_at": datetime.utcnow().isoformat(),
         "generated_by": current_user.id,
     }

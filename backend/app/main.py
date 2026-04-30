@@ -1,8 +1,9 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 from app.config import get_settings
 from app.api.v1 import leads, campaigns, emails, analytics, webhooks, crm, sequences, auth, calendar, phone_calls, settings as settings_router, deals, proposals, voice_agent
@@ -83,3 +84,118 @@ async def root():
         "docs": "/docs",
         "version": settings.APP_VERSION,
     }
+
+
+BOOK_DEMO_HTML = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book a Demo — Eko AI</title>
+<style>
+:root { --bg:#0B1120; --card:#111827; --text:#F3F4F6; --muted:#9CA3AF; --blue:#3B82F6; --blue-d:#2563EB; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; }
+.card { background:var(--card); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:32px; width:100%; max-width:480px; }
+h1 { margin:0 0 6px; font-size:24px; }
+p.sub { margin:0 0 24px; color:var(--muted); font-size:14px; }
+label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+input, textarea, select {
+  width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px; padding:12px 14px; color:var(--text); font-size:14px;
+}
+input:focus, textarea:focus, select:focus { outline:none; border-color:var(--blue); }
+::placeholder { color:#6B7280; }
+.field { margin-bottom:16px; }
+.times { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.time-btn {
+  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
+  border-radius:8px; padding:8px 0; color:var(--text); font-size:13px; cursor:pointer;
+}
+.time-btn:hover { border-color:rgba(255,255,255,0.2); }
+.time-btn.active { background:var(--blue); border-color:var(--blue); }
+button[type=submit] {
+  width:100%; background:var(--blue); color:#fff; border:none; border-radius:10px;
+  padding:14px; font-size:15px; font-weight:600; cursor:pointer; margin-top:8px;
+}
+button[type=submit]:hover { background:var(--blue-d); }
+button[type=submit]:disabled { opacity:0.5; cursor:not-allowed; }
+.success { text-align:center; }
+.success h2 { margin:0 0 8px; }
+.success p { color:var(--muted); margin:0 0 20px; }
+.footer { text-align:center; color:#6B7280; font-size:12px; margin-top:20px; }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <h1>Book a Demo</h1>
+  <p class="sub">15 minutes to see how Eko AI transforms your business</p>
+  <form id="form">
+    <div class="field">
+      <label>Business name</label>
+      <input type="text" id="name" placeholder="e.g. The Pampering Place" required>
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="email" placeholder="you@email.com" required>
+    </div>
+    <div class="field">
+      <label>Preferred date</label>
+      <input type="date" id="date" required>
+    </div>
+    <div class="field">
+      <label>Preferred time (MT)</label>
+      <div class="times" id="times"></div>
+      <input type="hidden" id="time" required>
+    </div>
+    <div class="field">
+      <label>Message (optional)</label>
+      <textarea id="message" rows="3" placeholder="Is there something specific you\'d like to see?"></textarea>
+    </div>
+    <button type="submit" id="submit">Book Demo</button>
+  </form>
+  <p class="footer">Eko AI — Denver, CO — contact@biz.ekoaiautomation.com</p>
+</div>
+<script>
+const params = new URLSearchParams(location.search);
+const prefillEmail = params.get("email") || "";
+const prefillName = params.get("name") || "";
+if(prefillEmail) document.getElementById("email").value = prefillEmail;
+if(prefillName) document.getElementById("name").value = prefillName;
+
+document.getElementById("date").min = new Date().toISOString().split("T")[0];
+
+const slots = ["09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30"];
+const timesWrap = document.getElementById("times");
+const timeInput = document.getElementById("time");
+slots.forEach(t=>{
+  const b=document.createElement("button"); b.type="button"; b.className="time-btn"; b.textContent=t;
+  b.onclick=()=>{ timesWrap.querySelectorAll(".time-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); timeInput.value=t; };
+  timesWrap.appendChild(b);
+});
+
+document.getElementById("form").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const btn=document.getElementById("submit"); btn.disabled=true; btn.textContent="Scheduling...";
+  const body={
+    name: document.getElementById("name").value,
+    email: document.getElementById("email").value,
+    date: document.getElementById("date").value,
+    time: document.getElementById("time").value,
+    message: document.getElementById("message").value,
+  };
+  try{
+    const r=await fetch("/api/v1/calendar/book-demo",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(!r.ok) throw new Error("Failed");
+    document.getElementById("card").innerHTML=\`<div class="success"><h2>✅ Demo Scheduled!</h2><p>Thank you \${body.name}. We\'ll contact you soon to confirm your demo on \${body.date} at \${body.time} (MT).</p><a href="/" style="color:#3B82F6">Back to home</a></div>\`;
+  }catch(err){
+    btn.disabled=false; btn.textContent="Book Demo"; alert("Something went wrong. Please try again.");
+  }
+});
+</script>
+</body>
+</html>'''
+
+@app.get("/book-demo", response_class=HTMLResponse)
+async def book_demo_page(request: Request):
+    return BOOK_DEMO_HTML

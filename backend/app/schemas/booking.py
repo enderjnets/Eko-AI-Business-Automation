@@ -1,8 +1,26 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field, EmailStr
 
 from app.models.booking import BookingStatus
+
+
+class BookingLeadSnippet(BaseModel):
+    """Minimal lead data embedded in booking responses."""
+    id: int
+    business_name: str
+    category: Optional[str] = None
+    city: Optional[str] = None
+    pain_points: Optional[List[str]] = None
+    services: Optional[List[str]] = None
+    total_score: Optional[float] = None
+    description: Optional[str] = None
+    scoring_reason: Optional[str] = None
+    review_summary: Optional[str] = None
+    proposal_suggestion: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 
 class BookingBase(BaseModel):
@@ -61,3 +79,8 @@ class BookingLinkRequest(BaseModel):
     lead_id: int
     event_type_id: Optional[int] = None
     message: Optional[str] = None
+
+
+class BookingWithLeadResponse(BookingResponse):
+    """Booking response that includes the associated lead data."""
+    lead: Optional[BookingLeadSnippet] = None

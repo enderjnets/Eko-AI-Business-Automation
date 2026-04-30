@@ -54,7 +54,7 @@ async def create_proposal(
         deal_id=data.deal_id,
         title=data.title,
         content=data.content or "",
-        plain_text=data.plain_text or "",
+        plain_text=getattr(data, 'plain_text', None) or "",
         brand_primary_color=primary_color,
         brand_secondary_color=secondary_color,
         brand_logo_url=logo_url,
@@ -78,7 +78,7 @@ async def list_proposals(
     current_user: User = Depends(get_current_user),
 ):
     """List proposals with filters."""
-    query = select(Proposal).options(selectinload(Proposal.deal)).order_by(desc(Proposal.created_at))
+    query = select(Proposal).order_by(desc(Proposal.created_at))
     
     if status:
         query = query.where(Proposal.status == status)
@@ -109,7 +109,7 @@ async def get_public_proposal(
 ):
     """Get a public proposal by its share token."""
     proposal = await db.scalar(
-        select(Proposal).options(selectinload(Proposal.deal)).where(Proposal.share_token == token)
+        select(Proposal).where(Proposal.share_token == token)
     )
     if not proposal:
         raise HTTPException(status_code=404, detail="Proposal not found")
@@ -149,7 +149,7 @@ async def accept_proposal(
 ):
     """Accept a public proposal."""
     proposal = await db.scalar(
-        select(Proposal).options(selectinload(Proposal.deal)).where(Proposal.share_token == token)
+        select(Proposal).where(Proposal.share_token == token)
     )
     if not proposal:
         raise HTTPException(status_code=404, detail="Proposal not found")
@@ -201,9 +201,8 @@ async def get_proposal(
     current_user: User = Depends(get_current_user),
 ):
     """Get a single proposal."""
-    proposal = await db.scalar(
-        select(Proposal).options(selectinload(Proposal.deal)).where(Proposal.id == proposal_id)
-    )
+    result = await db.execute(select(Proposal).where(Proposal.id == proposal_id))
+    proposal = result.scalar_one_or_none()
     if not proposal:
         raise HTTPException(status_code=404, detail="Proposal not found")
     return proposal
@@ -255,7 +254,7 @@ async def generate_proposal_content(
 ):
     """Generate AI proposal content for a proposal."""
     proposal = await db.scalar(
-        select(Proposal).options(selectinload(Proposal.deal)).where(Proposal.id == proposal_id)
+        select(Proposal).where(Proposal.id == proposal_id)
     )
     if not proposal:
         raise HTTPException(status_code=404, detail="Proposal not found")
@@ -312,7 +311,7 @@ async def send_proposal(
 ):
     """Send a proposal (mark as sent and generate share token)."""
     proposal = await db.scalar(
-        select(Proposal).options(selectinload(Proposal.deal)).where(Proposal.id == proposal_id)
+        select(Proposal).where(Proposal.id == proposal_id)
     )
     if not proposal:
         raise HTTPException(status_code=404, detail="Proposal not found")

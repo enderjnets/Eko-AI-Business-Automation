@@ -1,17 +1,20 @@
 from typing import Optional, List
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import select, and_
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
 from app.models.booking import Booking, BookingStatus
-from app.models.lead import Lead, LeadStatus
+from app.models.lead import Lead, LeadStatus, Interaction
 from app.models.user import User
 from app.schemas.booking import (
     BookingCreate,
     BookingUpdate,
     BookingResponse,
+    BookingWithLeadResponse,
     AvailabilityRequest,
     BookingLinkRequest,
 )
@@ -54,7 +57,7 @@ async def get_availability(
         await client.close()
 
 
-@router.get("/bookings", response_model=list[BookingResponse])
+@router.get("/bookings", response_model=list[BookingWithLeadResponse])
 async def list_bookings(
     status: Optional[BookingStatus] = None,
     lead_id: Optional[int] = None,
@@ -62,8 +65,8 @@ async def list_bookings(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List bookings with optional filtering."""
-    query = select(Booking)
+    """List bookings with optional filtering. Includes lead data."""
+    query = select(Booking).options(selectinload(Booking.lead))
 
     if status:
         query = query.where(Booking.status == status)
@@ -305,3 +308,63 @@ async def send_booking_link(
         "message_id": response.get("id"),
         "booking_link": booking_link,
     }
+
+
+class BookDemoRequest(BaseModel):
+    name: str
+    email: str
+    date: str
+    time: str
+    message: Optional[str] = None
+
+
+@router.post("/book-demo")
+async def book_demo(
+    request: BookDemoRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Receive a demo booking from the public booking page."""
+    from datetime import datetime
+    
+    # Find lead by email or create a placeholder
+    result = await db.execute(select(Lead).where(Lead.email == request.email))
+    lead = result.scalar_one_or_none()
+    
+    if not lead:
+        lead = Lead(
+            business_name=request.name,
+            email=request.email,
+            source="manual",
+            status=LeadStatus.DISCOVERED,
+            notes=f"Demo request via booking page: {request.message or ''}",
+        )
+        db.add(lead)
+        await db.flush()
+    
+    start_time = datetime.strptime(f"{request.date} {request.time}", "%Y-%m-%d %H:%M")
+    
+    booking = Booking(
+        lead_id=lead.id,
+        title=f"Demo with {request.name}",
+        start_time=start_time,
+        end_time=start_time + timedelta(minutes=15),
+        timezone="America/Denver",
+        attendee_email=request.email,
+        attendee_name=request.name,
+        notes=request.message,
+        status=BookingStatus.PENDING,
+    )
+    db.add(booking)
+    
+    interaction = Interaction(
+        lead_id=lead.id,
+        interaction_type="meeting",
+        direction="inbound",
+        subject="Demo booking request",
+        content=request.message or "Demo booked via website",
+        meta={"booking_id": booking.id, "source": "book_demo_page"},
+    )
+    db.add(interaction)
+    await db.commit()
+    
+    return {"status": "booked", "booking_id": booking.id}

@@ -285,6 +285,7 @@ Return ONLY a JSON object with:
         return {
             **response,
             "subject": email_data["subject"],
+            "body": email_data["body"],
             "personalization_notes": email_data.get("personalization_notes", ""),
             "cta": email_data.get("cta", ""),
         }
