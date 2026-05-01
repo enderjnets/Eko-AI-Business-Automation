@@ -68,5 +68,9 @@ celery_app.conf.update(
             "task": "app.tasks.scheduled.backup_processed_leads",
             "schedule": 7200.0,  # every 2 hours
         },
+        "send-demo-reminders-every-15-min": {
+            "task": "app.tasks.scheduled.send_demo_reminders",
+            "schedule": 900.0,  # every 15 minutes
+        },
     },
 )

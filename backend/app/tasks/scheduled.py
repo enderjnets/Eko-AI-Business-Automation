@@ -308,6 +308,110 @@ async def _remind_scheduled_calls_async():
         return {"reminders_logged": len(leads)}
 
 
+async def _send_demo_reminders_async():
+    """Send reminder emails for upcoming demos (24h and 1h before)."""
+    async with AsyncSessionLocal() as db:
+        now = datetime.utcnow()
+        from app.models.booking import Booking, BookingStatus
+
+        # Window: 23h-25h from now = 24h reminder
+        window_24h_start = now + timedelta(hours=23)
+        window_24h_end = now + timedelta(hours=25)
+
+        # Window: 0.75h-1.25h from now = 1h reminder
+        window_1h_start = now + timedelta(minutes=45)
+        window_1h_end = now + timedelta(minutes=75)
+
+        result = await db.execute(
+            select(Booking)
+            .where(Booking.status == BookingStatus.CONFIRMED)
+            .where(Booking.start_time > now)
+            .where(
+                (Booking.start_time >= window_24h_start) & (Booking.start_time <= window_24h_end) |
+                (Booking.start_time >= window_1h_start) & (Booking.start_time <= window_1h_end)
+            )
+            .limit(50)
+        )
+        bookings = result.scalars().all()
+
+        email = EmailOutreach()
+        sent_count = 0
+
+        for booking in bookings:
+            lead_result = await db.execute(select(Lead).where(Lead.id == booking.lead_id))
+            lead = lead_result.scalar_one_or_none()
+            if not lead or not lead.email:
+                continue
+
+            meta = booking.meta or {}
+            reminders_sent = meta.get("reminders_sent", [])
+
+            # Determine which reminder to send
+            hours_until = (booking.start_time - now).total_seconds() / 3600
+
+            if 23 <= hours_until <= 25 and "24h" not in reminders_sent:
+                subject = f"Recordatorio: Tu demo con Eko AI es mañana"
+                body = f"""<p>Hola,</p>
+<p>Este es un recordatorio de que tienes una <strong>demo con Eko AI</strong> programada para mañana:</p>
+<ul>
+<li><strong>Fecha:</strong> {booking.start_time.strftime('%A, %d de %B')}</li>
+<li><strong>Hora:</strong> {booking.start_time.strftime('%I:%M %p')} ({booking.timezone})</li>
+<li><strong>Duración:</strong> 15 minutos</li>
+</ul>
+<p>En esta demo te mostraremos exactamente cómo un agente de IA puede manejar las llamadas, citas y seguimiento de <strong>{lead.business_name}</strong>.</p>
+<p><strong>¿Necesitas reagendar?</strong> <a href="https://cal.com/eko-ai/demo">Haz clic aquí</a></p>
+<p>¡Nos vemos pronto!<br>Eko AI Team</p>"""
+                try:
+                    await email.send(
+                        to_email=lead.email,
+                        subject=subject,
+                        body=body,
+                        lead_id=lead.id,
+                        business_name=lead.business_name,
+                        ai_generated=False,
+                        tags=["demo_reminder", "24h"],
+                    )
+                    reminders_sent.append("24h")
+                    meta["reminders_sent"] = reminders_sent
+                    booking.meta = meta
+                    sent_count += 1
+                    logger.info(f"Sent 24h reminder for booking {booking.id}")
+                except Exception:
+                    logger.exception(f"Failed to send 24h reminder for booking {booking.id}")
+
+            elif 0.75 <= hours_until <= 1.25 and "1h" not in reminders_sent:
+                subject = f"Tu demo con Eko AI comienza en 1 hora"
+                body = f"""<p>Hola,</p>
+<p>Tu <strong>demo con Eko AI</strong> comienza en aproximadamente 1 hora:</p>
+<ul>
+<li><strong>Hora:</strong> {booking.start_time.strftime('%I:%M %p')} ({booking.timezone})</li>
+<li><strong>Duración:</strong> 15 minutos</li>
+</ul>
+<p>Te mostraremos cómo la IA puede automatizar <strong>{lead.business_name}</strong> — llamadas, citas, seguimiento, todo automático.</p>
+<p><strong>¿Necesitas reagendar?</strong> <a href="https://cal.com/eko-ai/demo">Haz clic aquí</a></p>
+<p>¡Nos vemos en un momento!<br>Eko AI Team</p>"""
+                try:
+                    await email.send(
+                        to_email=lead.email,
+                        subject=subject,
+                        body=body,
+                        lead_id=lead.id,
+                        business_name=lead.business_name,
+                        ai_generated=False,
+                        tags=["demo_reminder", "1h"],
+                    )
+                    reminders_sent.append("1h")
+                    meta["reminders_sent"] = reminders_sent
+                    booking.meta = meta
+                    sent_count += 1
+                    logger.info(f"Sent 1h reminder for booking {booking.id}")
+                except Exception:
+                    logger.exception(f"Failed to send 1h reminder for booking {booking.id}")
+
+        await db.commit()
+        return {"reminders_sent": sent_count}
+
+
 async def _enrich_pending_leads_async(batch_size: int = 100):
     """Auto-enrich newly discovered leads that haven't been enriched yet."""
     async with AsyncSessionLocal() as db:
@@ -716,6 +820,19 @@ def enrich_single_lead(lead_id: int):
     """Enrich a single lead by ID."""
     loop = _get_worker_loop()
     loop.run_until_complete(_enrich_single_lead_async(lead_id))
+
+
+@celery_app.task
+def send_demo_reminders():
+    """Scheduled task: Send demo reminder emails (24h and 1h before). Runs every 15 minutes."""
+    logger.info("[Celery] Sending demo reminders...")
+    try:
+        result = asyncio.run(_send_demo_reminders_async())
+        logger.info(f"[Celery] Demo reminders complete: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"[Celery] Demo reminders failed: {e}")
+        raise
 
 
 async def _enrich_single_lead_async(lead_id: int):

@@ -193,6 +193,51 @@ async def calcom_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                         booking.cancellation_reason = None
                 except Exception:
                     logger.exception("Failed to parse rescheduled times")
+
+    elif event_type == "MEETING_ENDED":
+        cal_booking_id = data.get("bookingId") or data.get("id")
+        if cal_booking_id:
+            result = await db.execute(
+                select(Booking).where(Booking.cal_com_booking_id == cal_booking_id)
+            )
+            booking = result.scalar_one_or_none()
+            if booking and booking.status == BookingStatus.CONFIRMED:
+                booking.status = BookingStatus.COMPLETED
+                lead.status = LeadStatus.NEGOTIATING
+                
+                # Send post-demo follow-up email
+                try:
+                    email = EmailOutreach()
+                    subject = f"Gracias por tu tiempo, {lead.business_name} — siguiente paso"
+                    body = f"""<p>Hola,</p>
+<p>Gracias por tomarte el tiempo de ver la demo de Eko AI hoy. Fue un placer mostrarte cómo la IA puede automatizar las operaciones de <strong>{lead.business_name}</strong>.</p>
+<p>Como siguiente paso, te envío un resumen de lo que vimos:</p>
+<ul>
+<li>Agente IA 24/7 para atender llamadas y chats</li>
+<li>Agendamiento automático de citas</li>
+<li>Seguimiento automático de leads por email/SMS</li>
+<li>Setup inicial de $499 (waived este mes si te unes ahora)</li>
+</ul>
+<p><strong>Planes disponibles:</strong></p>
+<ul>
+<li><strong>Starter:</strong> $199/mes — 1 agente IA, horario comercial</li>
+<li><strong>Growth:</strong> $299/mes — 2 agentes, horario extendido</li>
+<li><strong>Enterprise:</strong> $399/mes — Agentes ilimitados, 24/7</li>
+</ul>
+<p>Si estás listo para empezar, responde a este email o agenda una llamada de onboarding aquí: <a href="https://cal.com/eko-ai/onboarding">https://cal.com/eko-ai/onboarding</a></p>
+<p>Saludos,<br>Eko AI Team</p>"""
+                    await email.send(
+                        to_email=lead.email,
+                        subject=subject,
+                        body=body,
+                        lead_id=lead.id,
+                        business_name=lead.business_name,
+                        ai_generated=False,
+                        tags=["post_demo", "follow_up"],
+                    )
+                    logger.info(f"Post-demo follow-up sent to lead {lead.id}")
+                except Exception:
+                    logger.exception("Failed to send post-demo follow-up")
     
     await db.commit()
     return {"status": "ok"}

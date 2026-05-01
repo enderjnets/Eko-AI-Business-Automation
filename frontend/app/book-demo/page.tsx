@@ -1,17 +1,6 @@
-import { Suspense } from "react";
-import { Loader2 } from "lucide-react";
-import BookDemoForm from "./BookDemoForm";
+import { redirect } from "next/navigation";
 
 export default function BookDemoPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-eko-graphite flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-eko-blue" />
-      </div>
-    }>
-      <BookDemoForm />
-    </Suspense>
-  );
+  // Redirect to Cal.com booking page
+  redirect("https://cal.com/eko-ai/demo");
 }
-
-// Server Component that wraps the client form
