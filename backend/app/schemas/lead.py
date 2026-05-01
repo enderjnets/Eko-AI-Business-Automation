@@ -133,3 +133,12 @@ class LeadSearchRequest(BaseModel):
     limit: Optional[int] = Field(20, ge=1, le=100)
     status: Optional[LeadStatus] = None
     min_score: Optional[float] = Field(None, ge=0, le=100)
+
+
+class PublicLeadCreate(BaseModel):
+    """Schema for public lead capture from the marketing website."""
+    business_name: str = Field(..., min_length=1, max_length=255)
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    category: Optional[str] = None
+    notes: Optional[str] = None

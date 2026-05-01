@@ -11,6 +11,7 @@ from app.schemas.lead import LeadUpdate, LeadResponse
 from app.agents.outreach.channels.email import EmailOutreach
 from app.services.paperclip import on_lead_status_change
 from app.core.security import get_current_user
+from app.templates.emails.demo_invite import render_demo_invite
 
 router = APIRouter()
 
@@ -370,4 +371,77 @@ async def send_booking_link_from_crm(
         "status": "sent",
         "message_id": response.get("id"),
         "booking_link": booking_link,
+    }
+
+
+@router.post("/{lead_id}/send-demo-invite")
+async def send_demo_invite(
+    lead_id: int,
+    phone_number: str = "+1-720-555-0199",
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Send a professional HTML demo invite email to a lead.
+
+    Includes:
+    - Clickable phone number to call the VAPI inbound agent
+    - Link to the /book-demo page for online scheduling
+    """
+    result = await db.execute(select(Lead).where(Lead.id == lead_id))
+    lead = result.scalar_one_or_none()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    if not lead.email:
+        raise HTTPException(status_code=400, detail="Lead has no email address")
+
+    if lead.do_not_contact:
+        raise HTTPException(status_code=400, detail="Lead is marked as do-not-contact")
+
+    from app.config import get_settings
+    settings = get_settings()
+    booking_url = f"{settings.FRONTEND_URL}/book-demo?email={lead.email}&name={lead.business_name}"
+    unsubscribe_url = f"{settings.APP_URL}/api/v1/webhooks/unsubscribe?lead_id={lead.id}"
+
+    body = render_demo_invite(
+        name=lead.business_name,
+        phone_number=phone_number,
+        booking_url=booking_url,
+        unsubscribe_url=unsubscribe_url,
+    )
+
+    email = EmailOutreach()
+    response = await email.send(
+        to_email=lead.email,
+        subject=f"Your personalized Eko AI demo — {lead.business_name}",
+        body=body,
+        lead_id=lead.id,
+        business_name=lead.business_name,
+        ai_generated=False,
+        tags=["demo_invite", "vapi_inbound"],
+    )
+
+    interaction = Interaction(
+        lead_id=lead.id,
+        interaction_type="email",
+        direction="outbound",
+        subject=f"Demo invite — {lead.business_name}",
+        content="HTML demo invite sent with VAPI phone number and booking link",
+        email_status="sent",
+        email_message_id=response.get("id"),
+        meta={
+            "source": "crm_demo_invite",
+            "phone_number": phone_number,
+            "booking_url": booking_url,
+        },
+    )
+    db.add(interaction)
+    await db.commit()
+
+    return {
+        "status": "sent",
+        "message_id": response.get("id"),
+        "to": lead.email,
+        "phone_number": phone_number,
+        "booking_url": booking_url,
     }

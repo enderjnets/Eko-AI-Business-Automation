@@ -15,6 +15,9 @@ from app.services.vapi_client import (
     list_calls,
     create_assistant,
     update_assistant,
+    create_inbound_assistant,
+    assign_assistant_to_phone_number,
+    get_phone_number,
     build_sales_assistant_prompt,
 )
 from app.config import get_settings
@@ -304,4 +307,47 @@ async def get_voice_config(
     return {
         "configured": bool(api_key),
         "api_key_prefix": api_key[:8] + "..." if len(api_key) > 8 else None,
+    }
+
+
+class CreateInboundAssistantRequest(BaseModel):
+    name: str = "Eko AI — Inbound Demo Agent"
+    system_prompt: Optional[str] = None
+    first_message: str = "Hello, thank you for calling Eko AI. This is Eva, your virtual assistant. May I ask who I'm speaking with?"
+    voice_id: str = "EXAVITQu4vr4xnSDxMaL"
+    model: str = "gpt-4o"
+
+
+@router.post("/assistants/inbound-eko")
+async def create_inbound_demo_assistant(
+    data: CreateInboundAssistantRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Create the Eko AI inbound demo assistant with book_demo tool and bind it to the phone number."""
+    result = await create_inbound_assistant(
+        name=data.name,
+        system_prompt=data.system_prompt,
+        first_message=data.first_message,
+        voice_id=data.voice_id,
+        model=data.model,
+    )
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    assistant_id = result.get("id")
+
+    # Associate assistant with the configured phone number
+    phone_assignment = await assign_assistant_to_phone_number(assistant_id)
+
+    # Get current phone number info
+    phone_info = await get_phone_number()
+
+    return {
+        "status": "created",
+        "assistant": result,
+        "assistant_id": assistant_id,
+        "phone_number_id": settings.VAPI_PHONE_NUMBER_ID,
+        "phone_assignment": phone_assignment,
+        "phone_info": phone_info,
+        "note": "Inbound assistant is live. Calls to the configured number will now be handled by Eva.",
     }

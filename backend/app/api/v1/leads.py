@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.base import get_db
 from app.models.lead import Lead, LeadStatus, Interaction
 from app.models.user import User
-from app.schemas.lead import LeadCreate, LeadUpdate, LeadResponse, LeadListResponse, DiscoveryRequest, LeadSearchRequest
+from app.schemas.lead import LeadCreate, LeadUpdate, LeadResponse, LeadListResponse, DiscoveryRequest, LeadSearchRequest, PublicLeadCreate
 from app.agents.discovery.agent import DiscoveryAgent
 from app.agents.research.agent import ResearchAgent
 from app.agents.outreach.channels.email import EmailOutreach, EMAIL_TEMPLATES
@@ -263,6 +263,48 @@ async def create_lead(
     await db.commit()
     await db.refresh(lead)
     return lead
+
+
+@router.post("/public", response_model=dict, status_code=201)
+async def create_public_lead(
+    lead_data: PublicLeadCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a new lead from the public marketing website (no auth required)."""
+    # Check for duplicate by email
+    if lead_data.email:
+        result = await db.execute(select(Lead).where(Lead.email == lead_data.email))
+        existing = result.scalar_one_or_none()
+        if existing:
+            return {"status": "existing", "lead_id": existing.id, "message": "Lead already exists"}
+
+    lead = Lead(
+        business_name=lead_data.business_name,
+        email=lead_data.email,
+        phone=lead_data.phone,
+        category=lead_data.category,
+        source=LeadSource.MANUAL,
+        status=LeadStatus.DISCOVERED,
+        notes=lead_data.notes or "Captured from public landing page",
+        source_data={"origin": "website_landing", "captured_at": datetime.utcnow().isoformat()},
+    )
+    db.add(lead)
+    await db.commit()
+    await db.refresh(lead)
+
+    # Record interaction
+    interaction = Interaction(
+        lead_id=lead.id,
+        interaction_type="note",
+        direction="inbound",
+        subject="Lead captured from website",
+        content=lead_data.notes or "Lead submitted via public landing page form",
+        meta={"source": "website_landing", "category": lead_data.category},
+    )
+    db.add(interaction)
+    await db.commit()
+
+    return {"status": "created", "lead_id": lead.id}
 
 
 @router.patch("/{lead_id}", response_model=LeadResponse)

@@ -9,6 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@tanstack/react-query": "^5.37.1",
     "@tanstack/react-virtual": "^3.13.24",
     "axios": "^1.7.2",

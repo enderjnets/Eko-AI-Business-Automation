@@ -11,8 +11,14 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Eko AI — Business Automation",
-  description: "Sistema de Agentes Autónomos para Prospección y Ventas",
+  title: "Eko AI — Automatización de Negocios con IA",
+  description: "Agentes de IA 24/7 para cualquier negocio. Atiende clientes, agenda citas, responde emails y escala sin contratar más personal. Demo gratis.",
+  keywords: ["automatización", "IA", "inteligencia artificial", "agente IA", "chatbot", "automatización negocios", "recepcionista virtual"],
+  openGraph: {
+    title: "Eko AI — Automatización de Negocios con IA",
+    description: "Tu negocio funciona mientras duermes. Agente IA 24/7 para cualquier industria.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
