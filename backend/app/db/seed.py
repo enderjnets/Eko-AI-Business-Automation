@@ -1,10 +1,10 @@
 """Seed data for Eko AI — creates default nurture sequence on startup."""
 
 import logging
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.sequence import EmailSequence, SequenceStep, SequenceStatus, SequenceStepType
+from app.models.sequence import EmailSequence, SequenceStep, SequenceEnrollment, SequenceStatus, SequenceStepType
 
 logger = logging.getLogger(__name__)
 
@@ -103,13 +103,20 @@ async def seed_nurture_sequence(db: AsyncSession):
             logger.info(f"Nurture sequence '{NURTURE_SEQUENCE_NAME}' already exists with correct steps (id={existing.id})")
             return existing
 
-        # Rebuild steps (keep enrollments intact)
+        # Rebuild steps (pause active enrollments to avoid inconsistent state)
         logger.warning(f"Rebuilding steps for nurture sequence '{NURTURE_SEQUENCE_NAME}' (id={existing.id})")
+        await db.execute(
+            update(SequenceEnrollment)
+            .where(SequenceEnrollment.sequence_id == existing.id)
+            .where(SequenceEnrollment.status == "active")
+            .values(status="paused", meta={"auto_paused_reason": "sequence_steps_rebuilt"})
+        )
         await db.execute(delete(SequenceStep).where(SequenceStep.sequence_id == existing.id))
         for step_data in NURTURE_STEPS:
             step = SequenceStep(sequence_id=existing.id, **step_data)
             db.add(step)
         await db.commit()
+        logger.info(f"Paused {len([e for e in existing.enrollments if e.status == 'paused'])} enrollments during step rebuild")
         return existing
 
     seq = EmailSequence(
