@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
 from app.models.sequence import EmailSequence, SequenceStep, SequenceEnrollment, SequenceStatus, SequenceStepType
-from app.models.lead import Lead, LeadStatus
+from app.models.lead import Lead, LeadStatus, Interaction
 from app.models.user import User
 from app.schemas.sequence import (
     EmailSequenceCreate,
@@ -292,6 +292,25 @@ async def execute_sequence(
                 if lead.status in [LeadStatus.DISCOVERED, LeadStatus.ENRICHED, LeadStatus.SCORED]:
                     lead.status = LeadStatus.CONTACTED
                     lead.last_contact_at = datetime.utcnow()
+
+                # Record interaction
+                interaction = Interaction(
+                    lead_id=lead.id,
+                    interaction_type="email",
+                    direction="outbound",
+                    subject=response.get("subject", ""),
+                    content=response.get("body", ""),
+                    email_status="sent",
+                    email_message_id=response.get("id"),
+                    meta={
+                        "sequence_id": seq.id,
+                        "sequence_name": seq.name,
+                        "step_position": current_step.position,
+                        "template": template_key,
+                        "source": "sequence_execute_api",
+                    },
+                )
+                db.add(interaction)
 
                 executed += 1
                 results.append({
