@@ -81,3 +81,12 @@ async def init_db():
         # Enable pgvector extension
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.run_sync(Base.metadata.create_all)
+
+    # Seed default nurture sequence
+    from app.db.seed import seed_nurture_sequence
+    async with AsyncSessionLocal() as db:
+        try:
+            await seed_nurture_sequence(db)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Failed to seed nurture sequence")

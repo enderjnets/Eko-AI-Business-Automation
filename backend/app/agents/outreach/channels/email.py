@@ -45,6 +45,26 @@ EMAIL_TEMPLATES = {
         "subject": "Your AI automation proposal — {business_name}",
         "context": "Sending pricing and service details",
     },
+    "nurture_welcome": {
+        "subject": "Tu análisis de automatización para {business_name}",
+        "context": "Welcome email for leads captured from the website. Thank them for their interest. Briefly introduce Eko AI as an automation company for ANY type of business (not just spas). Mention that AI agents can handle calls, appointments, and follow-ups 24/7. Include a soft CTA to book a free demo. Keep it under 150 words, warm and personal. Sign as 'Eko AI Team'.",
+    },
+    "nurture_social_proof": {
+        "subject": "Cómo otros negocios como {business_name} ahorran 15+ horas/semana",
+        "context": "Share a brief, generic success story about how a business (adapt to their category) saved time and money with AI automation. Focus on specific results: hours saved, more bookings, fewer missed calls. Keep it under 150 words. No specific names unless generic. CTA: 'Want to see if this works for your business? Book a 15-min demo.'",
+    },
+    "nurture_education": {
+        "subject": "3 señales de que {business_name} necesita automatización",
+        "context": "Educational email listing 3 signs a business needs AI automation: 1) Missing calls after hours, 2) Spending too much time on scheduling/admin, 3) Losing leads due to slow follow-up. Frame it as helpful content, not salesy. Keep under 150 words. CTA: 'Book a free demo to see how AI can handle these for you.'",
+    },
+    "nurture_demo_offer": {
+        "subject": "15 minutos para transformar {business_name}",
+        "context": "Offer a free 15-minute personalized demo. Explain that in 15 minutes we'll show exactly how an AI agent would handle their specific type of business — their calls, appointments, FAQs. No commitment, no pressure. Keep under 125 words. Include direct Cal.com booking link if possible. Make it easy to say yes.",
+    },
+    "nurture_urgency": {
+        "subject": "Setup gratuito este mes para {business_name}",
+        "context": "Final nurturing email with a time-sensitive offer: waive the $499 setup fee if they book a demo and sign up this month. Be honest and direct — no fake urgency. Mention that spots are limited because each setup requires personalized training. Keep under 125 words. This is the last email in the sequence. CTA: strong push to book demo now.",
+    },
 }
 
 

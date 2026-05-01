@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.base import get_db
 from app.models.lead import Lead, LeadStatus, LeadSource, Interaction
 from app.models.user import User
+from app.models.sequence import EmailSequence, SequenceEnrollment, SequenceStatus
 from app.schemas.lead import LeadCreate, LeadUpdate, LeadResponse, LeadListResponse, DiscoveryRequest, LeadSearchRequest, PublicLeadCreate
 from app.agents.discovery.agent import DiscoveryAgent
 from app.agents.research.agent import ResearchAgent
@@ -303,6 +304,37 @@ async def create_public_lead(
     )
     db.add(interaction)
     await db.commit()
+
+    # Auto-enroll in nurture sequence
+    try:
+        seq_result = await db.execute(
+            select(EmailSequence).where(EmailSequence.name == "Landing Page Nurturing")
+        )
+        seq = seq_result.scalar_one_or_none()
+        if seq and seq.status == SequenceStatus.ACTIVE:
+            # Check not already enrolled
+            existing_enr = await db.execute(
+                select(SequenceEnrollment).where(
+                    SequenceEnrollment.sequence_id == seq.id,
+                    SequenceEnrollment.lead_id == lead.id,
+                    SequenceEnrollment.status.in_(["active", "paused"]),
+                )
+            )
+            if not existing_enr.scalar_one_or_none():
+                enrollment = SequenceEnrollment(
+                    sequence_id=seq.id,
+                    lead_id=lead.id,
+                    status="active",
+                    current_step_position=0,
+                    next_step_at=datetime.utcnow(),
+                    meta={"source": "website_landing_auto_enroll"},
+                )
+                db.add(enrollment)
+                seq.leads_entered += 1
+                await db.commit()
+                logger.info(f"Auto-enrolled lead {lead.id} in nurture sequence {seq.id}")
+    except Exception as e:
+        logger.warning(f"Failed to auto-enroll lead {lead.id} in nurture sequence: {e}")
 
     return {"status": "created", "lead_id": lead.id}
 
