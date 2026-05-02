@@ -59,9 +59,15 @@ export default function PublicProposalPage() {
     if (!token) return;
     setActionLoading(true);
     try {
-      await axios.post(
+      const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL || ""}/api/v1/proposals/public/${token}/accept`
       );
+      const leadId = res.data.lead_id;
+      if (leadId) {
+        // Redirect to checkout with lead_id
+        window.location.href = `/checkout?lead_id=${leadId}`;
+        return;
+      }
       setActionResult("accepted");
     } catch (e: any) {
       setError(e.response?.data?.detail || "Error aceptando propuesta");
@@ -227,7 +233,7 @@ export default function PublicProposalPage() {
                 ) : (
                   <CheckCircle className="w-5 h-5" />
                 )}
-                Aceptar Propuesta
+                Aceptar y Pagar
               </button>
               <button
                 onClick={handleReject}

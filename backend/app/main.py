@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
 from app.config import get_settings
-from app.api.v1 import leads, campaigns, emails, analytics, webhooks, crm, sequences, auth, calendar, phone_calls, settings as settings_router, deals, proposals, voice_agent
+from app.api.v1 import leads, campaigns, emails, analytics, webhooks, crm, sequences, auth, calendar, phone_calls, settings as settings_router, deals, proposals, voice_agent, checkout, webhooks_stripe
 
 # Ensure all models are registered in Base.metadata
 from app.models.lead import Lead  # noqa: F401
@@ -17,6 +17,7 @@ from app.models.phone_call import PhoneCall  # noqa: F401
 from app.models.setting import AppSetting  # noqa: F401
 from app.models.deal import Deal  # noqa: F401
 from app.models.proposal import Proposal  # noqa: F401
+from app.models.payment import Payment  # noqa: F401
 from app.db.base import init_db
 
 settings = get_settings()
@@ -70,6 +71,8 @@ app.include_router(settings_router.router, prefix="/api/v1/settings", tags=["set
 app.include_router(deals.router, prefix="/api/v1/deals", tags=["deals"])
 app.include_router(proposals.router, prefix="/api/v1/proposals", tags=["proposals"])
 app.include_router(voice_agent.router, prefix="/api/v1/voice-agent", tags=["voice_agent"])
+app.include_router(checkout.router, prefix="/api/v1/checkout", tags=["checkout"])
+app.include_router(webhooks_stripe.router, prefix="/api/v1/webhooks", tags=["webhooks"])
 
 
 @app.get("/health")

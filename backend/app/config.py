@@ -75,6 +75,11 @@ class Settings(BaseSettings):
     CAL_COM_API_KEY: str = ""
     CAL_COM_USERNAME: str = "eko-ai"
 
+    # Phase 4: Payments
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+
     # Compliance
     DNC_SYNC_CRON: str = "0 2 1 * *"
     MAX_CONTACT_ATTEMPTS: int = 5

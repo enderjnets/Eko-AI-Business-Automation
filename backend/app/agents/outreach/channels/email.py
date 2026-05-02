@@ -66,6 +66,10 @@ EMAIL_TEMPLATES = {
         "subject": "Setup gratuito este mes para {business_name}",
         "context": "Final nurturing email with a time-sensitive offer: waive the $499 setup fee if they book a demo and sign up this month. Be honest and direct — no fake urgency. Mention that spots are limited because each setup requires personalized training. Keep under 125 words. This is the last email in the sequence. CTA: strong push to book demo now. Write the email in SPANISH.",
     },
+    "welcome_onboarding": {
+        "subject": "Bienvenido a Eko AI — tu negocio nunca será igual",
+        "context": "Welcome email for a NEW PAYING CUSTOMER who just completed checkout. Congratulate them warmly. Outline the next 3 onboarding steps: 1) We'll schedule the setup call within 48 hours, 2) We'll integrate their phone/channels during setup, 3) Their AI agent goes live. Include a direct reply-to email for questions. Keep it under 200 words, warm and exciting. Sign as 'Eko AI Team'. Write the email in SPANISH.",
+    },
 }
 
 

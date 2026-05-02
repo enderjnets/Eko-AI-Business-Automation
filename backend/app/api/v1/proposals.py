@@ -148,6 +148,8 @@ async def accept_proposal(
     db: AsyncSession = Depends(get_db),
 ):
     """Accept a public proposal."""
+    from app.models.deal import Deal
+
     proposal = await db.scalar(
         select(Proposal).where(Proposal.share_token == token)
     )
@@ -166,7 +168,19 @@ async def accept_proposal(
     
     await db.commit()
     await db.refresh(proposal)
-    return {"status": "accepted", "message": "Proposal accepted successfully"}
+
+    # Get lead_id for checkout redirect
+    lead_id = None
+    if proposal.deal_id:
+        deal = await db.scalar(select(Deal).where(Deal.id == proposal.deal_id))
+        if deal:
+            lead_id = deal.lead_id
+
+    return {
+        "status": "accepted",
+        "message": "Proposal accepted successfully",
+        "lead_id": lead_id,
+    }
 
 
 @router.post("/public/{token}/reject")

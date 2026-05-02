@@ -107,6 +107,10 @@ class Lead(Base):
     next_call_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     call_attempts: Mapped[int] = mapped_column(Integer, default=0)
     last_call_result: Mapped[Optional[str]] = mapped_column(String(50))
+
+    # Payment & subscription (Phase 4)
+    payment_plan: Mapped[Optional[str]] = mapped_column(String(50))
+    subscription_status: Mapped[Optional[str]] = mapped_column(String(50), default="inactive")
     
     # Compliance
     consent_status: Mapped[Optional[str]] = mapped_column(String(50), default="pending")
@@ -135,6 +139,9 @@ class Lead(Base):
     # Relationships
     interactions: Mapped[List["Interaction"]] = relationship(
         "Interaction", back_populates="lead", lazy="selectin"
+    )
+    payments: Mapped[List["Payment"]] = relationship(
+        "Payment", back_populates="lead", lazy="selectin"
     )
     campaigns: Mapped[List["Campaign"]] = relationship(
         "Campaign", secondary="campaign_leads", back_populates="leads"
