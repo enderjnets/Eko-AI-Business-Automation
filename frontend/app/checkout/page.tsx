@@ -118,7 +118,7 @@ function CheckoutPageInner() {
             <h1 className="text-xl font-bold text-gray-900">Finalizar suscripción</h1>
           </div>
           <p className="text-gray-500 text-sm mt-1">
-            Setup único + primer mes. Cancela cuando quieras.
+            Suscripción mensual con setup único. Cancela cuando quieras.
           </p>
         </div>
       </div>

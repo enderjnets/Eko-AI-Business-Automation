@@ -37,3 +37,6 @@ class User(Base):
     leads: Mapped[List["Lead"]] = relationship(
         "Lead", back_populates="owner", lazy="selectin"
     )
+    workspaces: Mapped[List["WorkspaceMember"]] = relationship(
+        "WorkspaceMember", back_populates="user", lazy="selectin"
+    )

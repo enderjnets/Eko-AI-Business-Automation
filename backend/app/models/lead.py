@@ -42,6 +42,7 @@ class Lead(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    workspace_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("workspaces.id"), nullable=True, index=True)
     
     # Basic info
     business_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -111,6 +112,8 @@ class Lead(Base):
     # Payment & subscription (Phase 4)
     payment_plan: Mapped[Optional[str]] = mapped_column(String(50))
     subscription_status: Mapped[Optional[str]] = mapped_column(String(50), default="inactive")
+    stripe_customer_id: Mapped[Optional[str]] = mapped_column(String(255), index=True, nullable=True)
+    past_due_since: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     
     # Compliance
     consent_status: Mapped[Optional[str]] = mapped_column(String(50), default="pending")

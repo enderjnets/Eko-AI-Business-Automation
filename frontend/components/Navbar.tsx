@@ -20,11 +20,12 @@ import {
   TrendingUp,
   FileText,
   Mic,
+  Layers,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { emailsApi } from "@/lib/api";
+import { emailsApi, metadataApi } from "@/lib/api";
 
 const PRIMARY_LINKS = [
   { href: "/", icon: BarChart3, label: "Dashboard" },
@@ -50,7 +51,10 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [objectsOpen, setObjectsOpen] = useState(false);
+  const [dynamicObjects, setDynamicObjects] = useState<{ name_singular: string; label_plural: string; icon?: string }[]>([]);
   const moreRef = useRef<HTMLDivElement>(null);
+  const objectsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -67,21 +71,38 @@ export default function Navbar() {
     return () => clearInterval(interval);
   }, [user]);
 
-  // Close dropdown on outside click
+  // Load dynamic objects from metadata engine
+  useEffect(() => {
+    const loadObjects = async () => {
+      try {
+        const res = await metadataApi.listObjects();
+        setDynamicObjects(res.data.items || []);
+      } catch {
+        // silently fail — legacy objects may not be available
+      }
+    };
+    loadObjects();
+  }, []);
+
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
         setMoreOpen(false);
+      }
+      if (objectsRef.current && !objectsRef.current.contains(e.target as Node)) {
+        setObjectsOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Close mobile menu on route change
+  // Close menus on route change
   useEffect(() => {
     setMobileOpen(false);
     setMoreOpen(false);
+    setObjectsOpen(false);
   }, [pathname]);
 
   const isActive = (href: string) => {
@@ -116,6 +137,43 @@ export default function Navbar() {
                   badge={link.badgeKey === "unread" && unreadCount > 0 ? unreadCount : undefined}
                 />
               ))}
+
+              {/* Dynamic Objects dropdown */}
+              {dynamicObjects.length > 0 && (
+                <div className="relative" ref={objectsRef}>
+                  <button
+                    onClick={() => setObjectsOpen((v) => !v)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                      objectsOpen || pathname.startsWith("/objects/")
+                        ? "text-white bg-white/10"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <Layers className="w-4 h-4" />
+                    <span>Objetos</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${objectsOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {objectsOpen && (
+                    <div className="absolute right-0 mt-2 w-56 max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-eko-graphite shadow-xl overflow-hidden z-50">
+                      {dynamicObjects.map((obj) => (
+                        <Link
+                          key={obj.name_singular}
+                          href={`/objects/${obj.name_singular}`}
+                          className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                            pathname === `/objects/${obj.name_singular}`
+                              ? "text-white bg-white/10"
+                              : "text-gray-400 hover:text-white hover:bg-white/5"
+                          }`}
+                        >
+                          <span className="text-xs opacity-60">{obj.icon || "◆"}</span>
+                          <span>{obj.label_plural}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* More dropdown */}
               <div className="relative" ref={moreRef}>
@@ -215,6 +273,27 @@ export default function Navbar() {
                   )}
                 </Link>
               ))}
+              {dynamicObjects.length > 0 && (
+                <>
+                  <div className="px-3 pt-3 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Objetos
+                  </div>
+                  {dynamicObjects.map((obj) => (
+                    <Link
+                      key={obj.name_singular}
+                      href={`/objects/${obj.name_singular}`}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                        pathname === `/objects/${obj.name_singular}`
+                          ? "text-white bg-white/10"
+                          : "text-gray-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <Layers className="w-4 h-4" />
+                      <span>{obj.label_plural}</span>
+                    </Link>
+                  ))}
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-"""Stripe Checkout integration for Eko AI."""
+"""Stripe Checkout integration for Eko AI subscriptions."""
 
 import logging
 from typing import Optional
@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
 from app.models.lead import Lead
-from app.models.payment import Payment, PaymentStatus
+from app.models.payment import Payment, PaymentStatus, PaymentType
 from app.models.deal import Deal, DealStatus
 from app.config import get_settings
 
@@ -23,11 +23,19 @@ logger = logging.getLogger(__name__)
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
-PLAN_PRICES = {
-    "starter": {"monthly_cents": 19900, "setup_cents": 49900, "name": "Eko AI Starter"},
-    "growth": {"monthly_cents": 29900, "setup_cents": 49900, "name": "Eko AI Growth"},
-    "enterprise": {"monthly_cents": 39900, "setup_cents": 49900, "name": "Eko AI Enterprise"},
+STRIPE_PLAN_PRICE_MAP = {
+    "starter": settings.STRIPE_PRICE_STARTER,
+    "growth": settings.STRIPE_PRICE_GROWTH,
+    "enterprise": settings.STRIPE_PRICE_ENTERPRISE,
 }
+
+PLAN_NAMES = {
+    "starter": "Eko AI Starter",
+    "growth": "Eko AI Growth",
+    "enterprise": "Eko AI Enterprise",
+}
+
+SETUP_FEE_CENTS = 49900
 
 
 class CheckoutSessionRequest(BaseModel):
@@ -42,18 +50,27 @@ class CheckoutSessionResponse(BaseModel):
     session_id: str
 
 
+class PortalSessionRequest(BaseModel):
+    lead_id: int
+    return_url: Optional[str] = None
+
+
+class PortalSessionResponse(BaseModel):
+    portal_url: str
+
+
 @router.post("/session", response_model=CheckoutSessionResponse)
 async def create_checkout_session(
     request: CheckoutSessionRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a Stripe Checkout Session for a lead to pay setup + first month."""
+    """Create a Stripe Checkout Session for subscription + setup fee."""
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(status_code=500, detail="Stripe not configured")
 
-    plan = PLAN_PRICES.get(request.plan)
-    if not plan:
-        raise HTTPException(status_code=400, detail=f"Invalid plan: {request.plan}")
+    price_id = STRIPE_PLAN_PRICE_MAP.get(request.plan)
+    if not price_id:
+        raise HTTPException(status_code=400, detail=f"Invalid plan or Stripe price not configured: {request.plan}")
 
     # Get lead
     result = await db.execute(select(Lead).where(Lead.id == request.lead_id))
@@ -63,52 +80,70 @@ async def create_checkout_session(
     if not lead.email:
         raise HTTPException(status_code=400, detail="Lead has no email")
 
-    total_cents = plan["monthly_cents"] + plan["setup_cents"]
+    # Find or create Stripe Customer
+    customer_id = lead.stripe_customer_id
+    if not customer_id:
+        try:
+            customer = stripe.Customer.create(
+                email=lead.email,
+                name=lead.business_name or lead.name,
+                metadata={"lead_id": str(lead.id), "business_name": lead.business_name or ""},
+            )
+            customer_id = customer.id
+            lead.stripe_customer_id = customer_id
+        except stripe.error.StripeError as e:
+            logger.error(f"Stripe error creating customer: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
 
     try:
         session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
+            mode="subscription",
+            customer=customer_id,
             line_items=[
                 {
-                    "price_data": {
-                        "currency": "usd",
-                        "product_data": {"name": plan["name"]},
-                        "unit_amount": plan["monthly_cents"],
-                    },
+                    "price": price_id,
                     "quantity": 1,
                 },
                 {
                     "price_data": {
                         "currency": "usd",
                         "product_data": {"name": "Setup Fee"},
-                        "unit_amount": plan["setup_cents"],
+                        "unit_amount": SETUP_FEE_CENTS,
                     },
                     "quantity": 1,
                 },
             ],
-            mode="payment",
-            customer_email=lead.email,
+            subscription_data={
+                "metadata": {
+                    "lead_id": str(lead.id),
+                    "plan": request.plan,
+                    "business_name": lead.business_name or "",
+                },
+            },
             success_url=request.success_url or f"{settings.FRONTEND_URL}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=request.cancel_url or f"{settings.FRONTEND_URL}/checkout/cancel",
             metadata={
                 "lead_id": str(lead.id),
                 "plan": request.plan,
                 "business_name": lead.business_name or "",
+                "type": "subscription_signup",
             },
         )
 
-        # Record payment intent
+        # Record payment intent (setup fee portion tracked in webhook)
         payment = Payment(
             lead_id=lead.id,
             stripe_checkout_session_id=session.id,
-            amount_cents=total_cents,
+            stripe_customer_id=customer_id,
+            amount_cents=SETUP_FEE_CENTS,  # will be updated by webhook with actual total
             currency="usd",
             plan_name=request.plan,
+            payment_type=PaymentType.SETUP,
             status=PaymentStatus.PENDING,
             meta={
-                "plan_name": plan["name"],
-                "monthly_cents": plan["monthly_cents"],
-                "setup_cents": plan["setup_cents"],
+                "plan_name": PLAN_NAMES.get(request.plan, request.plan),
+                "stripe_price_id": price_id,
+                "setup_cents": SETUP_FEE_CENTS,
             },
         )
         db.add(payment)
@@ -118,6 +153,33 @@ async def create_checkout_session(
 
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error creating session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/portal", response_model=PortalSessionResponse)
+async def create_portal_session(
+    request: PortalSessionRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a Stripe Customer Portal session for a lead to manage their subscription."""
+    if not settings.STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+
+    result = await db.execute(select(Lead).where(Lead.id == request.lead_id))
+    lead = result.scalar_one_or_none()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    if not lead.stripe_customer_id:
+        raise HTTPException(status_code=400, detail="Lead has no Stripe customer")
+
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=lead.stripe_customer_id,
+            return_url=request.return_url or f"{settings.FRONTEND_URL}/billing",
+        )
+        return PortalSessionResponse(portal_url=session.url)
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error creating portal session: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -135,7 +197,74 @@ async def get_checkout_session(session_id: str):
             "payment_status": session.payment_status,
             "amount_total": session.amount_total,
             "customer_email": session.customer_email,
+            "customer": session.customer,
+            "subscription": session.subscription,
             "metadata": session.metadata,
         }
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/billing/{lead_id}")
+async def get_billing_info(lead_id: int, db: AsyncSession = Depends(get_db)):
+    """Get billing info for a lead — plan, subscription status, payment history."""
+    result = await db.execute(select(Lead).where(Lead.id == lead_id))
+    lead = result.scalar_one_or_none()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    # Fetch payments
+    from app.models.payment import Payment
+    payments_result = await db.execute(
+        select(Payment)
+        .where(Payment.lead_id == lead_id)
+        .order_by(Payment.created_at.desc())
+    )
+    payments = payments_result.scalars().all()
+
+    # Fetch subscription from Stripe if customer exists
+    subscription_info = None
+    if lead.stripe_customer_id and settings.STRIPE_SECRET_KEY:
+        try:
+            subs = stripe.Subscription.list(
+                customer=lead.stripe_customer_id,
+                status="all",
+                limit=1,
+            )
+            if subs.data:
+                sub = subs.data[0]
+                subscription_info = {
+                    "id": sub.id,
+                    "status": sub.status,
+                    "current_period_start": sub.current_period_start,
+                    "current_period_end": sub.current_period_end,
+                    "cancel_at_period_end": sub.cancel_at_period_end,
+                    "plan": sub.plan.nickname if sub.plan else None,
+                }
+        except stripe.error.StripeError as e:
+            logger.warning(f"Stripe error fetching subscription: {e}")
+
+    return {
+        "lead_id": lead.id,
+        "business_name": lead.business_name,
+        "email": lead.email,
+        "plan": lead.payment_plan,
+        "subscription_status": lead.subscription_status,
+        "stripe_customer_id": lead.stripe_customer_id,
+        "payments": [
+            {
+                "id": p.id,
+                "type": p.payment_type.value if p.payment_type else None,
+                "status": p.status.value if p.status else None,
+                "amount_cents": p.amount_cents,
+                "currency": p.currency,
+                "paid_at": p.paid_at.isoformat() if p.paid_at else None,
+                "billing_period_start": p.billing_period_start.isoformat() if p.billing_period_start else None,
+                "billing_period_end": p.billing_period_end.isoformat() if p.billing_period_end else None,
+                "receipt_url": p.receipt_url,
+                "meta": p.meta,
+            }
+            for p in payments
+        ],
+        "subscription": subscription_info,
+    }

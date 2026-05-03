@@ -27,6 +27,7 @@ class Campaign(Base):
     __tablename__ = "campaigns"
     
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    workspace_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("workspaces.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     

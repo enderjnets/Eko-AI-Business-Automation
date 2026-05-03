@@ -220,3 +220,151 @@ export const calendarApi = {
   sendLink: (data: { lead_id: number; event_type_id?: number; message?: string }) =>
     api.post("/calendar/send-link", data),
 };
+
+// ─────────────────────────────────────────────────────────────
+// Metadata Engine API
+// ─────────────────────────────────────────────────────────────
+
+export interface FieldMetadata {
+  id: string;
+  object_metadata_id: string;
+  workspace_id?: string;
+  name: string;
+  label: string;
+  type: string;
+  description?: string;
+  icon?: string;
+  default_value?: any;
+  options?: { label: string; value: string; color?: string }[];
+  settings?: Record<string, any>;
+  is_custom: boolean;
+  is_system: boolean;
+  is_active: boolean;
+  is_nullable: boolean;
+  is_unique: boolean;
+  is_read_only: boolean;
+  is_label_field: boolean;
+  position: number;
+  relation_target_object_id?: string;
+  relation_target_field_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ObjectMetadata {
+  id: string;
+  workspace_id?: string;
+  name_singular: string;
+  name_plural: string;
+  label_singular: string;
+  label_plural: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  target_table_name?: string;
+  is_custom: boolean;
+  is_system: boolean;
+  is_active: boolean;
+  is_searchable: boolean;
+  position: number;
+  duplicate_criteria?: string[];
+  fields: FieldMetadata[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ViewField {
+  id: string;
+  view_id: string;
+  field_metadata_id: string;
+  position: number;
+  is_visible: boolean;
+  width?: number;
+}
+
+export interface ViewFilter {
+  id: string;
+  view_id: string;
+  field_metadata_id: string;
+  operator: string;
+  value?: Record<string, any>;
+  display_value?: string;
+}
+
+export interface ViewSort {
+  id: string;
+  view_id: string;
+  field_metadata_id: string;
+  direction: "asc" | "desc";
+}
+
+export interface View {
+  id: string;
+  workspace_id?: string;
+  object_metadata_id: string;
+  name: string;
+  type: "table" | "kanban" | "calendar" | "gallery";
+  icon: string;
+  position: number;
+  is_default: boolean;
+  is_compact: boolean;
+  is_system: boolean;
+  group_by_field_id?: string;
+  calendar_field_id?: string;
+  visibility: string;
+  created_by_user_id?: number;
+  view_fields: ViewField[];
+  view_filters: ViewFilter[];
+  view_sorts: ViewSort[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DynamicRecord {
+  id: string;
+  workspace_id?: string;
+  object_metadata_id: string;
+  label: string;
+  data: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export const metadataApi = {
+  listObjects: () => api.get<{ total: number; items: ObjectMetadata[] }>("/metadata/objects"),
+  getObject: (id: string) => api.get<ObjectMetadata>(`/metadata/objects/${id}`),
+  getObjectByName: (name: string) => api.get<ObjectMetadata>(`/metadata/objects/by-name/${name}`),
+  createObject: (data: any) => api.post<ObjectMetadata>("/metadata/objects", data),
+  updateObject: (id: string, data: any) => api.patch<ObjectMetadata>(`/metadata/objects/${id}`, data),
+  deleteObject: (id: string) => api.delete(`/metadata/objects/${id}`),
+
+  listFields: (objectId?: string) =>
+    api.get<{ total: number; items: FieldMetadata[] }>("/metadata/fields", { params: objectId ? { object_metadata_id: objectId } : undefined }),
+  createField: (data: any) => api.post<FieldMetadata>("/metadata/fields", data),
+  updateField: (id: string, data: any) => api.patch<FieldMetadata>(`/metadata/fields/${id}`, data),
+  deleteField: (id: string) => api.delete(`/metadata/fields/${id}`),
+};
+
+export const viewsApi = {
+  list: (objectMetadataId?: string) =>
+    api.get<{ total: number; items: View[] }>("/views", { params: objectMetadataId ? { object_metadata_id: objectMetadataId } : undefined }),
+  get: (id: string) => api.get<View>(`/views/${id}`),
+  create: (data: any) => api.post<View>("/views", data),
+  update: (id: string, data: any) => api.patch<View>(`/views/${id}`, data),
+  delete: (id: string) => api.delete(`/views/${id}`),
+};
+
+export const dynamicDataApi = {
+  list: (objectName: string, params?: { search?: string; limit?: number; offset?: number; filters?: Record<string, any>; sorts?: { field: string; direction: string }[] }) =>
+    api.get<{ total: number; items: DynamicRecord[] }>(`/data/${objectName}`, { params }),
+  get: (objectName: string, recordId: string) =>
+    api.get<DynamicRecord>(`/data/${objectName}/${recordId}`),
+  create: (objectName: string, data: { label: string; data: Record<string, any> }) =>
+    api.post<DynamicRecord>(`/data/${objectName}`, data),
+  update: (objectName: string, recordId: string, data: { label?: string; data?: Record<string, any> }) =>
+    api.patch<DynamicRecord>(`/data/${objectName}/${recordId}`, data),
+  delete: (objectName: string, recordId: string) =>
+    api.delete(`/data/${objectName}/${recordId}`),
+  enrich: (objectName: string, recordId: string) =>
+    api.post<DynamicRecord>(`/data/${objectName}/${recordId}/enrich`),
+};

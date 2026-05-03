@@ -72,5 +72,9 @@ celery_app.conf.update(
             "task": "app.tasks.scheduled.send_demo_reminders",
             "schedule": 900.0,  # every 15 minutes
         },
+        "send-payment-reminders-daily": {
+            "task": "app.tasks.scheduled.send_payment_reminders",
+            "schedule": crontab(hour=10, minute=0),  # 10am MT
+        },
     },
 )

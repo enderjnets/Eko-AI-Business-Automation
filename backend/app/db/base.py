@@ -1,6 +1,7 @@
 """Database base module with lazy engine creation for Celery compatibility."""
 
 from sqlalchemy import text
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 
@@ -80,6 +81,19 @@ async def init_db():
     async with _get_engine().begin() as conn:
         # Enable pgvector extension
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+
+        # Create metadata engine tables idempotently via raw SQL
+        # (avoids SQLAlchemy create_all issues with partial existing indexes)
+        import pathlib
+        sql_path = pathlib.Path(__file__).parent / "init_metadata.sql"
+        if sql_path.exists():
+            sql = sql_path.read_text()
+            for stmt in sql.split(";"):
+                stmt = stmt.strip()
+                if stmt:
+                    await conn.execute(text(stmt))
+
+        # Create all remaining tables via SQLAlchemy
         await conn.run_sync(Base.metadata.create_all)
 
     # Seed default nurture sequence
@@ -90,3 +104,12 @@ async def init_db():
         except Exception:
             import logging
             logging.getLogger(__name__).exception("Failed to seed nurture sequence")
+
+    # Seed metadata engine (idempotent)
+    from app.db.seed_metadata import seed_metadata
+    async with AsyncSessionLocal() as db:
+        try:
+            await seed_metadata(db)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Failed to seed metadata")

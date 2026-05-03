@@ -835,6 +835,59 @@ def send_demo_reminders():
         raise
 
 
+@celery_app.task
+def send_payment_reminders():
+    """Scheduled task: Send payment reminders to past_due subscribers. Runs daily."""
+    logger.info("[Celery] Sending payment reminders...")
+    try:
+        result = asyncio.run(_send_payment_reminders_async())
+        logger.info(f"[Celery] Payment reminders complete: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"[Celery] Payment reminders failed: {e}")
+        raise
+
+
+async def _send_payment_reminders_async():
+    """Send payment reminder emails to leads that are past_due for > 3 days."""
+    from app.agents.outreach.channels.email import EmailOutreach
+
+    async with AsyncSessionLocal() as db:
+        three_days_ago = datetime.utcnow() - timedelta(days=3)
+
+        result = await db.execute(
+            select(Lead)
+            .where(Lead.subscription_status == "past_due")
+            .where(Lead.past_due_since <= three_days_ago)
+            .where(Lead.do_not_contact == False)
+            .limit(50)
+        )
+        leads = result.scalars().all()
+
+        email = EmailOutreach()
+        sent = 0
+
+        for lead in leads:
+            try:
+                context = f"""
+                El cliente {lead.business_name or lead.name} tiene un pago fallido de su suscripción Eko AI.
+                Plan: {lead.payment_plan or 'Starter'}.
+                Días vencido: {(datetime.utcnow() - (lead.past_due_since or datetime.utcnow())).days}.
+                Mensaje a enviar: Recordatorio amable de que el pago mensual sigue pendiente.
+                Instrucciones para actualizar método de pago. El servicio seguirá activo durante el periodo de gracia.
+                """
+                await email.generate_and_send(
+                    lead=lead,
+                    template_key="payment_failed",
+                    campaign_context=context,
+                )
+                sent += 1
+            except Exception as e:
+                logger.warning(f"Failed to send payment reminder to lead {lead.id}: {e}")
+
+        return {"reminders_sent": sent, "leads_checked": len(leads)}
+
+
 async def _enrich_single_lead_async(lead_id: int):
     """Async helper to enrich one lead."""
     async with AsyncSessionLocal() as db:

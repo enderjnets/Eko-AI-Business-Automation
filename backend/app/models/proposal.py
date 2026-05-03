@@ -21,6 +21,7 @@ class Proposal(Base):
     __tablename__ = "proposals"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    workspace_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("workspaces.id"), nullable=True, index=True)
     
     # Relations
     deal_id: Mapped[int] = mapped_column(ForeignKey("deals.id"), nullable=False, index=True)

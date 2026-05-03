@@ -65,7 +65,7 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
             detail="Inactive user",
         )
 
-    access_token = create_access_token(user.id)
+    access_token = create_access_token(user.id, workspace_id=data.workspace_id)
     refresh_token = create_refresh_token(user.id)
 
     return {
@@ -106,7 +106,9 @@ async def refresh_token(refresh_token: str, db: AsyncSession = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    new_access = create_access_token(user.id)
+    # Preserve workspace_id from the old token if present
+    workspace_id = payload.get("workspace_id")
+    new_access = create_access_token(user.id, workspace_id=workspace_id)
     new_refresh = create_refresh_token(user.id)
 
     return {

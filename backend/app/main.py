@@ -5,8 +5,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
+from app.services.tenant_context import resolve_tenant
+
 from app.config import get_settings
-from app.api.v1 import leads, campaigns, emails, analytics, webhooks, crm, sequences, auth, calendar, phone_calls, settings as settings_router, deals, proposals, voice_agent, checkout, webhooks_stripe
+from app.api.v1 import leads, campaigns, emails, analytics, webhooks, crm, sequences, auth, calendar, phone_calls, settings as settings_router, deals, proposals, voice_agent, checkout, webhooks_stripe, metadata_objects, metadata_fields, views, dynamic_data, workspaces
 
 # Ensure all models are registered in Base.metadata
 from app.models.lead import Lead  # noqa: F401
@@ -18,6 +20,11 @@ from app.models.setting import AppSetting  # noqa: F401
 from app.models.deal import Deal  # noqa: F401
 from app.models.proposal import Proposal  # noqa: F401
 from app.models.payment import Payment  # noqa: F401
+from app.models.object_metadata import ObjectMetadata  # noqa: F401
+from app.models.field_metadata import FieldMetadata  # noqa: F401
+from app.models.dynamic_record import DynamicRecord  # noqa: F401
+from app.models.view import View, ViewField, ViewFilter, ViewSort  # noqa: F401
+from app.models.workspace import Workspace, WorkspaceMember  # noqa: F401
 from app.db.base import init_db
 
 settings = get_settings()
@@ -46,6 +53,22 @@ app = FastAPI(
     redoc_url="/redoc" if settings.is_development else None,
 )
 
+# Tenant resolution middleware — stores workspace_id in request.state
+@app.middleware("http")
+async def tenant_middleware(request: Request, call_next):
+    from app.services.tenant_context import resolve_tenant
+    from app.db.base import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            tenant = await resolve_tenant(request, db=db)
+            request.state.workspace_id = tenant.workspace_id
+            request.state.tenant_user = tenant.user
+        except Exception:
+            request.state.workspace_id = None
+            request.state.tenant_user = None
+    response = await call_next(request)
+    return response
+
 # CORS
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
@@ -73,6 +96,15 @@ app.include_router(proposals.router, prefix="/api/v1/proposals", tags=["proposal
 app.include_router(voice_agent.router, prefix="/api/v1/voice-agent", tags=["voice_agent"])
 app.include_router(checkout.router, prefix="/api/v1/checkout", tags=["checkout"])
 app.include_router(webhooks_stripe.router, prefix="/api/v1/webhooks", tags=["webhooks"])
+
+# Workspace routes
+app.include_router(workspaces.router, prefix="/api/v1/workspaces", tags=["workspaces"])
+
+# Metadata engine routes
+app.include_router(metadata_objects.router, prefix="/api/v1/metadata/objects", tags=["metadata-objects"])
+app.include_router(metadata_fields.router, prefix="/api/v1/metadata/fields", tags=["metadata-fields"])
+app.include_router(views.router, prefix="/api/v1/views", tags=["views"])
+app.include_router(dynamic_data.router, prefix="/api/v1/data", tags=["dynamic-data"])
 
 
 @app.get("/health")

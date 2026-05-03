@@ -79,6 +79,9 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str = ""
     STRIPE_PUBLISHABLE_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_PRICE_STARTER: str = ""
+    STRIPE_PRICE_GROWTH: str = ""
+    STRIPE_PRICE_ENTERPRISE: str = ""
 
     # Compliance
     DNC_SYNC_CRON: str = "0 2 1 * *"

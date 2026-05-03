@@ -37,6 +37,7 @@ class UserResponse(UserBase):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    workspace_id: Optional[str] = None
 
 
 class Token(BaseModel):

@@ -70,6 +70,14 @@ EMAIL_TEMPLATES = {
         "subject": "Bienvenido a Eko AI — tu negocio nunca será igual",
         "context": "Welcome email for a NEW PAYING CUSTOMER who just completed checkout. Congratulate them warmly. Outline the next 3 onboarding steps: 1) We'll schedule the setup call within 48 hours, 2) We'll integrate their phone/channels during setup, 3) Their AI agent goes live. Include a direct reply-to email for questions. Keep it under 200 words, warm and exciting. Sign as 'Eko AI Team'. Write the email in SPANISH.",
     },
+    "payment_failed": {
+        "subject": "Acción requerida: actualiza tu método de pago — {business_name}",
+        "context": "Payment failed email for a subscription customer. Explain calmly that the monthly charge could not be processed. Offer clear steps to update payment method via the customer portal. Reassure them their service is still active during the grace period. No guilt or pressure. Keep under 150 words. Include a direct link to the billing portal. Sign as 'Eko AI Team'. Write the email in SPANISH.",
+    },
+    "subscription_canceled": {
+        "subject": "Tu suscripción a Eko AI ha sido cancelada — {business_name}",
+        "context": "Subscription cancellation email. Confirm the cancellation professionally. Thank them for being a customer. Mention that their service will remain active until the end of the current billing period (if applicable). Leave the door open for reactivation. If this is a retention email (before final cancellation), offer a quick call to address concerns. Keep under 150 words. Sign as 'Eko AI Team'. Write the email in SPANISH.",
+    },
 }
 
 

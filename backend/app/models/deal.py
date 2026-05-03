@@ -19,6 +19,7 @@ class Deal(Base):
     __tablename__ = "deals"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    workspace_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("workspaces.id"), nullable=True, index=True)
     lead_id: Mapped[int] = mapped_column(ForeignKey("leads.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     

@@ -19,6 +19,7 @@ class Booking(Base):
     __tablename__ = "bookings"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    workspace_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("workspaces.id"), nullable=True, index=True)
 
     # Cal.com IDs
     cal_com_booking_id: Mapped[Optional[int]] = mapped_column(Integer, index=True)

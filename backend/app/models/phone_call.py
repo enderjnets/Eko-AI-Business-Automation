@@ -11,6 +11,7 @@ class PhoneCall(Base):
     __tablename__ = "phone_calls"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    workspace_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("workspaces.id"), nullable=True, index=True)
     lead_id: Mapped[int] = mapped_column(ForeignKey("leads.id"), index=True)
 
     # Call result
