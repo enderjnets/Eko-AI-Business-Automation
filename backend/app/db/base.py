@@ -92,7 +92,14 @@ async def init_db():
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
 
         # Create all tables via SQLAlchemy first (new models like Workspace need to exist)
-        await conn.run_sync(Base.metadata.create_all)
+        # Some indexes may already exist from previous runs — ignore those errors
+        try:
+            await conn.run_sync(Base.metadata.create_all)
+        except Exception as e:
+            if "already exists" in str(e).lower():
+                logger.warning(f"Ignoring existing index/table during create_all: {e}")
+            else:
+                raise
 
         # Sync missing columns from models to existing tables
         from app.db.sync_schema import sync_schema
@@ -115,7 +122,13 @@ async def init_db():
             for stmt in sql.split(";"):
                 stmt = stmt.strip()
                 if stmt:
-                    await conn.execute(text(stmt))
+                    try:
+                        await conn.execute(text(stmt))
+                    except Exception as e:
+                        if "already exists" in str(e).lower():
+                            logger.warning(f"Ignoring existing object during SQL init: {e}")
+                        else:
+                            raise
 
         # Apply Row-Level Security policies for workspace isolation
         rls_path = pathlib.Path(__file__).parent / "init_rls.sql"
