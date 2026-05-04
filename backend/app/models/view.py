@@ -31,8 +31,6 @@ class View(Base):
 
     __tablename__ = "views"
     __table_args__ = (
-        Index("ix_views_workspace_object", "workspace_id", "object_metadata_id"),
-        Index("ix_views_visibility", "visibility"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(

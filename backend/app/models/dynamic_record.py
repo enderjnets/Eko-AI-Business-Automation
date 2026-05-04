@@ -20,10 +20,6 @@ class DynamicRecord(Base):
 
     __tablename__ = "dynamic_records"
     __table_args__ = (
-        Index("ix_dynamic_records_object_id", "object_metadata_id"),
-        Index("ix_dynamic_records_workspace_id", "workspace_id"),
-        Index("ix_dynamic_records_label", "label"),
-        Index("ix_dynamic_records_created_at", "created_at"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(

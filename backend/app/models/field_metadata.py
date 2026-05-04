@@ -45,9 +45,6 @@ class FieldMetadata(Base):
             "object_metadata_id", "name", "workspace_id",
             name="uq_field_name_object_workspace"
         ),
-        Index("ix_field_metadata_object_id", "object_metadata_id"),
-        Index("ix_field_metadata_workspace_id", "workspace_id"),
-        Index("ix_field_metadata_type", "type"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(

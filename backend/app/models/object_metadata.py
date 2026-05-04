@@ -17,8 +17,6 @@ class ObjectMetadata(Base):
     __table_args__ = (
         UniqueConstraint("name_singular", "workspace_id", name="uq_object_name_singular_workspace"),
         UniqueConstraint("name_plural", "workspace_id", name="uq_object_name_plural_workspace"),
-        Index("ix_object_metadata_workspace_id", "workspace_id"),
-        Index("ix_object_metadata_name_singular", "name_singular"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
