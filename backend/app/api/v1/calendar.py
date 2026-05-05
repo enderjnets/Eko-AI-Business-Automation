@@ -325,6 +325,7 @@ async def book_demo(
 ):
     """Receive a demo booking from the public booking page."""
     from datetime import datetime
+    from zoneinfo import ZoneInfo
     
     # Find lead by email or create a placeholder
     result = await db.execute(select(Lead).where(Lead.email == request.email))
@@ -341,7 +342,7 @@ async def book_demo(
         db.add(lead)
         await db.flush()
     
-    start_time = datetime.strptime(f"{request.date} {request.time}", "%Y-%m-%d %H:%M")
+    start_time = datetime.strptime(f"{request.date} {request.time}", "%Y-%m-%d %H:%M").replace(tzinfo=ZoneInfo("America/Denver"))
     
     booking = Booking(
         lead_id=lead.id,

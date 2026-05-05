@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.workspace import Workspace, WorkspaceMember
 from app.models.user import User
-from app.models.lead import Lead
+from app.models.lead import Lead, Interaction
 from app.models.deal import Deal
 from app.models.campaign import Campaign
 from app.models.booking import Booking

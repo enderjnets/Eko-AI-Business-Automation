@@ -29,6 +29,9 @@ def generate_google_calendar_link(
     def _fmt(dt: datetime) -> str:
         """Format datetime to UTC string for Google Calendar."""
         try:
+            if dt.tzinfo is None:
+                from zoneinfo import ZoneInfo
+                dt = dt.replace(tzinfo=ZoneInfo(timezone))
             utc_dt = dt.astimezone(timezone.utc)
             return utc_dt.strftime("%Y%m%dT%H%M%SZ")
         except Exception:

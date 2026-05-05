@@ -74,6 +74,7 @@ class Settings(BaseSettings):
     # Phase 2: Calendar
     CAL_COM_API_KEY: str = ""
     CAL_COM_USERNAME: str = "eko-ai"
+    GOOGLE_MEET_LINK: str = ""
 
     # Phase 4: Payments
     STRIPE_SECRET_KEY: str = ""

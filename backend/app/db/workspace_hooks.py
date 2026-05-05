@@ -3,7 +3,7 @@
 from sqlalchemy import event
 
 from app.services.tenant_context import get_workspace_id
-from app.models.lead import Lead
+from app.models.lead import Lead, Interaction
 from app.models.deal import Deal
 from app.models.campaign import Campaign
 from app.models.booking import Booking
@@ -19,6 +19,7 @@ from app.models.view import View, ViewField, ViewFilter, ViewSort
 
 
 _WORKSPACE_MODELS = [
+    Interaction,
     Lead, Deal, Campaign, Booking, PhoneCall,
     Proposal, Payment, EmailSequence, AppSetting,
     ObjectMetadata, FieldMetadata, DynamicRecord,

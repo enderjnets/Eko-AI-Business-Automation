@@ -63,9 +63,11 @@ async def tenant_middleware(request: Request, call_next):
             tenant = await resolve_tenant(request, db=db)
             request.state.workspace_id = tenant.workspace_id
             request.state.tenant_user = tenant.user
+            set_workspace_id(tenant.workspace_id)
         except Exception:
             request.state.workspace_id = None
             request.state.tenant_user = None
+            set_workspace_id(None)
     response = await call_next(request)
     return response
 

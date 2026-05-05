@@ -607,8 +607,12 @@ async def _process_book_demo_tool(
         attendee_email=lead.email or "",
         attendee_name=caller_name,
         attendee_phone=phone,
-        location="Zoom" if contact_method == "zoom" else f"Phone callback: {phone}",
-        location_type="video" if contact_method == "zoom" else "phone",
+        location=(
+            settings.GOOGLE_MEET_LINK if contact_method == "google_meet" and settings.GOOGLE_MEET_LINK
+            else "Zoom" if contact_method == "zoom"
+            else f"Phone callback: {phone}"
+        ),
+        location_type="video" if contact_method in ("zoom", "google_meet") else "phone",
         status=BookingStatus.CONFIRMED,
         meta={
             "source": "vapi_inbound",

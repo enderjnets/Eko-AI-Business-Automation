@@ -331,8 +331,8 @@ async def create_inbound_assistant(
                                 },
                                 "contact_method": {
                                     "type": "string",
-                                    "description": "How Ender should contact them: 'phone_callback' or 'zoom'",
-                                    "enum": ["phone_callback", "zoom"],
+                                    "description": "How Ender should contact them: 'phone_callback', 'zoom', or 'google_meet'",
+                                    "enum": ["phone_callback", "zoom", "google_meet"],
                                 },
                                 "caller_name": {
                                     "type": "string",
