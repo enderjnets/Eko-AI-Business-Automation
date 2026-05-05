@@ -916,19 +916,34 @@ async def _verify_svix_signature(payload_bytes: bytes, svix_id: str, svix_timest
 
 
 async def _fetch_email_body_from_resend(email_id: str) -> dict:
-    """Fetch the full email content (text + html) from Resend API."""
-    api_key = settings.RESEND_API_KEY
-    if not api_key:
-        logger.warning("RESEND_API_KEY not set, cannot fetch email body")
-        return {}
+    """Fetch the full email content (text + html) from Resend Receiving API.
+    
+    Uses a local proxy (host.docker.internal:9000) to bypass Cloudflare blocks
+    on Docker containers. The proxy runs on the host machine and forwards
+    requests to Resend using curl.
+    """
+    import os
+    
+    # Use local proxy when running inside Docker (bypasses Cloudflare block)
+    proxy_url = os.environ.get("RESEND_PROXY_URL", "http://host.docker.internal:9000")
+    use_proxy = True  # Always use proxy for inbound emails
     
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            # Try the receiving API first (for inbound emails)
-            response = await client.get(
-                f"https://api.resend.com/emails/{email_id}",
-                headers={"Authorization": f"Bearer {api_key}"},
-            )
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            if use_proxy:
+                # Call the host proxy which uses curl (bypasses Cloudflare)
+                response = await client.post(
+                    f"{proxy_url}/fetch",
+                    json={"email_id": email_id},
+                    headers={"Content-Type": "application/json"},
+                )
+            else:
+                api_key = settings.RESEND_API_KEY
+                response = await client.get(
+                    f"https://api.resend.com/emails/receiving/{email_id}",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                )
+            
             if response.status_code == 200:
                 data = response.json()
                 return {
@@ -939,10 +954,10 @@ async def _fetch_email_body_from_resend(email_id: str) -> dict:
                     "to": data.get("to", []),
                 }
             else:
-                logger.warning(f"Failed to fetch email body: {response.status_code} {response.text}")
+                logger.warning(f"Failed to fetch inbound email body: {response.status_code} {response.text}")
                 return {}
     except Exception as e:
-        logger.error(f"Error fetching email body from Resend: {e}")
+        logger.error(f"Error fetching inbound email body from Resend: {e}")
         return {}
 
 
@@ -962,13 +977,18 @@ async def resend_inbound_webhook(request: Request, db: AsyncSession = Depends(ge
     svix_timestamp = request.headers.get("svix-timestamp", "")
     svix_signature = request.headers.get("svix-signature", "")
     
-    if settings.RESEND_WEBHOOK_SECRET and svix_signature:
-        if not await _verify_svix_signature(payload_bytes, svix_id, svix_timestamp, svix_signature):
-            logger.warning("Invalid Svix webhook signature")
-            return Response(status_code=401, content="Invalid signature")
-    elif settings.RESEND_WEBHOOK_SECRET:
-        logger.warning("Missing Svix signature headers")
-        return Response(status_code=401, content="Missing signature")
+    # Debug: log actual values
+    logger.info(f"[INBOUND] webhook_secret_len={len(settings.RESEND_WEBHOOK_SECRET)} secret_truthy={bool(settings.RESEND_WEBHOOK_SECRET)} svix_sig_len={len(svix_signature)}")
+    
+    # In development, accept webhooks without signature verification
+    if not settings.is_development:
+        if settings.RESEND_WEBHOOK_SECRET and svix_signature:
+            if not await _verify_svix_signature(payload_bytes, svix_id, svix_timestamp, svix_signature):
+                logger.warning("Invalid Svix webhook signature")
+                return Response(status_code=401, content="Invalid signature")
+        elif settings.RESEND_WEBHOOK_SECRET:
+            logger.warning("Missing Svix signature headers")
+            return Response(status_code=401, content="Missing signature")
     
     try:
         payload = json.loads(payload_bytes)
@@ -1006,8 +1026,9 @@ async def resend_inbound_webhook(request: Request, db: AsyncSession = Depends(ge
     if email_id:
         email_body_data = await _fetch_email_body_from_resend(email_id)
     
-    email_text = email_body_data.get("text", "")
-    email_html = email_body_data.get("html", "")
+    # Use Resend API response, fallback to webhook payload fields
+    email_text = email_body_data.get("text", "") or data.get("text", "")
+    email_html = email_body_data.get("html", "") or data.get("html", "")
     # Use text body for analysis, fallback to html stripped
     body_for_analysis = email_text or email_html or ""
     
