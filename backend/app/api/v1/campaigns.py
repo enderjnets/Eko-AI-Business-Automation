@@ -1,7 +1,8 @@
 from typing import Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, insert
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
@@ -12,6 +13,7 @@ from app.schemas.campaign import CampaignCreate, CampaignUpdate, CampaignRespons
 from app.agents.outreach.channels.email import EmailOutreach, EMAIL_TEMPLATES
 from app.services.paperclip import on_campaign_launched
 from app.core.security import get_current_user
+from app.services.tenant_context import get_tenant_context_optional, TenantContext
 
 router = APIRouter()
 
@@ -56,8 +58,12 @@ async def create_campaign(
     data: CampaignCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    tenant: TenantContext = Depends(get_tenant_context_optional),
 ):
-    campaign = Campaign(**data.model_dump())
+    campaign_data = data.model_dump()
+    if not campaign_data.get("workspace_id"):
+        campaign_data["workspace_id"] = tenant.workspace_id
+    campaign = Campaign(**campaign_data)
     db.add(campaign)
     await db.commit()
     await db.refresh(campaign)
@@ -105,6 +111,46 @@ async def launch_campaign(
     if campaign.status == CampaignStatus.ACTIVE:
         raise HTTPException(status_code=400, detail="Campaign already active")
     
+    # Auto-associate leads matching campaign targeting filters
+    target_filters = []
+    if campaign.target_city:
+        target_filters.append(Lead.city.ilike(f"%{campaign.target_city}%"))
+    if campaign.target_state:
+        target_filters.append(Lead.state.ilike(f"%{campaign.target_state}%"))
+    if campaign.target_categories:
+        categories = [c.strip() for c in campaign.target_categories.split(",") if c.strip()]
+        if categories:
+            target_filters.append(Lead.category.in_(categories))
+    if campaign.min_urgency_score is not None and campaign.min_urgency_score > 0:
+        target_filters.append(Lead.total_score >= campaign.min_urgency_score)
+    
+    # Find matching leads from the same workspace that are SCORED and have email
+    matching_query = select(Lead).where(
+        and_(
+            Lead.status == LeadStatus.SCORED,
+            Lead.email.isnot(None),
+            Lead.do_not_contact == False,
+            Lead.workspace_id == campaign.workspace_id,
+            *target_filters,
+        )
+    )
+    if campaign.max_leads:
+        matching_query = matching_query.limit(campaign.max_leads)
+    
+    matching_result = await db.execute(matching_query)
+    matching_leads = matching_result.scalars().all()
+    
+    # Insert into campaign_leads (ignore duplicates)
+    for lead in matching_leads:
+        stmt = pg_insert(CampaignLead).values(
+            campaign_id=campaign.id,
+            lead_id=lead.id,
+            status="pending",
+            follow_up_count=0,
+        ).on_conflict_do_nothing(index_elements=["campaign_id", "lead_id"])
+        await db.execute(stmt)
+    await db.commit()
+    
     # Fetch eligible leads for this campaign
     leads_result = await db.execute(
         select(Lead)
@@ -112,6 +158,7 @@ async def launch_campaign(
         .where(
             and_(
                 CampaignLead.campaign_id == campaign_id,
+                CampaignLead.status == "pending",
                 Lead.status == LeadStatus.SCORED,
                 Lead.email.isnot(None),
                 Lead.do_not_contact == False,
@@ -123,7 +170,7 @@ async def launch_campaign(
     if not leads:
         raise HTTPException(
             status_code=400,
-            detail="No eligible leads found for this campaign. Need leads in SCORED status with email."
+            detail="No eligible leads found for this campaign. Need leads in SCORED status with email matching the campaign targeting filters."
         )
     
     # Rate limit: cap batch size
@@ -152,11 +199,14 @@ async def launch_campaign(
             )
             
             # Record interaction
+            email_subject = response.get("subject", "")
+            if not email_subject:
+                email_subject = f"Quick question about {lead.business_name}"
             interaction = Interaction(
                 lead_id=lead.id,
                 interaction_type="email",
                 direction="outbound",
-                subject=response.get("subject", ""),
+                subject=email_subject,
                 content=response.get("body", ""),
                 email_status="sent",
                 email_message_id=response.get("id"),

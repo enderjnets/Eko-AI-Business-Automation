@@ -1,6 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+
+// Strip HTML tags for clean preview text
+function stripHtml(html: string): string {
+  if (!html) return "";
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
 import {
   Inbox,
   MailOpen,
@@ -577,6 +583,9 @@ export default function InboxPage() {
                         <p className="text-sm text-gray-300 truncate">
                           {item.subject || "(sin asunto)"}
                         </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {stripHtml(item.content).substring(0, 120)}
+                        </p>
                         <div className="flex items-center gap-3 mt-2 flex-wrap">
                           <span
                             className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${priorityBadge(
@@ -697,8 +706,11 @@ export default function InboxPage() {
                                       })}
                                     </span>
                                   </div>
-                                  <p className="font-medium text-xs mb-1 opacity-80">{msg.subject}</p>
-                                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                                  <p className="font-medium text-xs mb-1 opacity-80">{msg.subject || "(sin asunto)"}</p>
+                                  <div
+                                    className="whitespace-pre-wrap prose prose-invert prose-sm max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: msg.content }}
+                                  />
                                 </div>
                               </div>
                             ))}

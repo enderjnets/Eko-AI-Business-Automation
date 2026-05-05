@@ -187,6 +187,48 @@ class MetadataService:
         await self.db.commit()
 
     # ------------------------------------------------------------------
+    # Workspace seeding
+    # ------------------------------------------------------------------
+
+    async def seed_default_objects(self, workspace_id: str) -> None:
+        """Clone global standard objects into a new workspace."""
+        from app.db.seed_metadata import STANDARD_OBJECTS, OBJECT_FIELDS_MAP
+        from sqlalchemy import select
+
+        for obj_def in STANDARD_OBJECTS:
+            # Check if workspace-specific version already exists
+            stmt = select(ObjectMetadata).where(
+                ObjectMetadata.name_singular == obj_def["name_singular"],
+                ObjectMetadata.workspace_id == workspace_id,
+            )
+            result = await self.db.execute(stmt)
+            existing = result.scalar_one_or_none()
+            if existing:
+                continue
+
+            # Clone object for this workspace
+            obj_data = {k: v for k, v in obj_def.items()}
+            obj = ObjectMetadata(workspace_id=workspace_id, **obj_data)
+            self.db.add(obj)
+            await self.db.flush()
+
+            # Clone fields
+            field_defs = OBJECT_FIELDS_MAP.get(obj_def["name_singular"], [])
+            for fdef in field_defs:
+                field_data = {k: v for k, v in fdef.items()}
+                field_data.pop("relation_target_object_id", None)
+                field = FieldMetadata(
+                    workspace_id=workspace_id,
+                    object_metadata_id=obj.id,
+                    is_system=True,
+                    **field_data,
+                )
+                self.db.add(field)
+
+            await self.db.flush()
+        await self.db.commit()
+
+    # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
 

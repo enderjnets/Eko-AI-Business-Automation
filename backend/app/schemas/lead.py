@@ -26,6 +26,7 @@ class LeadCreate(LeadBase):
     source_data: Optional[dict] = None
     tags: Optional[list] = None
     notes: Optional[str] = None
+    workspace_id: Optional[str] = None
 
 
 class LeadUpdate(BaseModel):

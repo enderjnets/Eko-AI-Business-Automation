@@ -2,7 +2,7 @@ import logging
 import math
 from typing import Optional, List
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, Body
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, Body, Request
 from sqlalchemy import select, func, Integer, case, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +18,7 @@ from app.services.paperclip import on_lead_status_change, on_system_alert
 from app.utils.embedding import update_lead_embedding
 from app.utils.ai_client import generate_embedding
 from app.core.security import get_current_user
+from app.services.tenant_context import get_tenant_context_optional, TenantContext
 from app.api.v1.crm import VALID_TRANSITIONS
 
 logger = logging.getLogger(__name__)
@@ -257,9 +258,14 @@ async def create_lead(
     lead_data: LeadCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    tenant: TenantContext = Depends(get_tenant_context_optional),
 ):
     """Create a new lead manually."""
-    lead = Lead(**lead_data.model_dump(), owner_id=current_user.id)
+    data = lead_data.model_dump()
+    # Auto-assign workspace from tenant context if not provided
+    if not data.get("workspace_id"):
+        data["workspace_id"] = tenant.workspace_id
+    lead = Lead(**data, owner_id=current_user.id)
     db.add(lead)
     await db.commit()
     await db.refresh(lead)

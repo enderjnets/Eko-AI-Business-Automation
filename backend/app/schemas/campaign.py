@@ -19,6 +19,7 @@ class CampaignBase(BaseModel):
     email_body_template: Optional[str] = None
     follow_up_delay_hours: int = Field(72, ge=1)
     max_follow_ups: int = Field(3, ge=0, le=10)
+    workspace_id: Optional[str] = None
 
 
 class CampaignCreate(CampaignBase):

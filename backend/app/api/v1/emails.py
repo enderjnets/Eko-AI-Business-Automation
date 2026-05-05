@@ -71,11 +71,14 @@ async def generate_and_send_email(
 
     # Record interaction so the email appears in the conversation thread
     from app.models.lead import Interaction
+    email_subject = response.get("subject", "")
+    if not email_subject:
+        email_subject = f"Quick question about {lead.business_name}"
     interaction = Interaction(
         lead_id=lead.id,
         interaction_type="email",
         direction="outbound",
-        subject=response.get("subject", ""),
+        subject=email_subject,
         content=response.get("body", ""),
         email_status="sent",
         email_message_id=response.get("id"),
