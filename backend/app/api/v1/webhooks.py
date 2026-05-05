@@ -1150,7 +1150,7 @@ async def resend_inbound_webhook(request: Request, db: AsyncSession = Depends(ge
     auto_reply_enabled = os.getenv("AUTO_REPLY_ENABLED", "false").lower() == "true"
     intent = analysis.get("intent", "")
     body_lower = body_for_analysis.lower()
-    interest_keywords = ["interesa", "interesada", "interesado", "cómo funciona", "como funciona", "cuánto cuesta", "cuanto cuesta", "precio", "precios", "demo", "llamada", "reunión", "reunion", "agendar", "saber más", "me gustaría", "me gustaria"]
+    interest_keywords = ["interesa", "interesada", "interesado", "cómo funciona", "como funciona", "cuánto cuesta", "cuanto cuesta", "precio", "precios", "demo", "llamada", "reunión", "reunion", "agendar", "saber más", "me gustaría", "me gustaria", "interested", "interest", "how much", "price", "pricing", "cost", "call", "meeting", "schedule", "book", "learn more", "would like", "tell me", "next steps", "available", "chat", "talk", "info", "information", "details", "question", "questions", "help", "service"]
     has_interest_keywords = any(kw in body_lower for kw in interest_keywords)
     should_auto_reply = intent in ("interested", "needs_info") or (intent == "unclear" and has_interest_keywords)
     
