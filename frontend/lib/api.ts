@@ -93,6 +93,7 @@ export const campaignsApi = {
   update: (id: number, data: any) => api.patch(`/campaigns/${id}`, data),
   launch: (id: number) => api.post(`/campaigns/${id}/launch`),
   pause: (id: number) => api.post(`/campaigns/${id}/pause`),
+  delete: (id: number) => api.delete(`/campaigns/${id}`),
 };
 
 // Analytics API

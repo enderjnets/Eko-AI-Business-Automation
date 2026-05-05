@@ -6,6 +6,7 @@ from sqlalchemy import select, and_, func
 
 from app.tasks.celery_app import celery_app
 from app.db.base import AsyncSessionLocal
+from app.models.workspace import Workspace, WorkspaceMember  # noqa: F401
 from app.models.user import User
 from app.models.lead import Lead, LeadStatus, Interaction
 from app.models.campaign import Campaign, CampaignLead
