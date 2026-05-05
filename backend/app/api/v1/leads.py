@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.base import get_db
 from app.models.lead import Lead, LeadStatus, LeadSource, Interaction
 from app.models.user import User
+from app.models.workspace import Workspace, WorkspaceMember
 from app.models.sequence import EmailSequence, SequenceEnrollment, SequenceStatus
 from app.schemas.lead import LeadCreate, LeadUpdate, LeadResponse, LeadListResponse, DiscoveryRequest, LeadSearchRequest, PublicLeadCreate
 from app.agents.discovery.agent import DiscoveryAgent
@@ -260,15 +261,55 @@ async def create_lead(
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(get_tenant_context_optional),
 ):
-    """Create a new lead manually."""
+    """Create a new lead manually. Auto-runs enrichment and initial outreach."""
     data = lead_data.model_dump()
-    # Auto-assign workspace from tenant context if not provided
-    if not data.get("workspace_id"):
-        data["workspace_id"] = tenant.workspace_id
+    workspace_id = data.get("workspace_id") or tenant.workspace_id
+    if not workspace_id and current_user:
+        result = await db.execute(
+            select(WorkspaceMember)
+            .where(WorkspaceMember.user_id == current_user.id)
+            .order_by(WorkspaceMember.created_at)
+            .limit(1)
+        )
+        member = result.scalar_one_or_none()
+        if member:
+            workspace_id = member.workspace_id
+    data["workspace_id"] = workspace_id
     lead = Lead(**data, owner_id=current_user.id)
     db.add(lead)
     await db.commit()
     await db.refresh(lead)
+    try:
+        agent = ResearchAgent()
+        enrichment = await agent.enrich(lead)
+        for field, value in enrichment.model_dump(exclude_unset=True).items():
+            setattr(lead, field, value)
+        if lead.urgency_score is not None and lead.fit_score is not None:
+            lead.total_score = (lead.urgency_score + lead.fit_score) / 2
+            lead.status = LeadStatus.SCORED
+        else:
+            lead.status = LeadStatus.ENRICHED
+        await db.commit()
+        await db.refresh(lead)
+    except Exception as e:
+        logger.warning(f"Auto-enrichment failed for lead {lead.id}: {e}")
+    if lead.email:
+        try:
+            email = EmailOutreach()
+            subject = lead.email_subject_template or f"Quick question about {lead.business_name}"
+            body = lead.email_body_template or f"Hi {lead.business_name},\n\nI came across your business and wanted to reach out.\n\nBest regards"
+            await email.send(
+                to_email=lead.email,
+                subject=subject,
+                body=body,
+                lead_id=lead.id,
+                business_name=lead.business_name,
+            )
+            if lead.status not in [LeadStatus.CONTACTED, LeadStatus.ENGAGED, LeadStatus.MEETING_BOOKED]:
+                lead.status = LeadStatus.CONTACTED
+            await db.commit()
+        except Exception as e:
+            logger.warning(f"Auto-email failed for lead {lead.id}: {e}")
     return lead
 
 
