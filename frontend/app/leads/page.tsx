@@ -16,6 +16,7 @@ import {
   X,
   ChevronDown,
   Send,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -132,6 +133,21 @@ export default function LeadsPage() {
   const [callInterest, setCallInterest] = useState("MEDIUM");
   const [callNextAction, setCallNextAction] = useState("CALL_AGAIN");
   const [callLogging, setCallLogging] = useState(false);
+  // Create lead modal
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [newLead, setNewLead] = useState({
+    business_name: "",
+    email: "",
+    phone: "",
+    website: "",
+    address: "",
+    city: "",
+    state: "",
+    category: "",
+    notes: "",
+  });
 
   // Headquarters
   const [hqAddress, setHqAddress] = useState(DEFAULT_HQ_ADDRESS);
@@ -437,6 +453,48 @@ export default function LeadsPage() {
     }
   };
 
+
+  const handleCreateLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLead.business_name.trim()) {
+      setCreateError("El nombre del negocio es obligatorio");
+      return;
+    }
+    setCreateLoading(true);
+    setCreateError(null);
+    try {
+      await leadsApi.create({
+        business_name: newLead.business_name.trim(),
+        email: newLead.email.trim() || undefined,
+        phone: newLead.phone.trim() || undefined,
+        website: newLead.website.trim() || undefined,
+        address: newLead.address.trim() || undefined,
+        city: newLead.city.trim() || undefined,
+        state: newLead.state.trim() || undefined,
+        category: newLead.category.trim() || undefined,
+        notes: newLead.notes.trim() || undefined,
+      });
+      setShowCreateModal(false);
+      setNewLead({
+        business_name: "",
+        email: "",
+        phone: "",
+        website: "",
+        address: "",
+        city: "",
+        state: "",
+        category: "",
+        notes: "",
+      });
+      loadLeads();
+    } catch (err: any) {
+      console.error(err);
+      setCreateError(err.response?.data?.detail || "Error creando lead");
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 70) return "text-eko-green";
     if (score >= 50) return "text-gold";
@@ -513,6 +571,13 @@ export default function LeadsPage() {
                 <ChevronDown className="w-3 h-3" />
               </button>
             )}
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-1.5 rounded-lg bg-eko-blue px-3 py-1.5 text-xs font-medium text-white hover:bg-eko-blue-dark transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Agregar Lead
+            </button>
           </div>
         </div>
 
@@ -1084,6 +1149,150 @@ export default function LeadsPage() {
               </button>
               <button
                 onClick={() => setCallModalLead(null)}
+                className="rounded-lg border border-white/10 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Lead Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-xl border border-white/10 bg-eko-graphite shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+              <h3 className="font-medium text-sm">Nuevo Lead</h3>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="p-1 rounded-lg hover:bg-white/10 text-gray-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateLead} className="px-5 py-4 space-y-4">
+              {createError && (
+                <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-sm text-red-400">
+                  {createError}
+                </div>
+              )}
+
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Nombre del negocio *</label>
+                <input
+                  type="text"
+                  value={newLead.business_name}
+                  onChange={(e) => setNewLead({ ...newLead, business_name: e.target.value })}
+                  placeholder="Ej: X3nails & Spa"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Email</label>
+                  <input
+                    type="email"
+                    value={newLead.email}
+                    onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
+                    placeholder="contacto@ejemplo.com"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Teléfono</label>
+                  <input
+                    type="tel"
+                    value={newLead.phone}
+                    onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
+                    placeholder="(303) 555-0123"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Website</label>
+                <input
+                  type="text"
+                  value={newLead.website}
+                  onChange={(e) => setNewLead({ ...newLead, website: e.target.value })}
+                  placeholder="https://ejemplo.com"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Dirección</label>
+                <input
+                  type="text"
+                  value={newLead.address}
+                  onChange={(e) => setNewLead({ ...newLead, address: e.target.value })}
+                  placeholder="123 Main St, Suite 100"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Ciudad</label>
+                  <input
+                    type="text"
+                    value={newLead.city}
+                    onChange={(e) => setNewLead({ ...newLead, city: e.target.value })}
+                    placeholder="Denver"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Estado</label>
+                  <input
+                    type="text"
+                    value={newLead.state}
+                    onChange={(e) => setNewLead({ ...newLead, state: e.target.value })}
+                    placeholder="CO"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Categoría</label>
+                <input
+                  type="text"
+                  value={newLead.category}
+                  onChange={(e) => setNewLead({ ...newLead, category: e.target.value })}
+                  placeholder="Ej: Nail Salon, Restaurant, Gym..."
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Notas</label>
+                <textarea
+                  value={newLead.notes}
+                  onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
+                  placeholder="Notas adicionales sobre el lead..."
+                  rows={3}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none resize-none"
+                />
+              </div>
+            </form>
+
+            <div className="flex items-center gap-2 px-5 py-4 border-t border-white/5">
+              <button
+                type="submit"
+                onClick={handleCreateLead}
+                disabled={createLoading}
+                className="flex-1 rounded-lg bg-eko-blue py-2.5 text-sm font-medium hover:bg-eko-blue-dark disabled:opacity-50 transition-colors"
+              >
+                {createLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Guardar Lead"}
+              </button>
+              <button
+                onClick={() => setShowCreateModal(false)}
                 className="rounded-lg border border-white/10 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 transition-colors"
               >
                 Cancelar
