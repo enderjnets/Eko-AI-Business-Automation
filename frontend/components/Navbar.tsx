@@ -26,6 +26,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { emailsApi, metadataApi } from "@/lib/api";
+import VersionButton from "@/components/VersionButton";
 
 const PRIMARY_LINKS = [
   { href: "/", icon: BarChart3, label: "Dashboard" },
@@ -235,6 +236,8 @@ export default function Navbar() {
                   <span className="text-xs text-gray-400">System Online</span>
                 </div>
               )}
+
+              <VersionButton />
 
               {/* Mobile hamburger */}
               <button
