@@ -73,7 +73,7 @@ export default function VersionButton() {
         >
           <div
             ref={panelRef}
-            className="relative w-full max-w-lg mx-4 max-h-[80vh] flex flex-col rounded-2xl border border-white/10 bg-eko-graphite shadow-2xl animate-in zoom-in-95 duration-200"
+            className="relative w-full max-w-lg mx-auto max-h-[80vh] flex flex-col rounded-2xl border border-white/10 bg-eko-graphite shadow-2xl animate-in zoom-in-95 duration-200"
             role="dialog"
             aria-modal="true"
             aria-labelledby="version-modal-title"
