@@ -1182,7 +1182,7 @@ async def resend_inbound_webhook(request: Request, db: AsyncSession = Depends(ge
                 lead_id=lead.id,
                 business_name=lead.business_name,
                 ai_generated=True,
-                headers={"In-Reply-To": smtp_msg_id} if smtp_msg_id else None,
+                in_reply_to=smtp_msg_id,
             )
             
             # Record outbound interaction
