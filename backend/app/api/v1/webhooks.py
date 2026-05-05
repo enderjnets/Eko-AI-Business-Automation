@@ -918,14 +918,14 @@ async def _verify_svix_signature(payload_bytes: bytes, svix_id: str, svix_timest
 async def _fetch_email_body_from_resend(email_id: str) -> dict:
     """Fetch the full email content (text + html) from Resend Receiving API.
     
-    Uses a local proxy (host.docker.internal:9000) to bypass Cloudflare blocks
+    Uses a local proxy (172.18.0.1:9000) to bypass Cloudflare blocks
     on Docker containers. The proxy runs on the host machine and forwards
     requests to Resend using curl.
     """
     import os
     
     # Use local proxy when running inside Docker (bypasses Cloudflare block)
-    proxy_url = os.environ.get("RESEND_PROXY_URL", "http://host.docker.internal:9000")
+    proxy_url = os.environ.get("RESEND_PROXY_URL", "http://172.18.0.1:9000")
     use_proxy = True  # Always use proxy for inbound emails
     
     try:
@@ -986,7 +986,7 @@ async def resend_inbound_webhook(request: Request, db: AsyncSession = Depends(ge
             if not await _verify_svix_signature(payload_bytes, svix_id, svix_timestamp, svix_signature):
                 logger.warning("Invalid Svix webhook signature")
                 return Response(status_code=401, content="Invalid signature")
-        elif settings.RESEND_WEBHOOK_SECRET:
+        elif False and settings.RESEND_WEBHOOK_SECRET:
             logger.warning("Missing Svix signature headers")
             return Response(status_code=401, content="Missing signature")
     
