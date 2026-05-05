@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import uuid
 from typing import Optional, Union
 
 from fastapi import Depends, HTTPException, status
@@ -30,28 +31,32 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(user_id: int, workspace_id: Optional[str] = None, expires_delta: Optional[timedelta] = None) -> str:
+    now = datetime.now(timezone.utc)
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = now + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
     to_encode = {
         "sub": str(user_id),
         "workspace_id": workspace_id,
         "exp": expire,
         "type": "access",
-        "iat": datetime.utcnow(),
+        "iat": now,
+        "jti": str(uuid.uuid4()),
     }
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
 
 
 def create_refresh_token(user_id: int) -> str:
-    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode = {
         "sub": str(user_id),
         "exp": expire,
         "type": "refresh",
-        "iat": datetime.utcnow(),
+        "iat": now,
+        "jti": str(uuid.uuid4()),
     }
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
 
