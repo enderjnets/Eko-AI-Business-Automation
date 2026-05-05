@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
-from app.services.tenant_context import resolve_tenant
+from app.services.tenant_context import resolve_tenant, set_workspace_id
 
 from app.config import get_settings
 from app.api.v1 import leads, campaigns, emails, analytics, webhooks, crm, sequences, auth, calendar, phone_calls, settings as settings_router, deals, proposals, voice_agent, checkout, webhooks_stripe, metadata_objects, metadata_fields, views, dynamic_data, workspaces
@@ -56,7 +56,7 @@ app = FastAPI(
 # Tenant resolution middleware — stores workspace_id in request.state
 @app.middleware("http")
 async def tenant_middleware(request: Request, call_next):
-    from app.services.tenant_context import resolve_tenant
+    from app.services.tenant_context import resolve_tenant, set_workspace_id
     from app.db.base import AsyncSessionLocal
     async with AsyncSessionLocal() as db:
         try:
