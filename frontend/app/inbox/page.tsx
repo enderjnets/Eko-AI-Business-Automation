@@ -51,6 +51,8 @@ interface InboxItem {
   auto_status_changed: boolean;
   previous_status: string;
   created_at: string;
+  lead_unread_count?: number;
+  lead_total_count?: number;
 }
 
 interface AIReply {
@@ -67,6 +69,8 @@ interface ConversationItem {
   subject: string;
   content: string;
   created_at: string;
+  lead_unread_count?: number;
+  lead_total_count?: number;
 }
 
 export default function InboxPage() {
@@ -567,10 +571,10 @@ export default function InboxPage() {
                           <span className="text-xs text-gray-500">
                             {item.lead_email}
                           </span>
-                          {item.lead_total_count > 1 && (
+                          {(item.lead_total_count || 0) > 1 && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-gray-400">
                               {item.lead_total_count} mensajes
-                              {item.lead_unread_count > 0 && (
+                              {(item.lead_unread_count || 0) > 0 && (
                                 <span className="ml-1 text-eko-blue">({item.lead_unread_count} sin leer)</span>
                               )}
                             </span>
