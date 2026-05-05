@@ -2,7 +2,7 @@ from typing import Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select, desc, or_
+from sqlalchemy import select, desc, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
@@ -110,21 +110,36 @@ async def get_inbox(
     Returns interactions with interaction_type='email',
     enriched with lead info and AI analysis.
     """
+    # Subquery: get the latest interaction id per lead
+    latest_subq = (
+        select(
+            Interaction.lead_id,
+            func.max(Interaction.created_at).label("latest_at")
+        )
+        .where(Interaction.interaction_type == "email")
+        .group_by(Interaction.lead_id)
+        .subquery()
+    )
+    
+    # Main query: join with latest subquery to get one row per lead
     query = (
         select(Interaction, Lead)
         .join(Lead, Interaction.lead_id == Lead.id)
+        .join(latest_subq, 
+              (Interaction.lead_id == latest_subq.c.lead_id) & 
+              (Interaction.created_at == latest_subq.c.latest_at))
         .where(Interaction.interaction_type == "email")
         .order_by(desc(Interaction.created_at))
     )
     
-    # Direction filter
+    # Direction filter — for inbox view we default to showing leads with inbound emails
     if direction == "inbound":
         query = query.where(Interaction.direction == "inbound")
     elif direction == "outbound":
         query = query.where(Interaction.direction == "outbound")
     elif direction == "draft":
         query = query.where(Interaction.email_status == "draft")
-    # else "all" or None — no direction filter
+    # else "all" or None — show leads with any email direction
     
     if lead_id:
         query = query.where(Interaction.lead_id == lead_id)
@@ -139,8 +154,11 @@ async def get_inbox(
     elif status == "read":
         query = query.where(Interaction.meta.op("?")("read") == True)
     
-    # Count total (with same filters)
-    count_query = select(Interaction).where(Interaction.interaction_type == "email")
+    # Count total leads with email interactions
+    count_query = (
+        select(func.count(func.distinct(Interaction.lead_id)))
+        .where(Interaction.interaction_type == "email")
+    )
     if direction == "inbound":
         count_query = count_query.where(Interaction.direction == "inbound")
     elif direction == "outbound":
@@ -149,12 +167,35 @@ async def get_inbox(
         count_query = count_query.where(Interaction.email_status == "draft")
     
     count_result = await db.execute(count_query)
-    total = len(count_result.scalars().all())
+    total = count_result.scalar() or 0
     
     result = await db.execute(query.offset(offset).limit(limit))
     items = []
     for interaction, lead in result.all():
         meta = interaction.meta or {}
+        
+        # Count unread emails for this lead
+        unread_count_query = select(func.count(Interaction.id)).where(
+            Interaction.interaction_type == "email",
+            Interaction.lead_id == lead.id,
+            Interaction.direction == "inbound",
+        ).where(
+            or_(
+                Interaction.meta.is_(None),
+                Interaction.meta.op("?")("read") == False,
+            )
+        )
+        unread_count_result = await db.execute(unread_count_query)
+        lead_unread_count = unread_count_result.scalar() or 0
+        
+        # Count total emails for this lead
+        total_count_query = select(func.count(Interaction.id)).where(
+            Interaction.interaction_type == "email",
+            Interaction.lead_id == lead.id,
+        )
+        total_count_result = await db.execute(total_count_query)
+        lead_total_count = total_count_result.scalar() or 0
+        
         items.append({
             "id": interaction.id,
             "lead_id": lead.id,
@@ -174,6 +215,8 @@ async def get_inbox(
             "auto_status_changed": meta.get("auto_status_changed", False),
             "previous_status": meta.get("previous_status"),
             "created_at": interaction.created_at.isoformat() if interaction.created_at else None,
+            "lead_unread_count": lead_unread_count,
+            "lead_total_count": lead_total_count,
         })
     
     # Count unread (only inbound)

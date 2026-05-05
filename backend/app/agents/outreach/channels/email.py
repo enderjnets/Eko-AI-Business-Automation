@@ -196,6 +196,22 @@ Return ONLY a JSON object with:
         pixel = f'<img src="{pixel_url}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;" />'
         return body + pixel
     
+    def _body_to_html(self, body: str) -> str:
+        """Convert plain text with newlines to basic HTML."""
+        if not body:
+            return ""
+        # If already looks like HTML, return as-is
+        if "<" in body and ">" in body:
+            return body
+        # Convert double newlines to paragraph breaks
+        paragraphs = body.split("\n\n")
+        html_paragraphs = []
+        for p in paragraphs:
+            # Convert single newlines to <br>
+            p = p.replace("\n", "<br>")
+            html_paragraphs.append(f"<p>{p}</p>")
+        return "\n".join(html_paragraphs)
+    
     async def send(
         self,
         to_email: str,
@@ -234,7 +250,7 @@ Return ONLY a JSON object with:
             if lead_id:
                 # Use lead_id as the message_id for the pixel so we can track opens
                 # even without knowing the Resend message_id beforehand
-                tracking_body = self._add_tracking_pixel(body, lead_id, f"lead_{lead_id}")
+                tracking_body = self._add_tracking_pixel(self._body_to_html(body), lead_id, f"lead_{lead_id}")
             
             params = {
                 "from": self.from_email,
