@@ -567,12 +567,20 @@ export default function InboxPage() {
                           <span className="text-xs text-gray-500">
                             {item.lead_email}
                           </span>
+                          {item.lead_total_count > 1 && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-gray-400">
+                              {item.lead_total_count} mensajes
+                              {item.lead_unread_count > 0 && (
+                                <span className="ml-1 text-eko-blue">({item.lead_unread_count} sin leer)</span>
+                              )}
+                            </span>
+                          )}
                           <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
                             item.direction === "outbound"
                               ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
                               : "bg-eko-blue/10 text-eko-blue border-eko-blue/20"
                           }`}>
-                            {item.direction === "outbound" ? "Enviado" : "Recibido"}
+                            {item.direction === "outbound" ? "Último: enviado" : "Último: recibido"}
                           </span>
                           {item.auto_status_changed && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-eko-green/10 text-eko-green border border-eko-green/20">
