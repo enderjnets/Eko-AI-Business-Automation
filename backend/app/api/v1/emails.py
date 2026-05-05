@@ -110,13 +110,22 @@ async def get_inbox(
     Returns interactions with interaction_type='email',
     enriched with lead info and AI analysis.
     """
-    # Subquery: get the latest interaction id per lead
+    # Build direction filter for subquery
+    direction_filter = [Interaction.interaction_type == "email"]
+    if direction == "inbound":
+        direction_filter.append(Interaction.direction == "inbound")
+    elif direction == "outbound":
+        direction_filter.append(Interaction.direction == "outbound")
+    elif direction == "draft":
+        direction_filter.append(Interaction.email_status == "draft")
+    
+    # Subquery: get the latest interaction per lead (with same direction filter)
     latest_subq = (
         select(
             Interaction.lead_id,
             func.max(Interaction.created_at).label("latest_at")
         )
-        .where(Interaction.interaction_type == "email")
+        .where(*direction_filter)
         .group_by(Interaction.lead_id)
         .subquery()
     )
@@ -128,18 +137,11 @@ async def get_inbox(
         .join(latest_subq, 
               (Interaction.lead_id == latest_subq.c.lead_id) & 
               (Interaction.created_at == latest_subq.c.latest_at))
-        .where(Interaction.interaction_type == "email")
+        .where(*direction_filter)
         .order_by(desc(Interaction.created_at))
     )
     
-    # Direction filter — for inbox view we default to showing leads with inbound emails
-    if direction == "inbound":
-        query = query.where(Interaction.direction == "inbound")
-    elif direction == "outbound":
-        query = query.where(Interaction.direction == "outbound")
-    elif direction == "draft":
-        query = query.where(Interaction.email_status == "draft")
-    # else "all" or None — show leads with any email direction
+    # No additional direction filter needed — already applied in subquery and main query
     
     if lead_id:
         query = query.where(Interaction.lead_id == lead_id)
