@@ -814,15 +814,8 @@ def backup_processed_leads():
 
 # Persistent event loop per worker process (solo pool) to avoid
 # "Future attached to a different loop" when asyncpg connections are reused.
-_worker_loop = None
 
 
-def _get_worker_loop():
-    global _worker_loop
-    if _worker_loop is None or _worker_loop.is_closed():
-        _worker_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(_worker_loop)
-    return _worker_loop
 
 
 @celery_app.task
@@ -854,8 +847,7 @@ def remind_scheduled_calls():
 @celery_app.task
 def enrich_single_lead(lead_id: int):
     """Enrich a single lead by ID."""
-    loop = _get_worker_loop()
-    loop.run_until_complete(_enrich_single_lead_async(lead_id))
+    asyncio.run(_enrich_single_lead_async(lead_id))
 
 
 @celery_app.task
@@ -1066,8 +1058,7 @@ def run_lead_pipeline(self, lead_id: int):
     """Celery task: enrich lead and send initial outreach email."""
     logger.info(f"[Celery] Running lead pipeline for lead {lead_id}...")
     try:
-        loop = _get_worker_loop()
-        result = loop.run_until_complete(_run_lead_pipeline_async(lead_id))
+        result = asyncio.run(_run_lead_pipeline_async(lead_id))
         logger.info(f"[Celery] Lead pipeline complete for {lead_id}")
         return result
     except Exception as e:
