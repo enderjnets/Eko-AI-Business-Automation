@@ -671,44 +671,56 @@ async def search_leads(
         logger.error(f"Failed to generate query embedding: {e}")
         raise HTTPException(status_code=500, detail="Embedding generation failed")
 
-    # Build query with cosine distance using pgvector
-    distance_expr = Lead.embedding.op("<=>")(query_embedding)
     search_term = request.query.strip().lower()
-    
-    # Semantic search + exact name fallback (UNION)
-    semantic_query = (
-        select(Lead, distance_expr.label("distance"))
-        .where(Lead.embedding.isnot(None))
-        .where(distance_expr < 0.5)
-    )
-    
-    exact_query = (
-        select(Lead, func.cast(0.0, Float).label("distance"))
-        .where(Lead.business_name.ilike(f"%{search_term}%"))
-    )
-    
-    query = semantic_query.union(exact_query).order_by("distance").limit(request.limit)
 
-    # Ownership filter
+    # 1. Try exact name match first
+    exact_query = select(Lead).where(Lead.business_name.ilike(f"%{search_term}%"))
     if not current_user.is_superuser and current_user.role.value != "admin":
-        query = query.where(
+        exact_query = exact_query.where(
             (Lead.owner_id == current_user.id) | (Lead.assigned_to == current_user.email) | (Lead.owner_id.is_(None))
         )
-
     if request.status:
-        query = query.where(Lead.status == request.status)
+        exact_query = exact_query.where(Lead.status == request.status)
     if request.min_score is not None:
-        query = query.where(Lead.total_score >= request.min_score)
+        exact_query = exact_query.where(Lead.total_score >= request.min_score)
+    exact_query = exact_query.limit(request.limit)
 
-    result = await db.execute(query)
-    rows = result.all()
-    items = [lead for lead, distance in rows]
+    exact_result = await db.execute(exact_query)
+    exact_items = exact_result.scalars().all()
+    if exact_items:
+        return LeadListResponse(
+            total=len(exact_items),
+            items=list(exact_items),
+            page=1,
+            page_size=len(exact_items),
+        )
+
+    # 2. Fallback to semantic search via embeddings
+    distance_expr = Lead.embedding.op("<=>")(query_embedding)
+    semantic_query = (
+        select(Lead)
+        .where(Lead.embedding.isnot(None))
+        .where(distance_expr < 0.5)
+        .order_by(distance_expr)
+        .limit(request.limit)
+    )
+    if not current_user.is_superuser and current_user.role.value != "admin":
+        semantic_query = semantic_query.where(
+            (Lead.owner_id == current_user.id) | (Lead.assigned_to == current_user.email) | (Lead.owner_id.is_(None))
+        )
+    if request.status:
+        semantic_query = semantic_query.where(Lead.status == request.status)
+    if request.min_score is not None:
+        semantic_query = semantic_query.where(Lead.total_score >= request.min_score)
+
+    semantic_result = await db.execute(semantic_query)
+    semantic_items = semantic_result.scalars().all()
 
     return LeadListResponse(
-        total=len(items),
-        items=items,
+        total=len(semantic_items),
+        items=list(semantic_items),
         page=1,
-        page_size=len(items),
+        page_size=len(semantic_items),
     )
 
 
