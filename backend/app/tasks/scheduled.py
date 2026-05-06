@@ -24,6 +24,39 @@ logger = logging.getLogger(__name__)
 # Async helpers (Celery tasks are sync; we run async code via asyncio.run)
 # ---------------------------------------------------------------------------
 
+
+
+# ---------------------------------------------------------------------------
+# Geocoding helper
+# ---------------------------------------------------------------------------
+
+async def _geocode_address(address: str, city: str = "", state: str = "") -> dict | None:
+    """Geocode an address using Nominatim (OpenStreetMap)."""
+    import httpx
+    
+    query = f"{address}, {city}, {state}".strip(", ")
+    if not query:
+        return None
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                "https://nominatim.openstreetmap.org/search",
+                params={"q": query, "format": "json", "limit": 1},
+                headers={"User-Agent": "Eko-AI-CRM/1.0"},
+            )
+            response.raise_for_status()
+            data = response.json()
+            if data:
+                return {
+                    "lat": float(data[0]["lat"]),
+                    "lng": float(data[0]["lon"]),
+                }
+    except Exception as e:
+        logger.warning(f'Geocoding failed for "{query}": {e}')
+    return None
+
+
 async def _process_follow_ups_async():
     """Process leads that need follow-up."""
     async with AsyncSessionLocal() as db:
@@ -901,6 +934,17 @@ async def _enrich_single_lead_async(lead_id: int):
             return
         if lead.status != LeadStatus.DISCOVERED:
             logger.info(f"Lead {lead_id} already processed (status={lead.status})")
+            # Still try geocoding if missing coordinates
+            if lead.address and (lead.latitude is None or lead.longitude is None):
+                try:
+                    coords = await _geocode_address(lead.address, lead.city or "", lead.state or "")
+                    if coords:
+                        lead.latitude = coords["lat"]
+                        lead.longitude = coords["lng"]
+                        await db.commit()
+                        logger.info(f"Geocoded lead {lead_id}: {coords['lat']}, {coords['lng']}")
+                except Exception as e:
+                    logger.warning(f"Geocoding failed for lead {lead_id}: {e}")
             return
 
         try:
@@ -933,6 +977,17 @@ async def _run_lead_pipeline_async(lead_id: int):
             return
         if lead.status != LeadStatus.DISCOVERED:
             logger.info(f"Lead {lead_id} already processed (status={lead.status})")
+            # Still try geocoding if missing coordinates
+            if lead.address and (lead.latitude is None or lead.longitude is None):
+                try:
+                    coords = await _geocode_address(lead.address, lead.city or "", lead.state or "")
+                    if coords:
+                        lead.latitude = coords["lat"]
+                        lead.longitude = coords["lng"]
+                        await db.commit()
+                        logger.info(f"Geocoded lead {lead_id}: {coords['lat']}, {coords['lng']}")
+                except Exception as e:
+                    logger.warning(f"Geocoding failed for lead {lead_id}: {e}")
             return
 
         # Step 1: Enrichment

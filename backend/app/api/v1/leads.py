@@ -281,6 +281,23 @@ async def create_lead(
         if member:
             workspace_id = member.workspace_id
     data["workspace_id"] = workspace_id
+
+    # Check for duplicates by business_name or email
+    dup_query = select(Lead).where(
+        (Lead.workspace_id == workspace_id) &
+        (
+            (Lead.business_name.ilike(lead_data.business_name.strip())) |
+            (lead_data.email is not None and Lead.email == lead_data.email)
+        )
+    ).limit(1)
+    dup_result = await db.execute(dup_query)
+    existing = dup_result.scalar_one_or_none()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Lead already exists: {existing.business_name} (ID: {existing.id})",
+        )
+
     lead = Lead(**data, owner_id=current_user.id)
     db.add(lead)
     await db.commit()
