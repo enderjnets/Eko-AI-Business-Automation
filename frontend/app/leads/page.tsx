@@ -17,10 +17,18 @@ import {
   ChevronDown,
   Send,
   Plus,
+  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { leadsApi, phoneCallsApi } from "@/lib/api";
+
+interface PipelineStep {
+  id: string;
+  title: string;
+  description: string;
+  status: "pending" | "active" | "completed";
+}
 
 interface Lead {
   id: number;
@@ -140,6 +148,10 @@ export default function LeadsPage() {
   const [showDiscrepancyModal, setShowDiscrepancyModal] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
   const [previewChoices, setPreviewChoices] = useState<Record<string, "manual" | "extracted">>({});
+  const [showPipelineModal, setShowPipelineModal] = useState(false);
+  const [pipelineLead, setPipelineLead] = useState<Lead | null>(null);
+  const [pipelineSteps, setPipelineSteps] = useState<PipelineStep[]>([]);
+  const pipelineIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [newLead, setNewLead] = useState({
     business_name: "",
     email: "",
@@ -268,6 +280,16 @@ export default function LeadsPage() {
     const interval = setInterval(loadEnrichmentStatus, 10000);
     return () => clearInterval(interval);
   }, [loadEnrichmentStatus]);
+
+  // Cleanup pipeline interval on unmount
+  useEffect(() => {
+    return () => {
+      if (pipelineIntervalRef.current) {
+        clearInterval(pipelineIntervalRef.current);
+        pipelineIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   const applyClientSort = useCallback(
     (items: Lead[]): Lead[] => {
@@ -506,7 +528,7 @@ export default function LeadsPage() {
     setCreateLoading(true);
     setCreateError(null);
     try {
-      await leadsApi.create({
+      const res = await leadsApi.create({
         business_name: data.business_name.trim(),
         email: data.email.trim() || undefined,
         phone: data.phone.trim() || undefined,
@@ -533,12 +555,104 @@ export default function LeadsPage() {
         notes: "",
       });
       loadLeads();
+      // Start pipeline progress tracking
+      if (res.data?.id) {
+        startPipelineTracking(res.data);
+      }
+      return res.data;
     } catch (err: any) {
       console.error(err);
       setCreateError(err.response?.data?.detail || "Error creando lead");
+      return null;
     } finally {
       setCreateLoading(false);
     }
+  };
+
+  const getStepStatusFromLeadStatus = (status: string): PipelineStep[] => {
+    const steps: PipelineStep[] = [
+      { id: "created", title: "Lead creado", description: "Guardado en la base de datos", status: "completed" },
+      { id: "web", title: "Extrayendo web", description: "Analizando página web...", status: "pending" },
+      { id: "enrich", title: "Enriqueciendo con AI", description: "Calculando scores y servicios...", status: "pending" },
+      { id: "email", title: "Enviando email", description: "Primer contacto de outreach...", status: "pending" },
+    ];
+    const s = status.toLowerCase();
+    if (["contacted", "engaged", "meeting_booked", "proposal_sent", "negotiating", "closed_won", "closed_lost"].includes(s)) {
+      steps[1].status = "completed";
+      steps[2].status = "completed";
+      steps[3].status = "completed";
+      steps[3].description = "Email enviado ✓";
+    } else if (["enriched", "scored"].includes(s)) {
+      steps[1].status = "completed";
+      steps[2].status = "completed";
+      steps[3].status = "active";
+      if (s === "scored") {
+        steps[2].description = "Scores calculados ✓";
+      } else {
+        steps[2].description = "Datos enriquecidos ✓";
+      }
+    } else if (s === "discovered") {
+      steps[1].status = "active";
+      steps[2].status = "pending";
+      steps[3].status = "pending";
+    }
+    return steps;
+  };
+
+  const startPipelineTracking = (lead: Lead) => {
+    // Clear any existing interval
+    if (pipelineIntervalRef.current) {
+      clearInterval(pipelineIntervalRef.current);
+    }
+    setPipelineLead(lead);
+    setPipelineSteps(getStepStatusFromLeadStatus(lead.status || "discovered"));
+    setShowPipelineModal(true);
+
+    let staleCount = 0;
+    const interval = setInterval(async () => {
+      try {
+        const res = await leadsApi.get(lead.id);
+        const updated = res.data;
+        setPipelineLead(updated);
+        setPipelineSteps(getStepStatusFromLeadStatus(updated.status));
+        staleCount = 0;
+
+        // Stop polling when pipeline is done
+        if (["contacted", "engaged", "meeting_booked", "proposal_sent", "negotiating", "closed_won", "closed_lost"].includes(updated.status)) {
+          clearInterval(interval);
+          pipelineIntervalRef.current = null;
+          // Auto-close after 3 seconds of success
+          setTimeout(() => {
+            setShowPipelineModal(false);
+            setPipelineLead(null);
+            setPipelineSteps([]);
+          }, 3000);
+        }
+      } catch (e) {
+        staleCount++;
+        console.error("Pipeline tracking error", e);
+        if (staleCount >= 5) {
+          clearInterval(interval);
+          pipelineIntervalRef.current = null;
+          setPipelineSteps((prev) =>
+            prev.map((s) => (s.status === "active" ? { ...s, description: "Error de conexión", status: "pending" } : s))
+          );
+        }
+      }
+    }, 2000);
+
+    // Safety timeout: stop after 4 minutes
+    setTimeout(() => {
+      if (pipelineIntervalRef.current) {
+        clearInterval(pipelineIntervalRef.current);
+        pipelineIntervalRef.current = null;
+        setPipelineSteps((prev) =>
+          prev.map((s) => (s.status === "active" ? { ...s, description: "Proceso tardando más de lo esperado", status: "pending" } : s))
+        );
+      }
+    }, 240000);
+
+    pipelineIntervalRef.current = interval;
   };
 
   const handleConfirmDiscrepancies = async () => {
@@ -1454,6 +1568,158 @@ export default function LeadsPage() {
               >
                 Volver
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pipeline Progress Modal */}
+      {showPipelineModal && pipelineLead && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-eko-graphite shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-white/5">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-eko-blue" />
+                  Procesando lead
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowPipelineModal(false);
+                    if (pipelineIntervalRef.current) {
+                      clearInterval(pipelineIntervalRef.current);
+                      pipelineIntervalRef.current = null;
+                    }
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1 truncate">{pipelineLead.business_name}</p>
+            </div>
+
+            {/* Steps */}
+            <div className="px-6 py-6 space-y-5">
+              {pipelineSteps.map((step, idx) => {
+                const isLast = idx === pipelineSteps.length - 1;
+                const Icon =
+                  step.id === "created"
+                    ? CheckCircle2
+                    : step.id === "web"
+                    ? Globe
+                    : step.id === "enrich"
+                    ? Sparkles
+                    : Mail;
+
+                return (
+                  <div key={step.id} className="relative flex items-start gap-3">
+                    {/* Connector line */}
+                    {!isLast && (
+                      <div
+                        className={`absolute left-[11px] top-7 w-0.5 h-8 transition-colors duration-500 ${
+                          step.status === "completed" ? "bg-eko-green" : "bg-white/10"
+                        }`}
+                      />
+                    )}
+
+                    {/* Icon */}
+                    <div
+                      className={`relative z-10 flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-500 ${
+                        step.status === "completed"
+                          ? "bg-eko-green/20 text-eko-green"
+                          : step.status === "active"
+                          ? "bg-eko-blue/20 text-eko-blue animate-pulse"
+                          : "bg-white/5 text-gray-600"
+                      }`}
+                    >
+                      {step.status === "completed" ? (
+                        <CheckCircle2 className="w-4 h-4" />
+                      ) : (
+                        <Icon className="w-3.5 h-3.5" />
+                      )}
+                    </div>
+
+                    {/* Text */}
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <p
+                        className={`text-sm font-medium transition-colors duration-300 ${
+                          step.status === "completed"
+                            ? "text-eko-green"
+                            : step.status === "active"
+                            ? "text-white"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {step.title}
+                      </p>
+                      <p
+                        className={`text-xs mt-0.5 transition-colors duration-300 ${
+                          step.status === "active" ? "text-eko-blue" : "text-gray-500"
+                        }`}
+                      >
+                        {step.description}
+                        {step.status === "active" && (
+                          <span className="inline-flex ml-1.5">
+                            <span className="w-1 h-1 rounded-full bg-eko-blue animate-bounce" style={{ animationDelay: "0ms" }} />
+                            <span className="w-1 h-1 rounded-full bg-eko-blue animate-bounce ml-0.5" style={{ animationDelay: "150ms" }} />
+                            <span className="w-1 h-1 rounded-full bg-eko-blue animate-bounce ml-0.5" style={{ animationDelay: "300ms" }} />
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Global progress bar */}
+              <div className="pt-2">
+                <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-eko-blue to-eko-green transition-all duration-700 ease-out"
+                    style={{
+                      width: `${
+                        (pipelineSteps.filter((s) => s.status === "completed").length /
+                          pipelineSteps.length) *
+                        100
+                      }%`,
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between mt-2">
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+                    {pipelineSteps.filter((s) => s.status === "completed").length} de {pipelineSteps.length} pasos
+                  </span>
+                  {pipelineSteps.every((s) => s.status === "completed") && (
+                    <span className="text-[10px] text-eko-green font-medium animate-pulse">
+                      ¡Listo! Cerrando...
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer with lead score if available */}
+            <div className="px-6 py-3 border-t border-white/5 bg-white/[0.02]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-gray-500 uppercase">Status</span>
+                  <span className="text-xs text-gray-300 capitalize">{pipelineLead.status.replace("_", " ")}</span>
+                </div>
+                {pipelineLead.total_score > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-gray-500 uppercase">Score</span>
+                    <span className={`text-xs font-semibold ${
+                      pipelineLead.total_score >= 70 ? "text-eko-green" :
+                      pipelineLead.total_score >= 50 ? "text-gold" :
+                      pipelineLead.total_score >= 30 ? "text-orange-400" : "text-gray-500"
+                    }`}>
+                      {Math.round(pipelineLead.total_score)}/100
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
