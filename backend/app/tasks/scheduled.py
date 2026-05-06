@@ -9,11 +9,13 @@ from app.db.base import AsyncSessionLocal
 from app.models.workspace import Workspace, WorkspaceMember  # noqa: F401
 from app.models.user import User
 from app.models.lead import Lead, LeadStatus, Interaction
+from app.models.payment import Payment  # noqa: F401 - needed for Lead mapper resolution
 from app.models.campaign import Campaign, CampaignLead
 from app.models.sequence import EmailSequence, SequenceStep, SequenceEnrollment, SequenceStatus, SequenceStepType
 from app.agents.outreach.channels.email import EmailOutreach
 from app.agents.research.agent import ResearchAgent
 from app.services.paperclip import on_system_alert, on_email_sent, on_email_error
+from app.utils.ai_client import generate_embedding
 
 logger = logging.getLogger(__name__)
 
@@ -987,7 +989,8 @@ def run_lead_pipeline(self, lead_id: int):
     """Celery task: enrich lead and send initial outreach email."""
     logger.info(f"[Celery] Running lead pipeline for lead {lead_id}...")
     try:
-        result = asyncio.run(_run_lead_pipeline_async(lead_id))
+        loop = _get_worker_loop()
+        result = loop.run_until_complete(_run_lead_pipeline_async(lead_id))
         logger.info(f"[Celery] Lead pipeline complete for {lead_id}")
         return result
     except Exception as e:
