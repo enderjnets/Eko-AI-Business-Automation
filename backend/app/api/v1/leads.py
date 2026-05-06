@@ -11,8 +11,9 @@ from app.models.lead import Lead, LeadStatus, LeadSource, Interaction
 from app.models.user import User
 from app.models.workspace import Workspace, WorkspaceMember
 from app.models.sequence import EmailSequence, SequenceEnrollment, SequenceStatus
-from app.schemas.lead import LeadCreate, LeadUpdate, LeadResponse, LeadListResponse, DiscoveryRequest, LeadSearchRequest, PublicLeadCreate
+from app.schemas.lead import LeadCreate, LeadUpdate, LeadResponse, LeadPreviewResponse, LeadListResponse, DiscoveryRequest, LeadSearchRequest, PublicLeadCreate
 from app.agents.discovery.agent import DiscoveryAgent
+from app.agents.research.analyzers.website import WebsiteAnalyzer
 from app.agents.research.agent import ResearchAgent
 from app.agents.outreach.channels.email import EmailOutreach, EMAIL_TEMPLATES
 from app.services.paperclip import on_lead_status_change, on_system_alert
@@ -279,38 +280,113 @@ async def create_lead(
     db.add(lead)
     await db.commit()
     await db.refresh(lead)
+
+    # Queue background pipeline (enrichment + initial outreach)
     try:
-        agent = ResearchAgent()
-        enrichment = await agent.enrich(lead)
-        for field, value in enrichment.model_dump(exclude_unset=True).items():
-            setattr(lead, field, value)
-        if lead.urgency_score is not None and lead.fit_score is not None:
-            lead.total_score = (lead.urgency_score + lead.fit_score) / 2
-            lead.status = LeadStatus.SCORED
-        else:
-            lead.status = LeadStatus.ENRICHED
-        await db.commit()
-        await db.refresh(lead)
+        from app.tasks.scheduled import run_lead_pipeline
+        run_lead_pipeline.delay(lead.id)
+        logger.info(f"Queued lead pipeline for lead {lead.id}")
     except Exception as e:
-        logger.warning(f"Auto-enrichment failed for lead {lead.id}: {e}")
-    if lead.email:
-        try:
-            email = EmailOutreach()
-            subject = lead.email_subject_template or f"Quick question about {lead.business_name}"
-            body = lead.email_body_template or f"Hi {lead.business_name},\n\nI came across your business and wanted to reach out.\n\nBest regards"
-            await email.send(
-                to_email=lead.email,
-                subject=subject,
-                body=body,
-                lead_id=lead.id,
-                business_name=lead.business_name,
-            )
-            if lead.status not in [LeadStatus.CONTACTED, LeadStatus.ENGAGED, LeadStatus.MEETING_BOOKED]:
-                lead.status = LeadStatus.CONTACTED
-            await db.commit()
-        except Exception as e:
-            logger.warning(f"Auto-email failed for lead {lead.id}: {e}")
+        logger.warning(f"Failed to queue lead pipeline for lead {lead.id}: {e}")
+
     return lead
+
+
+
+
+@router.post("/preview", response_model=LeadPreviewResponse)
+async def preview_lead(
+    lead_data: LeadCreate,
+    current_user: User = Depends(get_current_user),
+):
+    """Preview lead creation: extract website data and compare with manual input."""
+    from app.schemas.lead import FieldDiscrepancy, LeadPreviewResponse
+
+    manual = {
+        "business_name": lead_data.business_name or "",
+        "email": lead_data.email or "",
+        "category": lead_data.category or "",
+        "phone": lead_data.phone or "",
+        "address": lead_data.address or "",
+        "city": lead_data.city or "",
+        "state": lead_data.state or "",
+    }
+
+    extracted = {
+        "business_name": "",
+        "email": "",
+        "category": "",
+        "phone": "",
+        "address": "",
+        "city": "",
+        "state": "",
+    }
+
+    website = lead_data.website
+    if website:
+        analyzer = WebsiteAnalyzer()
+        try:
+            data = await analyzer.analyze(website)
+            # business_name from title (strip suffixes like "| Home" or "- Denver, CO")
+            title = data.get("title", "")
+            extracted["business_name"] = _clean_website_title(title)
+            extracted["email"] = data.get("email_found") or ""
+            # category from first service or title keywords
+            services = data.get("services", [])
+            if services:
+                extracted["category"] = services[0]
+            extracted["phone"] = data.get("phone_found") or ""
+        except Exception as e:
+            logger.warning(f"Website analysis failed for preview: {e}")
+        finally:
+            try:
+                await analyzer.close()
+            except Exception:
+                pass
+
+    # Build discrepancies list
+    discrepancies = []
+    field_labels = {
+        "business_name": "Nombre del negocio",
+        "email": "Email",
+        "category": "Categoría",
+        "phone": "Teléfono",
+        "address": "Dirección",
+        "city": "Ciudad",
+        "state": "Estado",
+    }
+
+    for field, label in field_labels.items():
+        m_val = (manual.get(field) or "").strip()
+        e_val = (extracted.get(field) or "").strip()
+        if e_val and m_val.lower() != e_val.lower():
+            discrepancies.append(
+                FieldDiscrepancy(
+                    field=field,
+                    label=label,
+                    manual_value=m_val or None,
+                    extracted_value=e_val or None,
+                )
+            )
+
+    return LeadPreviewResponse(
+        manual=manual,
+        extracted=extracted,
+        discrepancies=discrepancies,
+        has_discrepancies=len(discrepancies) > 0,
+    )
+
+
+def _clean_website_title(title: str) -> str:
+    """Clean website title to extract business name."""
+    if not title:
+        return ""
+    # Remove common separators and suffixes
+    for sep in [" | ", " - ", " – ", " — ", " |", " -", " :: ", " : "]:
+        if sep in title:
+            title = title.split(sep)[0]
+            break
+    return title.strip()
 
 
 @router.post("/public", response_model=dict, status_code=201)

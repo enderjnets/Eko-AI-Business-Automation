@@ -137,6 +137,9 @@ export default function LeadsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [showDiscrepancyModal, setShowDiscrepancyModal] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [previewChoices, setPreviewChoices] = useState<Record<string, "manual" | "extracted">>({});
   const [newLead, setNewLead] = useState({
     business_name: "",
     email: "",
@@ -460,21 +463,64 @@ export default function LeadsPage() {
       setCreateError("El nombre del negocio es obligatorio");
       return;
     }
+    // Skip preview if no website provided
+    if (!newLead.website.trim()) {
+      await doCreateLead(newLead);
+      return;
+    }
     setCreateLoading(true);
     setCreateError(null);
     try {
-      await leadsApi.create({
+      const preview = await leadsApi.preview({
         business_name: newLead.business_name.trim(),
         email: newLead.email.trim() || undefined,
         phone: newLead.phone.trim() || undefined,
-        website: newLead.website.trim() || undefined,
+        website: newLead.website.trim(),
         address: newLead.address.trim() || undefined,
         city: newLead.city.trim() || undefined,
         state: newLead.state.trim() || undefined,
         category: newLead.category.trim() || undefined,
         notes: newLead.notes.trim() || undefined,
       });
+      if (!preview.data.has_discrepancies) {
+        await doCreateLead(newLead);
+      } else {
+        setPreviewData(preview.data);
+        // Default choices: prefer extracted for empty manual values, manual otherwise
+        const defaults: Record<string, "manual" | "extracted"> = {};
+        preview.data.discrepancies.forEach((d: any) => {
+          defaults[d.field] = d.manual_value ? "manual" : "extracted";
+        });
+        setPreviewChoices(defaults);
+        setShowDiscrepancyModal(true);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setCreateError(err.response?.data?.detail || "Error verificando datos web");
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  const doCreateLead = async (data: typeof newLead) => {
+    setCreateLoading(true);
+    setCreateError(null);
+    try {
+      await leadsApi.create({
+        business_name: data.business_name.trim(),
+        email: data.email.trim() || undefined,
+        phone: data.phone.trim() || undefined,
+        website: data.website.trim() || undefined,
+        address: data.address.trim() || undefined,
+        city: data.city.trim() || undefined,
+        state: data.state.trim() || undefined,
+        category: data.category.trim() || undefined,
+        notes: data.notes.trim() || undefined,
+      });
       setShowCreateModal(false);
+      setShowDiscrepancyModal(false);
+      setPreviewData(null);
+      setPreviewChoices({});
       setNewLead({
         business_name: "",
         email: "",
@@ -493,6 +539,18 @@ export default function LeadsPage() {
     } finally {
       setCreateLoading(false);
     }
+  };
+
+  const handleConfirmDiscrepancies = async () => {
+    if (!previewData) return;
+    const final = { ...newLead };
+    previewData.discrepancies.forEach((d: any) => {
+      const choice = previewChoices[d.field];
+      if (choice === "extracted" && d.extracted_value) {
+        (final as any)[d.field] = d.extracted_value;
+      }
+    });
+    await doCreateLead(final);
   };
 
   const getScoreColor = (score: number) => {
@@ -1296,6 +1354,105 @@ export default function LeadsPage() {
                 className="rounded-lg border border-white/10 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 transition-colors"
               >
                 Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Discrepancy Review Modal */}
+      {showDiscrepancyModal && previewData && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-xl border border-white/10 bg-eko-graphite shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+              <h3 className="font-medium text-sm">Revisar datos de la web</h3>
+              <button
+                onClick={() => setShowDiscrepancyModal(false)}
+                className="p-1 rounded-lg hover:bg-white/10 text-gray-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-5 py-4 space-y-4">
+              <p className="text-xs text-gray-400">
+                Encontramos información diferente en{" "}
+                <span className="text-eko-blue">{newLead.website}</span>.
+                Selecciona qué datos quedarse:
+              </p>
+
+              {previewData.discrepancies.map((d: any) => (
+                <div key={d.field} className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-2">
+                  <label className="text-xs font-medium text-gray-300">{d.label}</label>
+
+                  <div className="space-y-1.5">
+                    <button
+                      onClick={() =>
+                        setPreviewChoices((prev) => ({ ...prev, [d.field]: "manual" }))
+                      }
+                      className={`w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                        previewChoices[d.field] === "manual"
+                          ? "border-eko-blue bg-eko-blue/10 text-white"
+                          : "border-white/10 text-gray-400 hover:bg-white/5"
+                      }`}
+                    >
+                      <div
+                        className={`w-3.5 h-3.5 rounded-full border ${
+                          previewChoices[d.field] === "manual"
+                            ? "border-eko-blue bg-eko-blue"
+                            : "border-gray-500"
+                        }`}
+                      />
+                      <span className="flex-1 text-left truncate">
+                        {d.manual_value || "(vacío)"}
+                      </span>
+                      <span className="text-[10px] text-gray-500 uppercase">manual</span>
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        setPreviewChoices((prev) => ({ ...prev, [d.field]: "extracted" }))
+                      }
+                      className={`w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                        previewChoices[d.field] === "extracted"
+                          ? "border-eko-blue bg-eko-blue/10 text-white"
+                          : "border-white/10 text-gray-400 hover:bg-white/5"
+                      }`}
+                    >
+                      <div
+                        className={`w-3.5 h-3.5 rounded-full border ${
+                          previewChoices[d.field] === "extracted"
+                            ? "border-eko-blue bg-eko-blue"
+                            : "border-gray-500"
+                        }`}
+                      />
+                      <span className="flex-1 text-left truncate">
+                        {d.extracted_value || "(vacío)"}
+                      </span>
+                      <span className="text-[10px] text-gray-500 uppercase">de la web</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 px-5 py-4 border-t border-white/5">
+              <button
+                onClick={handleConfirmDiscrepancies}
+                disabled={createLoading}
+                className="flex-1 rounded-lg bg-eko-blue py-2.5 text-sm font-medium hover:bg-eko-blue-dark disabled:opacity-50 transition-colors"
+              >
+                {createLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                ) : (
+                  "Confirmar y Guardar Lead"
+                )}
+              </button>
+              <button
+                onClick={() => setShowDiscrepancyModal(false)}
+                className="rounded-lg border border-white/10 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 transition-colors"
+              >
+                Volver
               </button>
             </div>
           </div>

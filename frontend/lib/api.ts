@@ -61,6 +61,7 @@ export const leadsApi = {
     api.get("/leads", { params }),
   get: (id: number) => api.get(`/leads/${id}`),
   create: (data: any) => api.post("/leads", data),
+  preview: (data: any) => api.post("/leads/preview", data),
   update: (id: number, data: any) => api.patch(`/leads/${id}`, data),
   delete: (id: number) => api.delete(`/leads/${id}`),
   enrich: (id: number) => api.post(`/leads/${id}/enrich`),

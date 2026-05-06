@@ -143,3 +143,21 @@ class PublicLeadCreate(BaseModel):
     phone: Optional[str] = None
     category: Optional[str] = None
     notes: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Lead preview / web extraction comparison
+# ---------------------------------------------------------------------------
+
+class FieldDiscrepancy(BaseModel):
+    field: str
+    label: str
+    manual_value: Optional[str] = None
+    extracted_value: Optional[str] = None
+
+
+class LeadPreviewResponse(BaseModel):
+    manual: dict
+    extracted: dict
+    discrepancies: List[FieldDiscrepancy]
+    has_discrepancies: bool

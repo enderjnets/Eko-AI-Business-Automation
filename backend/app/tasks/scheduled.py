@@ -918,3 +918,68 @@ async def _enrich_single_lead_async(lead_id: int):
             logger.info(f"Enriched lead {lead_id} '{lead.business_name}' → {lead.status.value}")
         except Exception as e:
             logger.warning(f"Failed to enrich lead {lead_id}: {e}")
+
+
+async def _run_lead_pipeline_async(lead_id: int):
+    """Run enrichment + initial outreach for a single lead."""
+    async with AsyncSessionLocal() as db:
+        from sqlalchemy import select
+        result = await db.execute(select(Lead).where(Lead.id == lead_id))
+        lead = result.scalar_one_or_none()
+        if not lead:
+            logger.warning(f"Lead {lead_id} not found for pipeline")
+            return
+        if lead.status != LeadStatus.DISCOVERED:
+            logger.info(f"Lead {lead_id} already processed (status={lead.status})")
+            return
+
+        # Step 1: Enrichment
+        try:
+            agent = ResearchAgent()
+            enrichment = await agent.enrich(lead)
+            for field, value in enrichment.model_dump(exclude_unset=True).items():
+                setattr(lead, field, value)
+            if lead.urgency_score is not None and lead.fit_score is not None:
+                lead.total_score = (lead.urgency_score + lead.fit_score) / 2
+                lead.status = LeadStatus.SCORED
+            else:
+                lead.status = LeadStatus.ENRICHED
+            await db.commit()
+            await db.refresh(lead)
+            logger.info(f"Enriched lead {lead_id} -> {lead.status.value}")
+        except Exception as e:
+            logger.warning(f"Pipeline enrichment failed for lead {lead_id}: {e}")
+            return
+
+        # Step 2: Initial outreach email
+        if lead.email:
+            try:
+                email = EmailOutreach()
+                subject = f"Quick question about {lead.business_name}"
+                body = f"Hi {lead.business_name},\n\nI came across your business and wanted to reach out.\n\nBest regards"
+                await email.send(
+                    to_email=lead.email,
+                    subject=subject,
+                    body=body,
+                    lead_id=lead.id,
+                    business_name=lead.business_name,
+                )
+                if lead.status not in [LeadStatus.CONTACTED, LeadStatus.ENGAGED, LeadStatus.MEETING_BOOKED]:
+                    lead.status = LeadStatus.CONTACTED
+                await db.commit()
+                logger.info(f"Sent initial outreach to lead {lead_id}")
+            except Exception as e:
+                logger.warning(f"Pipeline email failed for lead {lead_id}: {e}")
+
+
+@celery_app.task(bind=True, max_retries=2)
+def run_lead_pipeline(self, lead_id: int):
+    """Celery task: enrich lead and send initial outreach email."""
+    logger.info(f"[Celery] Running lead pipeline for lead {lead_id}...")
+    try:
+        result = asyncio.run(_run_lead_pipeline_async(lead_id))
+        logger.info(f"[Celery] Lead pipeline complete for {lead_id}")
+        return result
+    except Exception as e:
+        logger.error(f"[Celery] Lead pipeline failed for {lead_id}: {e}")
+        raise self.retry(exc=e, countdown=60)
