@@ -673,13 +673,21 @@ async def search_leads(
 
     # Build query with cosine distance using pgvector
     distance_expr = Lead.embedding.op("<=>")(query_embedding)
-    query = (
+    search_term = request.query.strip().lower()
+    
+    # Semantic search + exact name fallback (UNION)
+    semantic_query = (
         select(Lead, distance_expr.label("distance"))
         .where(Lead.embedding.isnot(None))
-        .where(distance_expr < 0.5)  # Filter in SQL, not Python
-        .order_by(distance_expr)
-        .limit(request.limit)
+        .where(distance_expr < 0.5)
     )
+    
+    exact_query = (
+        select(Lead, func.cast(0.0, Float).label("distance"))
+        .where(Lead.business_name.ilike(f"%{search_term}%"))
+    )
+    
+    query = semantic_query.union(exact_query).order_by("distance").limit(request.limit)
 
     # Ownership filter
     if not current_user.is_superuser and current_user.role.value != "admin":
