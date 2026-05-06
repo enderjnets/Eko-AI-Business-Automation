@@ -947,6 +947,16 @@ async def _run_lead_pipeline_async(lead_id: int):
             await db.commit()
             await db.refresh(lead)
             logger.info(f"Enriched lead {lead_id} -> {lead.status.value}")
+
+            # Generate/update embedding with enriched data
+            try:
+                embed_text = f"{lead.business_name or ''} {lead.category or ''} {lead.city or ''} {lead.state or ''} {', '.join(lead.services or [])} {lead.about_text or ''}".strip()
+                if embed_text:
+                    lead.embedding = await generate_embedding(embed_text)
+                    await db.commit()
+                    logger.info(f"Generated embedding for lead {lead_id}")
+            except Exception as e:
+                logger.warning(f"Failed to generate embedding for lead {lead_id}: {e}")
         except Exception as e:
             logger.warning(f"Pipeline enrichment failed for lead {lead_id}: {e}")
             return

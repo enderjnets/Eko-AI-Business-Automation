@@ -205,6 +205,7 @@ async def autocomplete_lead_names(
     limit: int = Query(10, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    tenant: TenantContext = Depends(get_tenant_context_optional),
 ):
     """Return matching business names for autocomplete."""
     query = (
@@ -213,11 +214,15 @@ async def autocomplete_lead_names(
         .distinct()
         .limit(limit)
     )
-    # Non-admin users only see their own leads
-    if not current_user.is_superuser and current_user.role.value != "admin":
-        query = query.where(
-            (Lead.owner_id == current_user.id) | (Lead.assigned_to == current_user.email)
-        )
+    # Apply workspace filter (RLS-compatible)
+    if tenant.workspace_id:
+        query = query.where(Lead.workspace_id == tenant.workspace_id)
+    else:
+        # Fallback: non-admin users only see their own leads
+        if not current_user.is_superuser and current_user.role.value != "admin":
+            query = query.where(
+                (Lead.owner_id == current_user.id) | (Lead.assigned_to == current_user.email)
+            )
 
     result = await db.execute(query)
     return list(result.scalars().all())
@@ -280,6 +285,16 @@ async def create_lead(
     db.add(lead)
     await db.commit()
     await db.refresh(lead)
+
+    # Generate embedding for semantic search
+    try:
+        embed_text = f"{lead.business_name} {lead.category or ''} {lead.city or ''} {lead.state or ''}".strip()
+        if embed_text:
+            lead.embedding = await generate_embedding(embed_text)
+            await db.commit()
+            logger.info(f"Generated embedding for lead {lead.id}")
+    except Exception as e:
+        logger.warning(f"Failed to generate embedding for lead {lead.id}: {e}")
 
     # Queue background pipeline (enrichment + initial outreach)
     try:
