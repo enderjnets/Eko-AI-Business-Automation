@@ -130,7 +130,7 @@ async def _process_follow_ups_async():
                     subject=response.get("subject", "Follow-up"),
                     content=response.get("body", ""),
                     email_status="sent",
-                    email_message_id=response.get("id"),
+                    email_message_id=response.get("id") or "",
                     meta={
                         "auto_follow_up": True,
                         "follow_up_number": follow_up_count + 1,
@@ -269,7 +269,7 @@ async def _execute_sequences_async():
                             subject=response.get("subject", ""),
                             content=response.get("body", body or ""),
                             email_status="sent",
-                            email_message_id=response.get("id"),
+                            email_message_id=response.get("id") or "",
                             meta={
                                 "sequence_id": seq.id,
                                 "sequence_name": seq.name,
@@ -1036,6 +1036,7 @@ async def _run_lead_pipeline_async(lead_id: int):
                 await db.commit()
 
                 # Record outbound interaction
+                email_message_id = res.get("id") or ""  # Ensure string, never None
                 try:
                     interaction = Interaction(
                         lead_id=lead.id,
@@ -1044,13 +1045,16 @@ async def _run_lead_pipeline_async(lead_id: int):
                         subject=subject,
                         content=body,
                         email_status="sent",
-                        email_message_id=res.get("id", ""),
+                        email_message_id=email_message_id,
                         meta={"auto_outreach": True, "source": "pipeline"},
                     )
                     db.add(interaction)
+                    await db.flush()  # Flush to catch DB errors early
                     await db.commit()
+                    logger.info(f"Recorded email interaction for lead {lead_id}: subject='{subject}', message_id='{email_message_id}'")
                 except Exception as ie:
-                    logger.warning(f"Failed to record interaction for lead {lead_id}: {ie}")
+                    logger.error(f"Failed to record interaction for lead {lead_id}: {ie}")
+                    await db.rollback()  # Rollback on error to keep session clean
 
                 logger.info(f"Sent initial outreach to lead {lead_id}")
             except Exception as e:

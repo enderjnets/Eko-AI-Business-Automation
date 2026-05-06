@@ -22,6 +22,7 @@ import {
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { leadsApi, phoneCallsApi } from "@/lib/api";
+import { geocodeAddress } from "@/lib/geocoding";
 
 interface PipelineStep {
   id: string;
@@ -86,21 +87,6 @@ function haversineKm(lat1: number, lng1: number, lat2?: number, lng2?: number): 
   const clampedA = Math.min(1.0, Math.max(0.0, a));
   const c = 2 * Math.atan2(Math.sqrt(clampedA), Math.sqrt(1 - clampedA));
   return R * c;
-}
-
-async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
-  if (!address.trim()) return null;
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
-    const res = await fetch(url, { headers: { "User-Agent": "EkoAI-LeadManager/1.0" } });
-    const data = await res.json();
-    if (data && data.length > 0) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-    }
-  } catch (err) {
-    console.error("Geocoding failed:", err);
-  }
-  return null;
 }
 
 export default function LeadsPage() {
@@ -1452,24 +1438,24 @@ export default function LeadsPage() {
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none resize-none"
                 />
               </div>
-            </form>
 
-            <div className="flex items-center gap-2 px-5 py-4 border-t border-white/5">
-              <button
-                type="submit"
-                onClick={handleCreateLead}
-                disabled={createLoading}
-                className="flex-1 rounded-lg bg-eko-blue py-2.5 text-sm font-medium hover:bg-eko-blue-dark disabled:opacity-50 transition-colors"
-              >
-                {createLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Guardar Lead"}
-              </button>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="rounded-lg border border-white/10 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 transition-colors"
-              >
-                Cancelar
-              </button>
-            </div>
+              <div className="flex items-center gap-2 py-4 border-t border-white/5">
+                <button
+                  type="submit"
+                  disabled={createLoading}
+                  className="flex-1 rounded-lg bg-eko-blue py-2.5 text-sm font-medium hover:bg-eko-blue-dark disabled:opacity-50 transition-colors"
+                >
+                  {createLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Guardar Lead"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="rounded-lg border border-white/10 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
