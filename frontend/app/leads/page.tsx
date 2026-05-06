@@ -511,7 +511,7 @@ export default function LeadsPage() {
         // Default choices: prefer extracted for empty manual values, manual otherwise
         const defaults: Record<string, "manual" | "extracted"> = {};
         preview.data.discrepancies.forEach((d: any) => {
-          defaults[d.field] = d.manual_value ? "manual" : "extracted";
+          defaults[d.field] = d.extracted_value ? "manual" : "manual";
         });
         setPreviewChoices(defaults);
         setShowDiscrepancyModal(true);

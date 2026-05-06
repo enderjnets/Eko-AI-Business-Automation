@@ -145,6 +145,13 @@ class WebsiteAnalyzer:
         if not email_found:
             email_found = await self._try_contact_page(url)
 
+        # Try to find phone on page
+        phone_found = self._extract_phone(response.text, soup)
+
+        # If no phone found, try contact page
+        if not phone_found:
+            phone_found = await self._try_contact_page_for_phone(url)
+
         # Extract services offered
         services = self._extract_services(soup)
 
@@ -190,6 +197,7 @@ class WebsiteAnalyzer:
             "has_contact_form": has_contact_form,
             "social_links": social_links,
             "email_found": email_found,
+            "phone_found": phone_found,
             "services": services,
             "pricing_info": pricing_info,
             "hours": hours,
@@ -288,6 +296,69 @@ class WebsiteAnalyzer:
                     email = self._extract_emails(resp.text, soup)
                     if email:
                         return email
+            except Exception:
+                continue
+        return None
+
+    def _extract_phone(self, text: str, soup: BeautifulSoup = None) -> Optional[str]:
+        """Extract the most likely business phone from page text, tel: links, and schema.org."""
+        # 1. tel: links (most reliable)
+        if soup:
+            for a in soup.find_all("a", href=True):
+                href = a["href"]
+                if href.startswith("tel:"):
+                    phone = href.replace("tel:", "").strip().replace("-", "").replace(".", "").replace("(", "").replace(")", "").replace(" ", "")
+                    if len(phone) >= 10:
+                        return phone
+
+            # 2. Schema.org JSON-LD
+            import json as _json
+            for script in soup.find_all("script", type="application/ld+json"):
+                try:
+                    ld = _json.loads(script.string or "{}")
+                    phones = []
+                    def _find_phones(obj):
+                        if isinstance(obj, dict):
+                            for k, v in obj.items():
+                                if k.lower() in ("telephone", "phone", "fax") and isinstance(v, str) and len(v) >= 10:
+                                    phones.append(v)
+                                elif isinstance(v, (dict, list)):
+                                    _find_phones(v)
+                        elif isinstance(obj, list):
+                            for item in obj:
+                                _find_phones(item)
+                    _find_phones(ld)
+                    if phones:
+                        return phones[0].replace("-", "").replace(".", "").replace("(", "").replace(")", "").replace(" ", "").replace("+", "")
+                except Exception:
+                    pass
+
+        # 3. Regex patterns for US phone numbers
+        patterns = [
+            r"\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})",
+            r"([0-9]{3})[.-]([0-9]{3})[.-]([0-9]{4})",
+        ]
+        for pattern in patterns:
+            matches = re.findall(pattern, text)
+            if matches:
+                digits = "".join(matches[0])
+                if len(digits) == 10:
+                    return digits
+        return None
+
+    async def _try_contact_page_for_phone(self, base_url: str) -> Optional[str]:
+        """Try common contact page URLs to find a phone number."""
+        from urllib.parse import urljoin
+        contact_paths = ["/contact", "/contact-us", "/about", "/about-us"]
+        for path in contact_paths:
+            try:
+                url = urljoin(base_url, path)
+                resp = await self.client.get(url)
+                if resp.status_code == 200:
+                    soup = BeautifulSoup(resp.text, "html.parser")
+                    phone = self._extract_phone(resp.text, soup)
+                    if phone:
+                        return phone
             except Exception:
                 continue
         return None

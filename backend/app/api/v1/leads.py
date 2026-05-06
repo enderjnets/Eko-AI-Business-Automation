@@ -363,11 +363,11 @@ async def preview_lead(
             title = data.get("title", "")
             extracted["business_name"] = _clean_website_title(title)
             extracted["email"] = data.get("email_found") or ""
+            extracted["phone"] = data.get("phone_found") or ""
             # category from first service or title keywords
             services = data.get("services", [])
             if services:
                 extracted["category"] = services[0]
-            extracted["phone"] = data.get("phone_found") or ""
         except Exception as e:
             logger.warning(f"Website analysis failed for preview: {e}")
         finally:
@@ -398,6 +398,16 @@ async def preview_lead(
                     label=label,
                     manual_value=m_val or None,
                     extracted_value=e_val or None,
+                )
+            )
+        elif m_val and not e_val:
+            # Web page does not have this data — warn user
+            discrepancies.append(
+                FieldDiscrepancy(
+                    field=field,
+                    label=label,
+                    manual_value=m_val or None,
+                    extracted_value=None,
                 )
             )
 
