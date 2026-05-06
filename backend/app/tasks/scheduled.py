@@ -969,7 +969,7 @@ async def _run_lead_pipeline_async(lead_id: int):
                 email = EmailOutreach()
                 subject = f"Quick question about {lead.business_name}"
                 body = f"Hi {lead.business_name},\n\nI came across your business and wanted to reach out.\n\nBest regards"
-                await email.send(
+                res = await email.send(
                     to_email=lead.email,
                     subject=subject,
                     body=body,
@@ -979,6 +979,24 @@ async def _run_lead_pipeline_async(lead_id: int):
                 if lead.status not in [LeadStatus.CONTACTED, LeadStatus.ENGAGED, LeadStatus.MEETING_BOOKED]:
                     lead.status = LeadStatus.CONTACTED
                 await db.commit()
+
+                # Record outbound interaction
+                try:
+                    interaction = Interaction(
+                        lead_id=lead.id,
+                        interaction_type="email",
+                        direction="outbound",
+                        subject=subject,
+                        content=body,
+                        email_status="sent",
+                        email_message_id=res.get("id", ""),
+                        meta={"auto_outreach": True, "source": "pipeline"},
+                    )
+                    db.add(interaction)
+                    await db.commit()
+                except Exception as ie:
+                    logger.warning(f"Failed to record interaction for lead {lead_id}: {ie}")
+
                 logger.info(f"Sent initial outreach to lead {lead_id}")
             except Exception as e:
                 logger.warning(f"Pipeline email failed for lead {lead_id}: {e}")
