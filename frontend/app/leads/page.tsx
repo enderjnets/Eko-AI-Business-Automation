@@ -18,6 +18,7 @@ import {
   Send,
   Plus,
   CheckCircle2,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -119,6 +120,7 @@ export default function LeadsPage() {
   const [selectedLeads, setSelectedLeads] = useState<Set<number>>(new Set());
   const [bulkContacting, setBulkContacting] = useState(false);
   const [bulkContactResult, setBulkContactResult] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ ids: number[]; name?: string } | null>(null);
 
   // Call modal
   const [callModalLead, setCallModalLead] = useState<Lead | null>(null);
@@ -445,6 +447,34 @@ export default function LeadsPage() {
       setTimeout(() => setBulkContactResult(null), 5000);
     } finally {
       setBulkContacting(false);
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedLeads.size === 0) return;
+    setDeleteConfirm({ ids: Array.from(selectedLeads) });
+  };
+
+  const handleDeleteSingle = (lead: Lead) => {
+    setDeleteConfirm({ ids: [lead.id], name: lead.business_name });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    try {
+      await Promise.all(
+        deleteConfirm.ids.map((id) => leadsApi.delete(id).catch((err: any) => {
+          console.error(`Error eliminando lead ${id}:`, err);
+          return null;
+        }))
+      );
+      setSelectedLeads(new Set());
+      loadLeads();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.detail || "Error eliminando leads");
+    } finally {
+      setDeleteConfirm(null);
     }
   };
 
@@ -1024,18 +1054,27 @@ export default function LeadsPage() {
               </button>
             )}
             {selectedLeads.size > 0 && (
-              <button
-                onClick={handleBulkContact}
-                disabled={bulkContacting}
-                className="flex items-center gap-2 rounded-lg bg-eko-blue/20 border border-eko-blue/30 px-4 py-2 text-sm font-medium text-eko-blue hover:bg-eko-blue/30 disabled:opacity-50 transition-colors"
-              >
-                {bulkContacting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-                Enviar email a {selectedLeads.size} seleccionados
-              </button>
+              <>
+                <button
+                  onClick={handleBulkContact}
+                  disabled={bulkContacting}
+                  className="flex items-center gap-2 rounded-lg bg-eko-blue/20 border border-eko-blue/30 px-4 py-2 text-sm font-medium text-eko-blue hover:bg-eko-blue/30 disabled:opacity-50 transition-colors"
+                >
+                  {bulkContacting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  Enviar email a {selectedLeads.size} seleccionados
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex items-center gap-2 rounded-lg bg-red-500/20 border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/30 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar {selectedLeads.size} seleccionados
+                </button>
+              </>
             )}
             {bulkContactResult && (
               <span className="text-xs text-gray-400 animate-in fade-in">{bulkContactResult}</span>
@@ -1258,6 +1297,13 @@ export default function LeadsPage() {
                             Llamar
                           </button>
                         )}
+                        <button
+                          onClick={() => handleDeleteSingle(lead)}
+                          className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Eliminar
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -1292,6 +1338,45 @@ export default function LeadsPage() {
           </div>
         )}
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-xl border border-white/10 bg-eko-graphite shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+              <h3 className="font-medium text-sm">¿Eliminar lead{deleteConfirm.ids.length > 1 ? "s" : ""}?</h3>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="p-1 rounded-lg hover:bg-white/10 text-gray-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-sm text-gray-400">
+                {deleteConfirm.name
+                  ? `Se eliminará permanentemente: "${deleteConfirm.name}"`
+                  : `Se eliminarán permanentemente ${deleteConfirm.ids.length} leads seleccionados.`}
+              </p>
+              <p className="text-xs text-gray-500 mt-2">Esta acción no se puede deshacer.</p>
+            </div>
+            <div className="flex items-center gap-2 px-5 py-4 border-t border-white/5">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-white/10 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 rounded-lg bg-red-500/20 border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/30 transition-colors"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Call Log Modal */}
       {callModalLead && (
