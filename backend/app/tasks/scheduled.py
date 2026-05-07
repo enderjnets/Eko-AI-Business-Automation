@@ -16,6 +16,7 @@ from app.agents.outreach.channels.email import EmailOutreach
 from app.agents.research.agent import ResearchAgent
 from app.services.paperclip import on_system_alert, on_email_sent, on_email_error
 from app.utils.ai_client import generate_embedding
+from app.utils.geocoding import geocode_address as _geocode_address
 
 logger = logging.getLogger(__name__)
 
@@ -25,36 +26,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-
-# ---------------------------------------------------------------------------
-# Geocoding helper
-# ---------------------------------------------------------------------------
-
-async def _geocode_address(address: str, city: str = "", state: str = "") -> dict | None:
-    """Geocode an address using Nominatim (OpenStreetMap)."""
-    import httpx
-    
-    query = f"{address}, {city}, {state}".strip(", ")
-    if not query:
-        return None
-    
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(
-                "https://nominatim.openstreetmap.org/search",
-                params={"q": query, "format": "json", "limit": 1},
-                headers={"User-Agent": "Eko-AI-CRM/1.0"},
-            )
-            response.raise_for_status()
-            data = response.json()
-            if data:
-                return {
-                    "lat": float(data[0]["lat"]),
-                    "lng": float(data[0]["lon"]),
-                }
-    except Exception as e:
-        logger.warning(f'Geocoding failed for "{query}": {e}')
-    return None
 
 
 async def _process_follow_ups_async():
@@ -130,7 +101,7 @@ async def _process_follow_ups_async():
                     subject=response.get("subject", "Follow-up"),
                     content=response.get("body", ""),
                     email_status="sent",
-                    email_message_id=response.get("id") or "",
+                    email_message_id=response.get("id"),
                     meta={
                         "auto_follow_up": True,
                         "follow_up_number": follow_up_count + 1,
@@ -269,7 +240,7 @@ async def _execute_sequences_async():
                             subject=response.get("subject", ""),
                             content=response.get("body", body or ""),
                             email_status="sent",
-                            email_message_id=response.get("id") or "",
+                            email_message_id=response.get("id"),
                             meta={
                                 "sequence_id": seq.id,
                                 "sequence_name": seq.name,
@@ -812,10 +783,14 @@ def backup_processed_leads():
         raise
 
 
-# Persistent event loop per worker process (solo pool) to avoid
-# "Future attached to a different loop" when asyncpg connections are reused.
-
-
+def _run_async_task(coro):
+    """Run an async coroutine inside a Celery task with a fresh event loop.
+    Calls recreate_engine() so SQLAlchemy asyncpg connections bind to the
+    correct loop and avoid 'Event loop is closed' errors.
+    """
+    from app.db.base import recreate_engine
+    recreate_engine()
+    return asyncio.run(coro)
 
 
 @celery_app.task
@@ -847,7 +822,7 @@ def remind_scheduled_calls():
 @celery_app.task
 def enrich_single_lead(lead_id: int):
     """Enrich a single lead by ID."""
-    asyncio.run(_enrich_single_lead_async(lead_id))
+    _run_async_task(_enrich_single_lead_async(lead_id))
 
 
 @celery_app.task
@@ -929,7 +904,13 @@ async def _enrich_single_lead_async(lead_id: int):
             # Still try geocoding if missing coordinates
             if lead.address and (lead.latitude is None or lead.longitude is None):
                 try:
-                    coords = await _geocode_address(lead.address, lead.city or "", lead.state or "")
+                    coords = await _geocode_address(
+                        address=lead.address,
+                        city=lead.city or "",
+                        state=lead.state or "",
+                        zip_code=lead.zip_code or "",
+                        lead_id=lead_id,
+                    )
                     if coords:
                         lead.latitude = coords["lat"]
                         lead.longitude = coords["lng"]
@@ -967,51 +948,61 @@ async def _run_lead_pipeline_async(lead_id: int):
         if not lead:
             logger.warning(f"Lead {lead_id} not found for pipeline")
             return
-        if lead.status != LeadStatus.DISCOVERED:
-            logger.info(f"Lead {lead_id} already processed (status={lead.status})")
-            # Still try geocoding if missing coordinates
-            if lead.address and (lead.latitude is None or lead.longitude is None):
-                try:
-                    coords = await _geocode_address(lead.address, lead.city or "", lead.state or "")
-                    if coords:
-                        lead.latitude = coords["lat"]
-                        lead.longitude = coords["lng"]
-                        await db.commit()
-                        logger.info(f"Geocoded lead {lead_id}: {coords['lat']}, {coords['lng']}")
-                except Exception as e:
-                    logger.warning(f"Geocoding failed for lead {lead_id}: {e}")
-            return
-
-        # Step 1: Enrichment
-        try:
-            agent = ResearchAgent()
-            enrichment = await agent.enrich(lead)
-            for field, value in enrichment.model_dump(exclude_unset=True).items():
-                setattr(lead, field, value)
-            if lead.urgency_score is not None and lead.fit_score is not None:
-                lead.total_score = (lead.urgency_score + lead.fit_score) / 2
-                lead.status = LeadStatus.SCORED
-            else:
-                lead.status = LeadStatus.ENRICHED
-            await db.commit()
-            await db.refresh(lead)
-            logger.info(f"Enriched lead {lead_id} -> {lead.status.value}")
-
-            # Generate/update embedding with enriched data
+        
+        # Geocode if missing coordinates
+        if lead.address and (lead.latitude is None or lead.longitude is None):
             try:
-                embed_text = f"{lead.business_name or ''} {lead.category or ''} {lead.city or ''} {lead.state or ''} {', '.join(lead.services or [])} {lead.about_text or ''}".strip()
-                if embed_text:
-                    lead.embedding = await generate_embedding(embed_text)
+                coords = await _geocode_address(
+                    address=lead.address,
+                    city=lead.city or "",
+                    state=lead.state or "",
+                    zip_code=lead.zip_code or "",
+                    lead_id=lead_id,
+                )
+                if coords:
+                    lead.latitude = coords["lat"]
+                    lead.longitude = coords["lng"]
                     await db.commit()
-                    logger.info(f"Generated embedding for lead {lead_id}")
+                    logger.info(f"Geocoded lead {lead_id}: {coords['lat']}, {coords['lng']}")
             except Exception as e:
-                logger.warning(f"Failed to generate embedding for lead {lead_id}: {e}")
-        except Exception as e:
-            logger.warning(f"Pipeline enrichment failed for lead {lead_id}: {e}")
+                logger.warning(f"Geocoding failed for lead {lead_id}: {e}")
+
+        # Skip if already contacted or beyond
+        if lead.status in [LeadStatus.CONTACTED, LeadStatus.ENGAGED, LeadStatus.MEETING_BOOKED, LeadStatus.PROPOSAL_SENT, LeadStatus.NEGOTIATING, LeadStatus.CLOSED_WON, LeadStatus.CLOSED_LOST]:
+            logger.info(f"Lead {lead_id} already contacted (status={lead.status})")
             return
 
-        # Step 2: Initial outreach email
-        if lead.email:
+        # Step 1: Enrichment (only if still discovered)
+        if lead.status == LeadStatus.DISCOVERED:
+            try:
+                agent = ResearchAgent()
+                enrichment = await agent.enrich(lead)
+                for field, value in enrichment.model_dump(exclude_unset=True).items():
+                    setattr(lead, field, value)
+                if lead.urgency_score is not None and lead.fit_score is not None:
+                    lead.total_score = (lead.urgency_score + lead.fit_score) / 2
+                    lead.status = LeadStatus.SCORED
+                else:
+                    lead.status = LeadStatus.ENRICHED
+                await db.commit()
+                await db.refresh(lead)
+                logger.info(f"Enriched lead {lead_id} -> {lead.status.value}")
+
+                # Generate/update embedding with enriched data
+                try:
+                    embed_text = f"{lead.business_name or ''} {lead.category or ''} {lead.city or ''} {lead.state or ''} {', '.join(lead.services or [])} {lead.about_text or ''}".strip()
+                    if embed_text:
+                        lead.embedding = await generate_embedding(embed_text)
+                        await db.commit()
+                        logger.info(f"Generated embedding for lead {lead_id}")
+                except Exception as e:
+                    logger.warning(f"Failed to generate embedding for lead {lead_id}: {e}")
+            except Exception as e:
+                logger.warning(f"Pipeline enrichment failed for lead {lead_id}: {e}")
+                return
+
+        # Step 2: Initial outreach email (run if enriched, scored, or discovered)
+        if lead.email and lead.status in [LeadStatus.DISCOVERED, LeadStatus.ENRICHED, LeadStatus.SCORED]:
             try:
                 email = EmailOutreach()
                 subject = f"Quick question about {lead.business_name}"
@@ -1028,8 +1019,8 @@ async def _run_lead_pipeline_async(lead_id: int):
                 await db.commit()
 
                 # Record outbound interaction
-                email_message_id = res.get("id") or ""  # Ensure string, never None
                 try:
+                    msg_id = res.get("id") or ""
                     interaction = Interaction(
                         lead_id=lead.id,
                         interaction_type="email",
@@ -1037,16 +1028,15 @@ async def _run_lead_pipeline_async(lead_id: int):
                         subject=subject,
                         content=body,
                         email_status="sent",
-                        email_message_id=email_message_id,
+                        email_message_id=msg_id,
                         meta={"auto_outreach": True, "source": "pipeline"},
                     )
                     db.add(interaction)
-                    await db.flush()  # Flush to catch DB errors early
                     await db.commit()
-                    logger.info(f"Recorded email interaction for lead {lead_id}: subject='{subject}', message_id='{email_message_id}'")
+                    logger.info(f"Recorded interaction for lead {lead_id}: subject='{subject}', msg_id='{msg_id}'")
                 except Exception as ie:
-                    logger.error(f"Failed to record interaction for lead {lead_id}: {ie}")
-                    await db.rollback()  # Rollback on error to keep session clean
+                    await db.rollback()
+                    logger.exception(f"Failed to record interaction for lead {lead_id}: {ie}")
 
                 logger.info(f"Sent initial outreach to lead {lead_id}")
             except Exception as e:
@@ -1058,7 +1048,7 @@ def run_lead_pipeline(self, lead_id: int):
     """Celery task: enrich lead and send initial outreach email."""
     logger.info(f"[Celery] Running lead pipeline for lead {lead_id}...")
     try:
-        result = asyncio.run(_run_lead_pipeline_async(lead_id))
+        result = _run_async_task(_run_lead_pipeline_async(lead_id))
         logger.info(f"[Celery] Lead pipeline complete for {lead_id}")
         return result
     except Exception as e:

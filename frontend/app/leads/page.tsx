@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
-import { leadsApi, phoneCallsApi } from "@/lib/api";
+import { leadsApi, phoneCallsApi, crmApi } from "@/lib/api";
 import { geocodeAddress } from "@/lib/geocoding";
 
 interface PipelineStep {
@@ -138,6 +138,8 @@ export default function LeadsPage() {
   const [pipelineLead, setPipelineLead] = useState<Lead | null>(null);
   const [pipelineSteps, setPipelineSteps] = useState<PipelineStep[]>([]);
   const pipelineIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [pipelinePhase, setPipelinePhase] = useState<"idle" | "preview" | "discrepancy" | "creating" | "tracking">("idle");
+  const [pipelinePreviewData, setPipelinePreviewData] = useState<any>(null);
   const [newLead, setNewLead] = useState({
     business_name: "",
     email: "",
@@ -276,6 +278,13 @@ export default function LeadsPage() {
       }
     };
   }, []);
+
+  // Force-show pipeline modal when tracking a lead (prevents race-condition disappearance)
+  useEffect(() => {
+    if (pipelineLead && pipelinePhase === "tracking" && !showPipelineModal) {
+      setShowPipelineModal(true);
+    }
+  }, [pipelineLead, pipelinePhase, showPipelineModal]);
 
   const applyClientSort = useCallback(
     (items: Lead[]): Lead[] => {
@@ -471,13 +480,29 @@ export default function LeadsPage() {
       setCreateError("El nombre del negocio es obligatorio");
       return;
     }
+    setCreateLoading(true);
+    setCreateError(null);
+    setShowCreateModal(false);
+
+    // Open pipeline modal immediately for ALL leads
+    setShowPipelineModal(true);
+    setPipelineSteps([
+      { id: "preview", title: "Verificando datos web", description: "Comparando con información del sitio...", status: "active" },
+      { id: "created", title: "Lead creado", description: "Guardado en la base de datos", status: "pending" },
+      { id: "web", title: "Extrayendo web", description: "Analizando página web...", status: "pending" },
+      { id: "enrich", title: "Enriqueciendo con AI", description: "Calculando scores y servicios...", status: "pending" },
+      { id: "email", title: "Enviando email", description: "Primer contacto de outreach...", status: "pending" },
+    ]);
+
     // Skip preview if no website provided
     if (!newLead.website.trim()) {
+      setPipelinePhase("creating");
       await doCreateLead(newLead);
       return;
     }
-    setCreateLoading(true);
-    setCreateError(null);
+
+    setPipelinePhase("preview");
+
     try {
       const preview = await leadsApi.preview({
         business_name: newLead.business_name.trim(),
@@ -490,21 +515,30 @@ export default function LeadsPage() {
         category: newLead.category.trim() || undefined,
         notes: newLead.notes.trim() || undefined,
       });
-      if (!preview.data.has_discrepancies) {
-        await doCreateLead(newLead);
-      } else {
-        setPreviewData(preview.data);
-        // Default choices: prefer extracted for empty manual values, manual otherwise
+      setPipelinePreviewData(preview.data);
+
+      if (preview.data.has_discrepancies) {
         const defaults: Record<string, "manual" | "extracted"> = {};
         preview.data.discrepancies.forEach((d: any) => {
           defaults[d.field] = d.extracted_value ? "manual" : "manual";
         });
         setPreviewChoices(defaults);
-        setShowDiscrepancyModal(true);
+        setPipelinePhase("discrepancy");
+        setCreateLoading(false);
+        return;
       }
+
+      // No discrepancies - mark preview complete and continue
+      setPipelineSteps((prev) =>
+        prev.map((s) => (s.id === "preview" ? { ...s, status: "completed" as const } : s))
+      );
+      setPipelinePhase("creating");
+      await doCreateLead(newLead);
     } catch (err: any) {
       console.error(err);
       setCreateError(err.response?.data?.detail || "Error verificando datos web");
+      setPipelinePhase("idle");
+      setShowPipelineModal(false);
     } finally {
       setCreateLoading(false);
     }
@@ -541,9 +575,12 @@ export default function LeadsPage() {
         notes: "",
       });
       loadLeads();
-      // Start pipeline progress tracking
       if (res.data?.id) {
+        setPipelinePhase("tracking");
         startPipelineTracking(res.data);
+      } else {
+        setPipelinePhase("idle");
+        setShowPipelineModal(false);
       }
       return res.data;
     } catch (err: any) {
@@ -555,8 +592,18 @@ export default function LeadsPage() {
     }
   };
 
-  const getStepStatusFromLeadStatus = (status: string): PipelineStep[] => {
+  const getStepStatusFromLeadStatus = (status: string, currentPhase?: string): PipelineStep[] => {
+    if (currentPhase === "preview" || currentPhase === "discrepancy" || currentPhase === "creating") {
+      return [
+        { id: "preview", title: "Verificando datos web", description: "Comparando con información del sitio...", status: currentPhase === "preview" ? "active" : "completed" },
+        { id: "created", title: "Lead creado", description: "Guardado en la base de datos", status: currentPhase === "creating" ? "active" : "pending" },
+        { id: "web", title: "Extrayendo web", description: "Analizando página web...", status: "pending" },
+        { id: "enrich", title: "Enriqueciendo con AI", description: "Calculando scores y servicios...", status: "pending" },
+        { id: "email", title: "Enviando email", description: "Primer contacto de outreach...", status: "pending" },
+      ];
+    }
     const steps: PipelineStep[] = [
+      { id: "preview", title: "Verificando datos web", description: "Datos verificados ✓", status: "completed" },
       { id: "created", title: "Lead creado", description: "Guardado en la base de datos", status: "completed" },
       { id: "web", title: "Extrayendo web", description: "Analizando página web...", status: "pending" },
       { id: "enrich", title: "Enriqueciendo con AI", description: "Calculando scores y servicios...", status: "pending" },
@@ -586,12 +633,13 @@ export default function LeadsPage() {
   };
 
   const startPipelineTracking = (lead: Lead) => {
+    console.log("[Pipeline] Opening pipeline modal for lead", lead.id, lead.status);
     // Clear any existing interval
     if (pipelineIntervalRef.current) {
       clearInterval(pipelineIntervalRef.current);
     }
     setPipelineLead(lead);
-    setPipelineSteps(getStepStatusFromLeadStatus(lead.status || "discovered"));
+    setPipelineSteps(getStepStatusFromLeadStatus(lead.status || "discovered", pipelinePhase));
     setShowPipelineModal(true);
 
     let staleCount = 0;
@@ -642,14 +690,18 @@ export default function LeadsPage() {
   };
 
   const handleConfirmDiscrepancies = async () => {
-    if (!previewData) return;
+    if (!pipelinePreviewData) return;
     const final = { ...newLead };
-    previewData.discrepancies.forEach((d: any) => {
+    pipelinePreviewData.discrepancies.forEach((d: any) => {
       const choice = previewChoices[d.field];
       if (choice === "extracted" && d.extracted_value) {
         (final as any)[d.field] = d.extracted_value;
       }
     });
+    setPipelinePhase("creating");
+    setPipelineSteps((prev) =>
+      prev.map((s) => (s.id === "preview" ? { ...s, status: "completed" as const } : s))
+    );
     await doCreateLead(final);
   };
 
@@ -1072,7 +1124,7 @@ export default function LeadsPage() {
                   <th className="px-4 py-3">Ubicación</th>
                   <th className="px-4 py-3">Contacto</th>
                   <th className="px-4 py-3">Score</th>
-                  {hqCoords && sortBy !== "score" && <th className="px-4 py-3">Distancia</th>}
+                  {hqCoords && <th className="px-4 py-3">Distancia</th>}
                   <th className="px-4 py-3">Estado</th>
                   <th className="px-4 py-3">Acciones</th>
                 </tr>
@@ -1099,7 +1151,7 @@ export default function LeadsPage() {
                     <td className="px-4 py-3">
                       <span className="flex items-center gap-1 text-sm text-gray-400">
                         <MapPin className="w-3 h-3" />
-                        {lead.address || `${lead.city}, ${lead.state}`}
+                        {lead.address?.trim() || (lead.city?.trim() && lead.state?.trim() ? `${lead.city}, ${lead.state}` : lead.city?.trim() || lead.state?.trim() || "—")}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -1139,7 +1191,7 @@ export default function LeadsPage() {
                         <span className="text-gray-600 text-sm">—</span>
                       )}
                     </td>
-                    {hqCoords && sortBy !== "score" && (
+                    {hqCoords && (
                       <td className="px-4 py-3">
                         {typeof lead.distance_km === "number" && !Number.isNaN(lead.distance_km) ? (
                           <span className="flex items-center gap-1 text-xs text-gray-400">
@@ -1160,6 +1212,29 @@ export default function LeadsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-1">
+                        <Link
+                          href={`/leads/${lead.id}`}
+                          className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors"
+                        >
+                          <Navigation className="w-3 h-3" />
+                          Ver detalle
+                        </Link>
+                        {lead.email && lead.status !== "discovered" && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await crmApi.contact(lead.id, "initial_outreach");
+                                loadLeads();
+                              } catch (err: any) {
+                                alert(err.response?.data?.detail || "Error enviando email");
+                              }
+                            }}
+                            className="flex items-center gap-1 text-xs text-eko-blue hover:text-eko-blue-dark"
+                          >
+                            <Send className="w-3 h-3" />
+                            Enviar email
+                          </button>
+                        )}
                         {(lead.status === "discovered" || lead.status === "enriched") && (
                           <button
                             onClick={() => handleEnrich(lead.id)}
@@ -1438,8 +1513,7 @@ export default function LeadsPage() {
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none resize-none"
                 />
               </div>
-
-              <div className="flex items-center gap-2 py-4 border-t border-white/5">
+              <div className="flex items-center gap-2 pt-2">
                 <button
                   type="submit"
                   disabled={createLoading}
@@ -1560,9 +1634,9 @@ export default function LeadsPage() {
       )}
 
       {/* Pipeline Progress Modal */}
-      {showPipelineModal && pipelineLead && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-eko-graphite shadow-2xl overflow-hidden">
+      {showPipelineModal && (pipelineLead || ["preview", "discrepancy", "creating", "tracking"].includes(pipelinePhase)) && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-eko-graphite shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-300">
             {/* Header */}
             <div className="px-6 py-5 border-b border-white/5">
               <div className="flex items-center justify-between">
@@ -1583,7 +1657,9 @@ export default function LeadsPage() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <p className="text-xs text-gray-400 mt-1 truncate">{pipelineLead.business_name}</p>
+              <p className="text-xs text-gray-400 mt-1 truncate">
+                {pipelineLead?.business_name || newLead.business_name || "Nuevo lead"}
+              </p>
             </div>
 
             {/* Steps */}
@@ -1591,7 +1667,9 @@ export default function LeadsPage() {
               {pipelineSteps.map((step, idx) => {
                 const isLast = idx === pipelineSteps.length - 1;
                 const Icon =
-                  step.id === "created"
+                  step.id === "preview"
+                    ? Globe
+                    : step.id === "created"
                     ? CheckCircle2
                     : step.id === "web"
                     ? Globe
@@ -1686,14 +1764,69 @@ export default function LeadsPage() {
               </div>
             </div>
 
+            {/* Inline discrepancy review during pipeline */}
+            {pipelinePhase === "discrepancy" && pipelinePreviewData?.discrepancies && (
+              <div className="px-6 py-4 border-t border-white/5 space-y-4">
+                <p className="text-xs text-gray-400">
+                  Encontramos información diferente en{" "}
+                  <span className="text-eko-blue">{newLead.website}</span>.
+                  Selecciona qué datos quedarse:
+                </p>
+                {pipelinePreviewData.discrepancies.map((d: any) => (
+                  <div key={d.field} className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-2">
+                    <label className="text-xs font-medium text-gray-300">{d.label}</label>
+                    <div className="space-y-1.5">
+                      <button
+                        onClick={() => setPreviewChoices((prev: any) => ({ ...prev, [d.field]: "manual" }))}
+                        className={`w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                          previewChoices[d.field] === "manual"
+                            ? "border-eko-blue bg-eko-blue/10 text-white"
+                            : "border-white/10 text-gray-400 hover:bg-white/5"
+                        }`}
+                      >
+                        <div className={`w-3.5 h-3.5 rounded-full border ${
+                          previewChoices[d.field] === "manual" ? "border-eko-blue bg-eko-blue" : "border-gray-500"
+                        }`} />
+                        <span className="flex-1 text-left truncate">{d.manual_value || "(vacío)"}</span>
+                        <span className="text-[10px] text-gray-500 uppercase">manual</span>
+                      </button>
+                      <button
+                        onClick={() => setPreviewChoices((prev: any) => ({ ...prev, [d.field]: "extracted" }))}
+                        className={`w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                          previewChoices[d.field] === "extracted"
+                            ? "border-eko-blue bg-eko-blue/10 text-white"
+                            : "border-white/10 text-gray-400 hover:bg-white/5"
+                        }`}
+                      >
+                        <div className={`w-3.5 h-3.5 rounded-full border ${
+                          previewChoices[d.field] === "extracted" ? "border-eko-blue bg-eko-blue" : "border-gray-500"
+                        }`} />
+                        <span className="flex-1 text-left truncate">{d.extracted_value || "(vacío)"}</span>
+                        <span className="text-[10px] text-gray-500 uppercase">de la web</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  onClick={handleConfirmDiscrepancies}
+                  disabled={createLoading}
+                  className="w-full rounded-lg bg-eko-blue py-2.5 text-sm font-medium hover:bg-eko-blue-dark disabled:opacity-50 transition-colors"
+                >
+                  {createLoading ? "Guardando..." : "Confirmar y continuar"}
+                </button>
+              </div>
+            )}
+
             {/* Footer with lead score if available */}
             <div className="px-6 py-3 border-t border-white/5 bg-white/[0.02]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-gray-500 uppercase">Status</span>
-                  <span className="text-xs text-gray-300 capitalize">{pipelineLead.status.replace("_", " ")}</span>
+                  <span className="text-xs text-gray-300 capitalize">
+                    {pipelineLead ? pipelineLead.status.replace("_", " ") : pipelinePhase.replace("_", " ")}
+                  </span>
                 </div>
-                {pipelineLead.total_score > 0 && (
+                {pipelineLead && pipelineLead.total_score > 0 && (
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] text-gray-500 uppercase">Score</span>
                     <span className={`text-xs font-semibold ${

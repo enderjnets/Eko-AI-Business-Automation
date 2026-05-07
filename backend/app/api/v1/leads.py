@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, Body, Request
 from sqlalchemy import select, func, Integer, case, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+import httpx
 
 from app.db.base import get_db
 from app.models.lead import Lead, LeadStatus, LeadSource, Interaction
@@ -22,6 +23,7 @@ from app.utils.ai_client import generate_embedding
 from app.core.security import get_current_user
 from app.services.tenant_context import get_tenant_context_optional, TenantContext
 from app.api.v1.crm import VALID_TRANSITIONS
+from app.utils.geocoding import geocode_address as _geocode_address
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +68,7 @@ def _haversine_km(lat1: float, lng1: float, lat2: Optional[float], lng2: Optiona
     a = min(1.0, max(0.0, a))  # Clamp to protect against floating-point drift
     c = 2 * math.asin(math.sqrt(a))
     return R * c
+
 
 
 @router.get("", response_model=LeadListResponse)
@@ -191,6 +194,11 @@ async def list_leads(
     result = await db.execute(query)
     leads = result.scalars().all()
 
+    # Calculate distance_km for all leads with coordinates when lat/lng provided
+    if lat is not None and lng is not None:
+        for lead in leads:
+            lead.distance_km = _haversine_km(lat, lng, lead.latitude, lead.longitude)
+
     return LeadListResponse(
         total=total,
         items=leads,
@@ -298,6 +306,19 @@ async def create_lead(
             detail=f"Lead already exists: {existing.business_name} (ID: {existing.id})",
         )
 
+    # Geocode address BEFORE creating the lead so coords are included in the response
+    if data.get("latitude") is None and data.get("longitude") is None:
+        geo = await _geocode_address(
+            address=lead_data.address or "",
+            city=lead_data.city or "",
+            state=lead_data.state or "",
+            zip_code=lead_data.zip_code or "",
+        )
+        if geo:
+            data["latitude"] = geo["lat"]
+            data["longitude"] = geo["lng"]
+            logger.info(f"Geocoded address to {geo['lat']}, {geo['lng']}")
+
     lead = Lead(**data, owner_id=current_user.id)
     db.add(lead)
     await db.commit()
@@ -305,7 +326,7 @@ async def create_lead(
 
     # Generate embedding for semantic search
     try:
-        embed_text = f"{lead.business_name} {lead.category or ''} {lead.city or ''} {lead.state or ''}".strip()
+        embed_text = f"{lead.business_name} {lead.category or ''} {lead.address or ''} {lead.city or ''} {lead.state or ''} {lead.zip_code or ''}".strip()
         if embed_text:
             lead.embedding = await generate_embedding(embed_text)
             await db.commit()
@@ -342,6 +363,7 @@ async def preview_lead(
         "address": lead_data.address or "",
         "city": lead_data.city or "",
         "state": lead_data.state or "",
+        "zip_code": lead_data.zip_code or "",
     }
 
     extracted = {
@@ -352,6 +374,7 @@ async def preview_lead(
         "address": "",
         "city": "",
         "state": "",
+        "zip_code": "",
     }
 
     website = lead_data.website
@@ -359,11 +382,14 @@ async def preview_lead(
         analyzer = WebsiteAnalyzer()
         try:
             data = await analyzer.analyze(website)
-            # business_name from title (strip suffixes like "| Home" or "- Denver, CO")
-            title = data.get("title", "")
-            extracted["business_name"] = _clean_website_title(title)
+            # business_name from title or schema.org
+            extracted["business_name"] = data.get("business_name_found") or _clean_website_title(data.get("title", ""))
             extracted["email"] = data.get("email_found") or ""
             extracted["phone"] = data.get("phone_found") or ""
+            extracted["address"] = data.get("address_found") or ""
+            extracted["city"] = data.get("city_found") or ""
+            extracted["state"] = data.get("state_found") or ""
+            extracted["zip_code"] = data.get("zip_found") or ""
             # category from first service or title keywords
             services = data.get("services", [])
             if services:
@@ -386,11 +412,22 @@ async def preview_lead(
         "address": "Dirección",
         "city": "Ciudad",
         "state": "Estado",
+        "zip_code": "Código Postal",
     }
+
+    import re as _re
 
     for field, label in field_labels.items():
         m_val = (manual.get(field) or "").strip()
         e_val = (extracted.get(field) or "").strip()
+        if not m_val and not e_val:
+            continue
+        # Normalize phone for comparison (digits only)
+        if field == "phone" and m_val and e_val:
+            m_digits = _re.sub(r"\D", "", m_val)
+            e_digits = _re.sub(r"\D", "", e_val)
+            if m_digits == e_digits:
+                continue
         if e_val and m_val.lower() != e_val.lower():
             discrepancies.append(
                 FieldDiscrepancy(
