@@ -8,6 +8,10 @@ from app.config import get_settings
 from app.models.lead import Lead, LeadStatus, Interaction
 from app.utils.ai_client import generate_completion
 from app.services.paperclip import on_email_sent, on_email_error
+from app.templates.emails.outreach_email import (
+    format_plain_text_to_html,
+    render_outreach_email,
+)
 
 settings = get_settings()
 resend.api_key = settings.RESEND_API_KEY
@@ -162,8 +166,8 @@ Return ONLY a JSON object with:
         import json
         try:
             result = json.loads(response)
-            # Add compliance footer
-            result["body"] = self._add_compliance_footer(result["body"], lead.id)
+            # Note: compliance footer is now part of the HTML wrapper template
+            # No need to append it here — _body_to_html() will add it when send() is called
             return result
         except json.JSONDecodeError:
             logger.error("Failed to parse email generation response")
@@ -178,39 +182,60 @@ Return ONLY a JSON object with:
             }
     
     def _add_compliance_footer(self, body: str, lead_id: int) -> str:
-        """Add TCPA/CAN-SPAM compliance footer to email."""
-        app_url = settings.APP_URL.rstrip("/")
-        footer = f"""
-<div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999;">
-  <p>[AI-generated message] — Eko AI Automation LLC, Denver, CO</p>
-  <p>You're receiving this because your business matches our service area.</p>
-  <p><a href="{app_url}/api/v1/webhooks/unsubscribe?lead_id={lead_id}">Unsubscribe</a> | Reply STOP to opt out</p>
-</div>
-"""
-        return body + footer
+        """Add TCPA/CAN-SPAM compliance footer to email.
+
+        DEPRECATED: Footer is now embedded in the professional HTML wrapper template.
+        Kept for backward compatibility with callers that expect it.
+        """
+        return body
 
     def _add_tracking_pixel(self, body: str, lead_id: int, message_id: str) -> str:
-        """Add 1x1 transparent tracking pixel for open tracking."""
+        """Add 1x1 transparent tracking pixel for open tracking.
+
+        Inserts the pixel before </body> so it renders correctly within the
+        HTML document structure.
+        """
         app_url = settings.APP_URL.rstrip("/")
         pixel_url = f"{app_url}/api/v1/webhooks/track/open?lead_id={lead_id}&message_id={message_id}"
         pixel = f'<img src="{pixel_url}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;" />'
-        return body + pixel
+        # Insert before </body> to keep pixel inside the HTML document
+        return body.replace("</body>", f"{pixel}</body>")
     
-    def _body_to_html(self, body: str) -> str:
-        """Convert plain text with newlines to basic HTML."""
+    def _body_to_html(self, body: str, subject: str = "", lead_id: Optional[int] = None) -> str:
+        """Convert plain text to professionally styled HTML email with branding.
+
+        Wraps content in a professional HTML template with inline CSS for
+        Gmail/Outlook compatibility.
+        """
         if not body:
             return ""
-        # If already looks like HTML, return as-is
-        if "<" in body and ">" in body:
+
+        # If body is already a complete HTML document (has <html> or <body>),
+        # don't wrap it again — but inject our styles if it's our template
+        lower_body = body.lower()
+        is_complete_html = "<html" in lower_body or "<body" in lower_body
+        if is_complete_html:
+            # Already wrapped — just ensure tracking pixel can be inserted
             return body
-        # Convert double newlines to paragraph breaks
-        paragraphs = body.split("\n\n")
-        html_paragraphs = []
-        for p in paragraphs:
-            # Convert single newlines to <br>
-            p = p.replace("\n", "<br>")
-            html_paragraphs.append(f"<p>{p}</p>")
-        return "\n".join(html_paragraphs)
+
+        # Format the content: plain text -> styled HTML paragraphs
+        # This handles both plain text AND partial HTML (<p>, <br> from LLM)
+        email_content = format_plain_text_to_html(body)
+
+        # Build unsubscribe URL
+        app_url = settings.APP_URL.rstrip("/")
+        unsubscribe_url = f"{app_url}/api/v1/webhooks/unsubscribe?lead_id={lead_id}" if lead_id else "#"
+
+        # Build tracking pixel (will be inserted by send() after rendering)
+        tracking_pixel = ""
+
+        # Render the full professional email
+        return render_outreach_email(
+            subject=subject or "Eko AI",
+            email_content=email_content,
+            unsubscribe_url=unsubscribe_url,
+            tracking_pixel=tracking_pixel,
+        )
     
     async def send(
         self,
@@ -245,12 +270,13 @@ Return ONLY a JSON object with:
                 for tag in tags:
                     email_tags.append({"name": tag, "value": "true"})
             
-            # Build body with tracking pixel before sending
-            tracking_body = body
+            # Build professional HTML body before sending
+            html_body = self._body_to_html(body, subject=subject, lead_id=lead_id)
+
+            # Add tracking pixel
+            tracking_body = html_body
             if lead_id:
-                # Use lead_id as the message_id for the pixel so we can track opens
-                # even without knowing the Resend message_id beforehand
-                tracking_body = self._add_tracking_pixel(self._body_to_html(body), lead_id, f"lead_{lead_id}")
+                tracking_body = self._add_tracking_pixel(html_body, lead_id, f"lead_{lead_id}")
             
             params = {
                 "from": self.from_email,
