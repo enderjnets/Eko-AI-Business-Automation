@@ -202,40 +202,67 @@ Return ONLY a JSON object with:
         return body.replace("</body>", f"{pixel}</body>")
     
     def _body_to_html(self, body: str, subject: str = "", lead_id: Optional[int] = None) -> str:
-        """Convert plain text to professionally styled HTML email with branding.
+        """Convert plain text to minimal HTML for email delivery.
 
-        Wraps content in a professional HTML template with inline CSS for
-        Gmail/Outlook compatibility.
+        For cold outreach: uses plain-text style with minimal HTML to preserve
+        paragraph spacing in Gmail/Outlook while looking like a personal email.
+
+        For transactional emails (demo invites, notifications): uses the full
+        professional HTML wrapper from outreach_email.py.
         """
         if not body:
             return ""
 
-        # If body is already a complete HTML document (has <html> or <body>),
-        # don't wrap it again — but inject our styles if it's our template
         lower_body = body.lower()
-        is_complete_html = "<html" in lower_body or "<body" in lower_body
-        if is_complete_html:
-            # Already wrapped — just ensure tracking pixel can be inserted
+
+        # If already a complete HTML document, don't touch it
+        if "<html" in lower_body or "<body" in lower_body:
             return body
 
-        # Format the content: plain text -> styled HTML paragraphs
-        # This handles both plain text AND partial HTML (<p>, <br> from LLM)
-        email_content = format_plain_text_to_html(body)
+        # Detect if this is a transactional email (uses the full template)
+        is_transactional = "<!doctype" in lower_body or "ender_notification" in lower_body
+        if is_transactional:
+            return body
 
-        # Build unsubscribe URL
+        # ------------------------------------------------------------------
+        # COLD OUTREACH: Plain-text style with minimal HTML
+        # ------------------------------------------------------------------
+        # The key insight from B2B research: plain text gets 73% inbox
+        # placement vs 34% for HTML. We use the lightest possible HTML
+        # (just <p> tags with inline margin) to preserve paragraph spacing
+        # without looking like a marketing template.
+        # ------------------------------------------------------------------
+
+        # Handle partial HTML from LLM (<p> tags without styles)
+        if "<p" in lower_body or "<div" in lower_body:
+            # LLM returned partial HTML — ensure <p> tags have spacing
+            from app.templates.emails.outreach_email import _style_existing_p_tags
+            body = _style_existing_p_tags(body)
+        else:
+            # Pure plain text — convert to minimal HTML paragraphs
+            paragraphs = body.split("\n\n")
+            html_paras = []
+            for p in paragraphs:
+                p = p.strip().replace("\n", "<br>")
+                if not p:
+                    continue
+                html_paras.append(
+                    f'<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#333;">{p}</p>'
+                )
+            body = "\n".join(html_paras)
+
+        # Add a minimal signature block
         app_url = settings.APP_URL.rstrip("/")
         unsubscribe_url = f"{app_url}/api/v1/webhooks/unsubscribe?lead_id={lead_id}" if lead_id else "#"
 
-        # Build tracking pixel (will be inserted by send() after rendering)
-        tracking_pixel = ""
+        signature = f'''<p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#666;">
+—<br>
+Eko AI Team<br>
+Denver, CO<br>
+<a href="{unsubscribe_url}" style="color:#666;text-decoration:underline;">Unsubscribe</a> | Reply STOP to opt out
+</p>'''
 
-        # Render the full professional email
-        return render_outreach_email(
-            subject=subject or "Eko AI",
-            email_content=email_content,
-            unsubscribe_url=unsubscribe_url,
-            tracking_pixel=tracking_pixel,
-        )
+        return body + signature
     
     async def send(
         self,
