@@ -266,7 +266,7 @@ async def send_booking_link(
 
     # Build booking link
     # In a real implementation, this would be fetched from Cal.com or configured
-    booking_link = f"https://cal.com/eko-ai/demo?email={lead.email}&name={lead.business_name}"
+    booking_link = f"https://cal.com/ender-ocando-lfxtkn/15min/demo?email={lead.email}&name={lead.business_name}"
 
     email = EmailOutreach()
     subject = f"Let's schedule a quick call — {lead.business_name}"

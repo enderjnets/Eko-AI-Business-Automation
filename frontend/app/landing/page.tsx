@@ -174,7 +174,7 @@ function SuccessModal({ open, onClose, name }: { open: boolean; onClose: () => v
           We&apos;ve received your information. Our team will analyze your business and send your personalized AI automation report within 24 hours.
         </p>
         <a
-          href="https://cal.com/eko-ai/demo"
+          href="https://cal.com/ender-ocando-lfxtkn/15min/demo"
           target="_blank"
           rel="noopener noreferrer"
           onClick={onClose}
@@ -252,7 +252,7 @@ export default function LandingPage() {
           email: form.email,
           phone: form.phone,
           website: form.website,
-          business_name: form.website || "Not provided",
+          business_name: `${form.first_name} ${form.last_name}`,
           notes: `Lead from landing page. Name: ${form.first_name} ${form.last_name}`,
           source: "landing_page",
         }),
@@ -405,7 +405,7 @@ export default function LandingPage() {
                 <CheckCircle className="w-12 h-12 text-[#10B981] mx-auto mb-3" />
                 <h3 className="text-xl font-bold text-white mb-2">Thank you, {heroForm.first_name}!</h3>
                 <p className="text-[#CBD5E1] mb-4">We&apos;ve received your info. Our team will send your personalized AI automation report within 24 hours.</p>
-                <a href="https://cal.com/eko-ai/demo" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[#0B4FD8] hover:text-[#22D3EE] font-medium transition-colors">
+                <a href="https://cal.com/ender-ocando-lfxtkn/15min/demo" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[#0B4FD8] hover:text-[#22D3EE] font-medium transition-colors">
                   Book Your Demo Now <ArrowRight className="w-4 h-4" />
                 </a>
               </div>
@@ -704,7 +704,7 @@ export default function LandingPage() {
                   <span>Your information is secure. We never share your data.</span>
                 </div>
                 <div className="text-center pt-2">
-                  <a href="https://cal.com/eko-ai/demo" target="_blank" rel="noopener noreferrer"
+                  <a href="https://cal.com/ender-ocando-lfxtkn/15min/demo" target="_blank" rel="noopener noreferrer"
                     className="text-[#0B4FD8] hover:text-[#22D3EE] text-sm font-medium transition-colors inline-flex items-center gap-1">
                     Prefer to talk? Book a 15-min call <ArrowRight className="w-3.5 h-3.5" />
                   </a>
@@ -717,7 +717,7 @@ export default function LandingPage() {
                 <p className="text-[#CBD5E1] mb-6 leading-relaxed">
                   We&apos;ve received your information. Our team will analyze your business and send your personalized AI automation report within 24 hours.
                 </p>
-                <a href="https://cal.com/eko-ai/demo" target="_blank" rel="noopener noreferrer"
+                <a href="https://cal.com/ender-ocando-lfxtkn/15min/demo" target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#0B4FD8] text-white font-semibold hover:bg-[#0A3FB8] transition-colors">
                   Book Your Demo Now <ArrowRight className="w-4 h-4" />
                 </a>
@@ -767,7 +767,7 @@ export default function LandingPage() {
               <Zap className="w-5 h-5" />
               Get My Free AI Analysis
             </button>
-            <a href="https://cal.com/eko-ai/demo" target="_blank" rel="noopener noreferrer"
+            <a href="https://cal.com/ender-ocando-lfxtkn/15min/demo" target="_blank" rel="noopener noreferrer"
               className="text-[#0B4FD8] hover:text-[#22D3EE] font-medium transition-colors inline-flex items-center gap-1">
               Or book a 15-minute demo call <ArrowRight className="w-4 h-4" />
             </a>

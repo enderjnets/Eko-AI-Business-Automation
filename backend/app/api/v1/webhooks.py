@@ -224,7 +224,7 @@ async def calcom_webhook(request: Request, db: AsyncSession = Depends(get_db)):
 <li><strong>Growth:</strong> $299/mes — 2 agentes, horario extendido</li>
 <li><strong>Enterprise:</strong> $399/mes — Agentes ilimitados, 24/7</li>
 </ul>
-<p>Si estás listo para empezar, responde a este email o agenda una llamada de onboarding aquí: <a href="https://cal.com/eko-ai/onboarding">https://cal.com/eko-ai/onboarding</a></p>
+<p>Si estás listo para empezar, responde a este email o agenda una llamada de onboarding aquí: <a href="https://cal.com/ender-ocando-lfxtkn/15min/onboarding">https://cal.com/ender-ocando-lfxtkn/15min/onboarding</a></p>
 <p>Saludos,<br>Eko AI Team</p>"""
                     await email.send(
                         to_email=lead.email,

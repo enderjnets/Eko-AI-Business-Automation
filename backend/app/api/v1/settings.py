@@ -145,5 +145,5 @@ async def get_public_defaults():
     return {
         "app_name": "Eko AI Business Automation",
         "app_version": "0.5.1",
-        "cal_com_username": "eko-ai",
+        "cal_com_username": "ender-ocando-lfxtkn",
     }
