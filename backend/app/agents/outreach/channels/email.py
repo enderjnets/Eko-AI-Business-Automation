@@ -171,14 +171,36 @@ Return ONLY a JSON object with:
             return result
         except json.JSONDecodeError:
             logger.error("Failed to parse email generation response")
+            # Template-specific fallbacks so emails still look good if AI fails
+            if template_key == "nurture_welcome":
+                subject = template["subject"].format(business_name=lead.business_name)
+                body = (
+                    f"<p>Hola {lead.first_name or 'there'},</p>"
+                    f"<p>Gracias por tu interés en Eko AI. Hemos recibido tu solicitud de análisis gratuito para <strong>{lead.business_name}</strong>.</p>"
+                    f"<p>Nuestros agentes de IA pueden atender llamadas 24/7, capturar leads, agendar citas y recuperar llamadas perdidas — todo automáticamente.</p>"
+                    f"<p>En las próximas 24 horas te enviaremos un análisis personalizado de cómo la IA puede ayudar a tu negocio. Mientras tanto, si tienes alguna pregunta, solo responde a este email.</p>"
+                    f"<p>Si prefieres hablar directamente, agenda una demo gratuita de 15 minutos aquí: <a href='https://cal.com/eko-ai/15min'>https://cal.com/eko-ai/15min</a></p>"
+                )
+            elif template_key.startswith("nurture_"):
+                subject = template["subject"].format(business_name=lead.business_name)
+                body = (
+                    f"<p>Hola {lead.first_name or 'there'},</p>"
+                    f"<p>Quería compartir algo relevante para <strong>{lead.business_name}</strong>.</p>"
+                    f"<p>En Eko AI ayudamos a negocios como el tuyo a automatizar llamadas, agendar citas y capturar leads 24/7 con agentes de inteligencia artificial.</p>"
+                    f"<p>¿Te gustaría ver una demo de 15 minutos sin compromiso? Agenda aquí: <a href='https://cal.com/eko-ai/15min'>https://cal.com/eko-ai/15min</a></p>"
+                )
+            else:
+                subject = template["subject"].format(business_name=lead.business_name)
+                body = (
+                    f"<p>Hi there,</p>"
+                    f"<p>I noticed <strong>{lead.business_name}</strong> and wanted to reach out. At Eko AI, we help local businesses automate calls, appointments, and follow-ups with AI voice agents.</p>"
+                    f"<p>Would you be open to a quick 15-minute call to see if this makes sense for your business?</p>"
+                )
             return {
-                "subject": template["subject"].format(business_name=lead.business_name),
-                "body": self._add_compliance_footer(
-                    f"<p>Hi there,</p><p>I noticed {lead.business_name} and wanted to reach out...</p>",
-                    lead.id
-                ),
-                "personalization_notes": "Fallback template",
-                "cta": "Reply to learn more",
+                "subject": subject,
+                "body": body,
+                "personalization_notes": "Fallback template (AI parsing failed)",
+                "cta": "Book a demo" if template_key.startswith("nurture_") else "Reply to learn more",
             }
     
     def _add_compliance_footer(self, body: str, lead_id: int) -> str:
