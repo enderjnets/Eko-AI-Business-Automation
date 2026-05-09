@@ -7,7 +7,7 @@ from sqlalchemy import select, func, Integer, case, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 
-from app.db.base import get_db
+from app.db.base import get_db, AsyncSessionLocal
 from app.models.lead import Lead, LeadStatus, LeadSource, Interaction
 from app.models.user import User
 from app.models.workspace import Workspace, WorkspaceMember
@@ -468,9 +468,30 @@ def _clean_website_title(title: str) -> str:
     return title.strip()
 
 
+async def _send_welcome_email(lead_id: int):
+    """Background task: send the Free AI Analysis welcome email immediately."""
+    try:
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(select(Lead).where(Lead.id == lead_id))
+            lead = result.scalar_one_or_none()
+            if not lead or not lead.email:
+                logger.warning(f"Cannot send welcome email: lead {lead_id} not found or no email")
+                return
+
+            outreach = EmailOutreach()
+            await outreach.generate_and_send(
+                lead=lead,
+                template_key="nurture_welcome",
+            )
+            logger.info(f"Welcome email sent to lead {lead_id} ({lead.email})")
+    except Exception as e:
+        logger.error(f"Failed to send welcome email to lead {lead_id}: {e}")
+
+
 @router.post("/public", response_model=dict, status_code=201)
 async def create_public_lead(
     lead_data: PublicLeadCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new lead from the public marketing website (no auth required)."""
@@ -540,6 +561,10 @@ async def create_public_lead(
             logger.warning(f"Failed to auto-enroll lead {lead.id} in nurture sequence: {e}")
     else:
         logger.info(f"Lead {lead.id} has no email, skipping nurture enrollment")
+
+    # Send welcome email immediately in background
+    if lead.email:
+        background_tasks.add_task(_send_welcome_email, lead.id)
 
     return {"status": "created", "lead_id": lead.id}
 
