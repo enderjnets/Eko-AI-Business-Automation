@@ -171,11 +171,15 @@ Return ONLY a JSON object with:
             return result
         except json.JSONDecodeError:
             logger.error("Failed to parse email generation response")
+            # Extract first_name from source_data if available, else use business_name
+            first_name = "there"
+            if lead.source_data and isinstance(lead.source_data, dict):
+                first_name = lead.source_data.get("first_name") or lead.source_data.get("contact_name") or first_name
             # Template-specific fallbacks so emails still look good if AI fails
             if template_key == "nurture_welcome":
                 subject = template["subject"].format(business_name=lead.business_name)
                 body = (
-                    f"<p>Hola {lead.first_name or 'there'},</p>"
+                    f"<p>Hola {first_name},</p>"
                     f"<p>Gracias por tu interés en Eko AI. Hemos recibido tu solicitud de análisis gratuito para <strong>{lead.business_name}</strong>.</p>"
                     f"<p>Nuestros agentes de IA pueden atender llamadas 24/7, capturar leads, agendar citas y recuperar llamadas perdidas — todo automáticamente.</p>"
                     f"<p>En las próximas 24 horas te enviaremos un análisis personalizado de cómo la IA puede ayudar a tu negocio. Mientras tanto, si tienes alguna pregunta, solo responde a este email.</p>"
@@ -184,7 +188,7 @@ Return ONLY a JSON object with:
             elif template_key.startswith("nurture_"):
                 subject = template["subject"].format(business_name=lead.business_name)
                 body = (
-                    f"<p>Hola {lead.first_name or 'there'},</p>"
+                    f"<p>Hola {first_name},</p>"
                     f"<p>Quería compartir algo relevante para <strong>{lead.business_name}</strong>.</p>"
                     f"<p>En Eko AI ayudamos a negocios como el tuyo a automatizar llamadas, agendar citas y capturar leads 24/7 con agentes de inteligencia artificial.</p>"
                     f"<p>¿Te gustaría ver una demo de 15 minutos sin compromiso? Agenda aquí: <a href='https://cal.com/eko-ai/15min'>https://cal.com/eko-ai/15min</a></p>"

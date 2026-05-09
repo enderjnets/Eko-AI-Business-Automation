@@ -510,7 +510,12 @@ async def create_public_lead(
         source=LeadSource.MANUAL,
         status=LeadStatus.DISCOVERED,
         notes=lead_data.notes or "Captured from public landing page",
-        source_data={"origin": "website_landing", "captured_at": datetime.utcnow().isoformat()},
+        source_data={
+            "origin": "website_landing",
+            "captured_at": datetime.utcnow().isoformat(),
+            "first_name": lead_data.first_name,
+            "last_name": lead_data.last_name,
+        },
     )
     db.add(lead)
     await db.commit()
