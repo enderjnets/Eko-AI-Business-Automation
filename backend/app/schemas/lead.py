@@ -139,6 +139,8 @@ class LeadSearchRequest(BaseModel):
 class PublicLeadCreate(BaseModel):
     """Schema for public lead capture from the marketing website."""
     business_name: str = Field(..., min_length=1, max_length=255)
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     category: Optional[str] = None
