@@ -98,7 +98,7 @@ def _style_existing_p_tags(html: str) -> str:
         tag = match.group(0)
         if 'style=' in tag:
             return tag  # Already has styles, leave it
-        return '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#E2E8F0;">'
+        return '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#1a1a1a;">'
 
     return re.sub(r'<p(?![^>]*style=)[^>]*>', add_style_to_p, html, flags=re.IGNORECASE)
 
@@ -165,11 +165,11 @@ def format_plain_text_to_html(text: str) -> str:
 
         if is_signoff:
             html_parts.append(
-                f'<p style="margin:24px 0 0;font-size:15px;line-height:1.6;color:#94A3B8;">{para}</p>'
+                f'<p style="margin:24px 0 0;font-size:15px;line-height:1.6;color:#555555;">{para}</p>'
             )
         else:
             html_parts.append(
-                f'<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#E2E8F0;">{para}</p>'
+                f'<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#1a1a1a;">{para}</p>'
             )
 
     result = "\n".join(html_parts)
