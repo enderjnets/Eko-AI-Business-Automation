@@ -164,8 +164,15 @@ Return ONLY a JSON object with:
         )
         
         import json
+        import re
         try:
-            result = json.loads(response)
+            # Clean markdown code blocks that some providers wrap JSON in
+            cleaned = response.strip()
+            cleaned = re.sub(r'^```json\s*', '', cleaned)
+            cleaned = re.sub(r'^```\s*', '', cleaned)
+            cleaned = re.sub(r'\s*```\s*$', '', cleaned)
+            cleaned = cleaned.strip()
+            result = json.loads(cleaned)
             # Note: compliance footer is now part of the HTML wrapper template
             # No need to append it here — _body_to_html() will add it when send() is called
             return result
