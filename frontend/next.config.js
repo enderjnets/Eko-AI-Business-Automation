@@ -2,13 +2,12 @@
 const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
-    // Use INTERNAL_API_URL for server-side rewrites (Docker internal network)
-    // Fallback to NEXT_PUBLIC_API_URL for external access
-    const apiUrl = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     return [
       {
         source: '/api/:path*',
-        destination: `${apiUrl}/api/:path*`,
+        // Hardcoded to Docker internal network so server-side rewrites work inside the container.
+        // Client-side fetch uses NEXT_PUBLIC_API_URL directly.
+        destination: 'http://eko-backend:8000/api/:path*',
       },
     ];
   },
