@@ -3,7 +3,9 @@ import axios from "axios";
 // In browser: use relative paths so requests go through Next.js rewrites
 // (avoids CORS and cross-network issues, e.g. Tailscale users)
 // In SSR/server: use the full API URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = typeof window !== "undefined"
+  ? ""                          // browser  → relative URLs via nginx
+  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export const api = axios.create({
   baseURL: `${API_URL}/api/v1`,
@@ -14,11 +16,11 @@ export const api = axios.create({
 
 // Add auth token and workspace header to every request
 api.interceptors.request.use((config) => {
-  const token = // typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  const workspaceId = // typeof window !== "undefined" ? localStorage.getItem("workspace_id") : null;
+  const workspaceId = typeof window !== "undefined" ? localStorage.getItem("workspace_id") : null;
   if (workspaceId) {
     config.headers["X-Workspace-ID"] = workspaceId;
   }
@@ -29,7 +31,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && // typeof window !== "undefined") {
+    if (error.response?.status === 401 && typeof window !== "undefined") {
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       window.location.href = "/login";
