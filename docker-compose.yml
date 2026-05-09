@@ -248,6 +248,7 @@ services:
       - ./frontend:/app
     environment:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://eko-backend:8000}
+      - INTERNAL_API_URL=http://eko-backend:8000
     depends_on:
       - backend
 
