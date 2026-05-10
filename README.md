@@ -26,6 +26,77 @@ A 6-agent LangGraph system orchestrates the full sales cycle:
 | **Customer Success** | Onboarding, health monitoring, churn prevention |
 | **Compliance** | TCPA consent validation, CAN-SPAM unsubscribe, CPA Colorado, FCC AI Rule |
 
+
+### Architecture Diagram
+
+```mermaid
+flowchart TB
+    subgraph Sources[Discovery Sources]
+        GM[Google Maps]
+        YP[Yelp]
+        LI[LinkedIn]
+        SOS[Colorado SOS]
+    end
+
+    subgraph Agents[AI Agents]
+        DA[DiscoveryAgent]
+        RA[ResearchAgent]
+        OA[OutreachAgent]
+        CA[ComplianceAgent]
+    end
+
+    subgraph Channels[Channels]
+        EM[Email / Resend]
+        VA[Voice / VAPI.ai]
+        TG[Telegram]
+    end
+
+    subgraph Storage[Storage]
+        PG[(PostgreSQL + pgvector)]
+        RD[(Redis)]
+        ST[/Static Files /]
+    end
+
+    subgraph Frontend[Frontend]
+        NX[Next.js 14 + Tailwind]
+        US[User Dashboard]
+        LP[Landing Page]
+    end
+
+    User -->|Login| NX
+    NX -->|API Calls| FA[FastAPI Backend]
+    FA -->|Celery Tasks| CW[Celery Worker]
+    FA -->|Cache/Queue| RD
+    FA -->|Persist| PG
+    FA -->|Serve| ST
+
+    Sources -->|Raw Leads| DA
+    DA -->|Enrich| RA
+    RA -->|Score & Analyze| PG
+    FA -->|Trigger| OA
+    OA -->|Send| EM
+    OA -->|Call| VA
+    OA -->|Notify| TG
+    CA -->|Validate| OA
+
+    CW -->|Scheduled| DA
+    CW -->|Follow-ups| OA
+    CW -->|DNC Sync| PG
+
+    Paperclip[Paperclip AI] -->|Governance| FA
+
+    classDef source fill:#e1f5fe,stroke:#01579b
+    classDef agent fill:#fff3e0,stroke:#e65100
+    classDef channel fill:#e8f5e9,stroke:#2e7d32
+    classDef storage fill:#f3e5f5,stroke:#6a1b9a
+    classDef frontend fill:#fce4ec,stroke:#c2185b
+    class GM,YP,LI,SOS source
+    class DA,RA,OA,CA agent
+    class EM,VA,TG channel
+    class PG,RD,ST storage
+    class NX,US,LP frontend
+```
+
 ### Tech Stack
 
 - **Backend**: Python 3.11, FastAPI, LangGraph, SQLAlchemy (async), Celery
