@@ -9,6 +9,25 @@ from fastapi.responses import HTMLResponse
 from app.services.tenant_context import resolve_tenant, set_workspace_id
 
 from app.config import get_settings
+n# Sentry observability (optional — only loads if SENTRY_DSN is set)
+try:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.starlette import StarletteIntegration
+    settings = get_settings()
+    if settings.SENTRY_DSN:
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            integrations=[
+                StarletteIntegration(),
+                FastApiIntegration(),
+            ],
+            traces_sample_rate=1.0 if settings.is_development else 0.2,
+        )
+        logging.info("[Sentry] Observability initialized")
+except Exception:
+    pass
+
 from app.api.v1 import leads, campaigns, emails, analytics, webhooks, crm, sequences, auth, calendar, phone_calls, settings as settings_router, deals, proposals, voice_agent, checkout, webhooks_stripe, metadata_objects, metadata_fields, views, dynamic_data, workspaces
 
 # Ensure all models are registered in Base.metadata

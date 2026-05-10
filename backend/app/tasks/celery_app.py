@@ -36,13 +36,13 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     # Beat schedule
     beat_schedule={
-        "process-follow-ups-every-hour": {
+        "process-follow-ups-every-5-min": {
             "task": "app.tasks.scheduled.process_follow_ups",
-            "schedule": 3600.0,  # 1 hour
+            "schedule": 300.0,  # 5 minutes
         },
         "execute-sequences-every-hour": {
             "task": "app.tasks.scheduled.execute_sequences",
-            "schedule": 3600.0,  # 1 hour
+            "schedule": 300.0,  # 5 minutes
         },
         "remind-scheduled-calls-daily": {
             "task": "app.tasks.scheduled.remind_scheduled_calls",
