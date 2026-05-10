@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse
 from app.services.tenant_context import resolve_tenant, set_workspace_id
 
 from app.config import get_settings
-n# Sentry observability (optional — only loads if SENTRY_DSN is set)
+# Sentry observability (optional — only loads if SENTRY_DSN is set)
 try:
     import sentry_sdk
     from sentry_sdk.integrations.fastapi import FastApiIntegration
