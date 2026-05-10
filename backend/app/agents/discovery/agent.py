@@ -6,6 +6,7 @@ from app.agents.discovery.sources.yelp import YelpSource
 from app.agents.discovery.sources.linkedin import LinkedInSource
 from app.agents.discovery.sources.colorado_sos import ColoradoSOSSource
 from app.services.paperclip import on_discovery_complete
+from app.utils.email import sanitize_email
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +116,13 @@ class DiscoveryAgent:
             except Exception as e:
                 logger.error(f"Colorado SOS discovery failed: {e}")
         
+        # Sanitize emails before returning
+        for lead in all_leads:
+            raw_email = lead.get("email")
+            if raw_email:
+                cleaned = sanitize_email(raw_email, source="discovery")
+                lead["email"] = cleaned
+
         # Deduplicate by business_name + city
         seen = set()
         unique_leads = []

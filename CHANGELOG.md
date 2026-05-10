@@ -72,7 +72,7 @@
 
 ---
 
-## [0.6.1] — 2026-04-25
+## [0.6.2] — 2026-04-25
 
 ### Pipeline Fix — Complete Visibility + Valid Transitions + Interaction Tracking
 

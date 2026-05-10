@@ -9,7 +9,7 @@ class LeadBase(BaseModel):
     business_name: str = Field(..., min_length=1, max_length=255)
     category: Optional[str] = None
     description: Optional[str] = None
-    email: Optional[str] = None  # Relaxed from EmailStr to prevent 500 on dirty data
+    email: Optional[EmailStr] = None
     phone: Optional[str] = None
     website: Optional[str] = None
     address: Optional[str] = None
@@ -32,7 +32,7 @@ class LeadCreate(LeadBase):
 class LeadUpdate(BaseModel):
     business_name: Optional[str] = None
     category: Optional[str] = None
-    email: Optional[str] = None
+    email: Optional[EmailStr] = None
     phone: Optional[str] = None
     website: Optional[str] = None
     address: Optional[str] = None
@@ -60,7 +60,7 @@ class LeadEnrichment(BaseModel):
     fit_score: Optional[float] = Field(None, ge=0, le=100)
     scoring_reason: Optional[str] = None
     # Extended enrichment fields
-    email: Optional[str] = None
+    email: Optional[EmailStr] = None
     website_real: Optional[str] = None
     services: Optional[list] = None
     pricing_info: Optional[str] = None
