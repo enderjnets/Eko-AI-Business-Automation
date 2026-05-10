@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-eko}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eko_dev_pass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-eko_ai}
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -43,11 +43,10 @@ services:
       - .env
     restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-eko}:${POSTGRES_PASSWORD:-eko_dev_pass}@db:5432/${POSTGRES_DB:-eko_ai}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-eko}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-eko_ai}
       - REDIS_URL=redis://redis:6379/0
       - AI_PROVIDER=${AI_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ELEVENLABS_API_KEY=98b4670ec5f8658b81fbcf0d9a685b3f3348ac6420a6be261ee7d5ceaf656a8f
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
       - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
@@ -91,7 +90,7 @@ services:
       - STRIPE_PRICE_GROWTH=${STRIPE_PRICE_GROWTH}
       - STRIPE_PRICE_ENTERPRISE=${STRIPE_PRICE_ENTERPRISE}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8000}
-      - SECRET_KEY=${SECRET_KEY:-dev-secret-change-in-production}
+      - SECRET_KEY=${SECRET_KEY}
       - ENVIRONMENT=${ENVIRONMENT:-development}
     ports:
       - "8000:8000"
@@ -114,11 +113,10 @@ services:
       - .env
     restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-eko}:${POSTGRES_PASSWORD:-eko_dev_pass}@db:5432/${POSTGRES_DB:-eko_ai}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-eko}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-eko_ai}
       - REDIS_URL=redis://redis:6379/0
       - AI_PROVIDER=${AI_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ELEVENLABS_API_KEY=98b4670ec5f8658b81fbcf0d9a685b3f3348ac6420a6be261ee7d5ceaf656a8f
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
       - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
@@ -162,7 +160,7 @@ services:
       - STRIPE_PRICE_GROWTH=${STRIPE_PRICE_GROWTH}
       - STRIPE_PRICE_ENTERPRISE=${STRIPE_PRICE_ENTERPRISE}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8000}
-      - SECRET_KEY=${SECRET_KEY:-dev-secret-change-in-production}
+      - SECRET_KEY=${SECRET_KEY}
       - ENVIRONMENT=${ENVIRONMENT:-development}
     volumes:
       - ./backend:/app
@@ -179,13 +177,14 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: eko-celery-beat
+    env_file:
+      - .env
     restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-eko}:${POSTGRES_PASSWORD:-eko_dev_pass}@db:5432/${POSTGRES_DB:-eko_ai}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-eko}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-eko_ai}
       - REDIS_URL=redis://redis:6379/0
       - AI_PROVIDER=${AI_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ELEVENLABS_API_KEY=98b4670ec5f8658b81fbcf0d9a685b3f3348ac6420a6be261ee7d5ceaf656a8f
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
       - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
@@ -229,7 +228,7 @@ services:
       - STRIPE_PRICE_GROWTH=${STRIPE_PRICE_GROWTH}
       - STRIPE_PRICE_ENTERPRISE=${STRIPE_PRICE_ENTERPRISE}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8000}
-      - SECRET_KEY=${SECRET_KEY:-dev-secret-change-in-production}
+      - SECRET_KEY=${SECRET_KEY}
       - ENVIRONMENT=${ENVIRONMENT:-development}
     volumes:
       - ./backend:/app

@@ -46,7 +46,7 @@ VAPI_EKO_ASSISTANT_ID = "8c2de53b-3979-4e15-8824-757b749b27c3"
 
 # Notifications
 ENDER_NOTIFICATION_EMAIL = "ender@ekoaiautomation.com"
-TELEGRAM_BOT_TOKEN = "8264195169:AAG94XS7lPHh_L7DBvTNVKSR_4geB_WEju0"
+TELEGRAM_BOT_TOKEN = "<TELEGRAM_BOT_TOKEN - set in .env>"
 TELEGRAM_CHAT_ID = "771213858"
 
 # Email
@@ -66,13 +66,13 @@ ENVIRONMENT = "production"
 
 | Field | Value |
 |---|---|
-| **Business** | X3nails & Spa |
-| **Contact** | Margie (margie240478@gmail.com) |
-| **Lead ID** | 74 |
+| **Business** | Demo Business (ACME Nails & Spa) |
+| **Contact** | Demo Contact (demo@example.com) |
+| **Lead ID: 74 (example) |
 | **Status** | `CONTACTED` |
 | **Score** | 90/100 (urgency 88, fit 92) |
-| **Phone** | +13037162622 |
-| **City** | Lakewood, CO |
+| **Phone** | +1-555-0100 |
+| **City** | Denver, CO (example) |
 
 **Demo flow:** Outreach email → Margie replies → AI auto-reply (booking link + phone) → Margie books demo → Demo happens → Proposal → Close.
 
@@ -97,7 +97,7 @@ See full details in `CHANGELOG.md`.
 
 ```bash
 # After any backend code change
-cd Eko-AI-Bussinnes-Automation
+cd Eko-AI-Business-Automation
 docker compose up -d --no-deps backend celery-worker celery-beat
 
 # After any frontend code change

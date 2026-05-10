@@ -38,8 +38,8 @@ Sistema multi-agente construido con **LangGraph** que orquesta todo el ciclo de 
 ### 1. Clonar y configurar
 
 ```bash
-git clone https://github.com/enderjnets/Eko-AI-Bussinnes-Automation.git
-cd Eko-AI-Bussinnes-Automation
+git clone https://github.com/enderjnets/Eko-AI-Business-Automation.git
+cd Eko-AI-Business-Automation
 cp .env.example .env
 # Editar .env con tus API keys
 ```

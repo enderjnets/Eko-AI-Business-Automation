@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -15,11 +16,11 @@ class Settings(BaseSettings):
     APP_URL: str = "http://localhost:8000"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
-    SECRET_KEY: str = "change-this-in-production"
+    SECRET_KEY: str = ""
     LOG_LEVEL: str = "INFO"
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://eko:eko_dev_pass@localhost:5432/eko_ai"
+    DATABASE_URL: str = ""
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -66,11 +67,11 @@ class Settings(BaseSettings):
 
     # Phase 3: Voice
     RETELL_API_KEY: str = ""
-    VAPI_API_KEY: str = "f361bb66-8274-403a-8c0c-b984d7dd1cee"
-    VAPI_PHONE_NUMBER_ID: str = "81c18484-e0eb-4dd1-933c-a2a922427b07"
+    VAPI_API_KEY: str = ""
+    VAPI_PHONE_NUMBER_ID: str = ""
     VAPI_INBOUND_PHONE_NUMBER: str = "+1-256-364-1727"
-    VAPI_BLACK_VOLT_ASSISTANT_ID: str = "b7bc5bc2-5e54-4e40-8cf9-63a06f478aa3"
-    VAPI_EKO_ASSISTANT_ID: str = "8c2de53b-3979-4e15-8824-757b749b27c3"
+    VAPI_BLACK_VOLT_ASSISTANT_ID: str = ""
+    VAPI_EKO_ASSISTANT_ID: str = ""
 
     # Phase 2: Calendar
     CAL_COM_API_KEY: str = ""
@@ -97,7 +98,7 @@ class Settings(BaseSettings):
     ENDER_NOTIFICATION_EMAIL: str = "ender@ekoaiautomation.com"
 
     # Eko Rog Telegram Notifications
-    TELEGRAM_BOT_TOKEN: str = "8264195169:AAG94XS7lPHh_L7DBvTNVKSR_4geB_WEju0"
+    TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_CHAT_ID: str = "771213858"
 
     # CORS
@@ -107,6 +108,23 @@ class Settings(BaseSettings):
     PAPERCLIP_API_URL: str = "http://100.88.47.99:3100"
     PAPERCLIP_COMPANY_ID: str = "a5151f95-51cd-4d2d-a35b-7d7cb4f4102e"
     PAPERCLIP_API_KEY: str = ""
+
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def validate_secret_key(cls, v: str, info) -> str:
+        env = info.data.get("ENVIRONMENT", "development")
+        if env == "production":
+            if not v or len(v) < 32:
+                raise ValueError("SECRET_KEY must be at least 32 characters in production")
+        return v
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def validate_database_url(cls, v: str, info) -> str:
+        env = info.data.get("ENVIRONMENT", "development")
+        if env == "production" and v and "eko_dev_pass" in v:
+            raise ValueError("DATABASE_URL must not use default dev password in production")
+        return v
 
     @property
     def is_development(self) -> bool:
