@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 
 from app.services.tenant_context import resolve_tenant, set_workspace_id
@@ -80,6 +81,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Static files (audio notes, etc.)
+app.mount("/audio", StaticFiles(directory="/app/static/audio"), name="audio")
 
 # API Routes v1
 app.include_router(leads.router, prefix="/api/v1/leads", tags=["leads"])

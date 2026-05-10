@@ -3,6 +3,7 @@ from typing import Optional, Dict
 
 import httpx
 from bs4 import BeautifulSoup
+from langdetect import detect
 
 import logging
 
@@ -73,6 +74,29 @@ class WebsiteAnalyzer:
         if not description:
             og_desc = soup.find("meta", attrs={"property": "og:description"})
             description = og_desc["content"] if og_desc else ""
+
+        # Detect language (after title/description are extracted)
+        detected_language = "en"
+        try:
+            # First check <html lang> attribute
+            html_tag = soup.find("html")
+            if html_tag and html_tag.get("lang"):
+                lang_attr = html_tag.get("lang").lower()[:2]
+                if lang_attr and len(lang_attr) == 2:
+                    detected_language = lang_attr
+                    logger.info(f"Language from <html lang>: {detected_language}")
+            # Fallback: detect from title + description + about text sample
+            if detected_language == "en":
+                sample_text = " ".join(filter(None, [
+                    title,
+                    description,
+                    soup.get_text(separator=" ", strip=True)[:500],
+                ]))
+                if sample_text and len(sample_text) > 20:
+                    detected_language = detect(sample_text)
+                    logger.info(f"Language detected from text: {detected_language}")
+        except Exception as e:
+            logger.warning(f"Language detection failed, defaulting to en: {e}")
 
         # Detect technologies
         technologies = []
@@ -207,6 +231,7 @@ class WebsiteAnalyzer:
             "has_blog": has_blog,
             "has_newsletter": has_newsletter,
             "has_online_ordering": has_online_ordering,
+            "detected_language": detected_language,
         }
 
     def _extract_emails(self, text: str, soup: BeautifulSoup = None) -> Optional[str]:

@@ -97,6 +97,9 @@ class Lead(Base):
     brand_secondary_color: Mapped[Optional[str]] = mapped_column(String(20))
     brand_logo_url: Mapped[Optional[str]] = mapped_column(String(500))
     
+    # Language preference (auto-detected from website or replies)
+    language: Mapped[Optional[str]] = mapped_column(String(10), default="en")
+
     # Engagement tracking
     email_opened_count: Mapped[int] = mapped_column(Integer, default=0)
     email_clicked_count: Mapped[int] = mapped_column(Integer, default=0)

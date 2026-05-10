@@ -54,3 +54,4 @@ sentence-transformers==3.0.1
 # Monitoring
 sentry-sdk==2.1.0
 stripe>=8.0.0
+langdetect==1.0.9

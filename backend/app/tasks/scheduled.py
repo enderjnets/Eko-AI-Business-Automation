@@ -13,6 +13,7 @@ from app.models.payment import Payment  # noqa: F401 - needed for Lead mapper re
 from app.models.campaign import Campaign, CampaignLead
 from app.models.sequence import EmailSequence, SequenceStep, SequenceEnrollment, SequenceStatus, SequenceStepType
 from app.agents.outreach.channels.email import EmailOutreach
+from app.templates.emails.outreach_email import render_outreach_email
 from app.agents.research.agent import ResearchAgent
 from app.services.paperclip import on_system_alert, on_email_sent, on_email_error
 from app.utils.ai_client import generate_embedding
@@ -1041,6 +1042,136 @@ async def _run_lead_pipeline_async(lead_id: int):
                 logger.info(f"Sent initial outreach to lead {lead_id}")
             except Exception as e:
                 logger.warning(f"Pipeline email failed for lead {lead_id}: {e}")
+
+
+async def _enrich_and_welcome_lead_async(lead_id: int):
+    """Enrich a landing-page lead and send the AI Analysis email."""
+    from app.services.lead_analysis_generator import generate_analysis_email
+    from app.services.tts_generator import generate_tts_audio, build_voice_script
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(Lead).where(Lead.id == lead_id))
+        lead = result.scalar_one_or_none()
+        if not lead:
+            logger.warning(f"[Celery] Lead {lead_id} not found for enrichment")
+            return {"status": "not_found"}
+
+        if not lead.email:
+            logger.info(f"[Celery] Lead {lead_id} has no email, skipping")
+            return {"status": "no_email"}
+
+        # 1. Enrich
+        logger.info(f"[Celery] Enriching lead {lead_id} ({lead.business_name})...")
+        try:
+            research = ResearchAgent()
+            enriched = await research.enrich(lead)
+            for field, value in enriched.model_dump(exclude_unset=True).items():
+                setattr(lead, field, value)
+            if lead.urgency_score is not None and lead.fit_score is not None:
+                lead.total_score = (lead.urgency_score + lead.fit_score) / 2
+                lead.status = LeadStatus.SCORED
+            else:
+                lead.status = LeadStatus.ENRICHED
+            await db.commit()
+            await db.refresh(lead)
+            logger.info(f"[Celery] Lead {lead_id} enriched. Score: {lead.total_score}")
+        except Exception as e:
+            logger.error(f"[Celery] Enrichment failed for lead {lead_id}: {e}")
+            # Send fallback generic welcome email so lead isn't left hanging
+            try:
+                outreach = EmailOutreach()
+                await outreach.generate_and_send(lead=lead, template_key="nurture_welcome")
+                logger.info(f"[Celery] Fallback welcome email sent to lead {lead_id}")
+            except Exception as e2:
+                logger.error(f"[Celery] Fallback email also failed: {e2}")
+            return {"status": "enrichment_failed", "error": str(e)}
+
+        # 1b. Generate voice note (TTS)
+        audio_url = None
+        try:
+            lang = (lead.language or "en").lower()[:2]
+            voice_script = build_voice_script(lead, lang=lang)
+            audio_path = f"/app/static/audio/lead_{lead_id}.mp3"
+            audio_result = await generate_tts_audio(
+                text=voice_script,
+                language=lang,
+                output_path=audio_path,
+            )
+            if audio_result:
+                audio_url = f"https://ender-rog.tail25dc73.ts.net/audio/lead_{lead_id}.mp3"
+                logger.info(f"[Celery] TTS audio generated for lead {lead_id}: {audio_url}")
+        except Exception as e:
+            logger.warning(f"[Celery] TTS generation failed for lead {lead_id}: {e}")
+
+        # 2. Generate analysis HTML
+        try:
+            analysis_html = generate_analysis_email(lead, audio_url=audio_url)
+        except Exception as e:
+            logger.error(f"[Celery] Analysis generation failed for lead {lead_id}: {e}")
+            analysis_html = ""
+
+        # 3. Wrap in professional email template and send
+        try:
+            outreach = EmailOutreach()
+            subject = f"Tu análisis de automatización para {lead.business_name}"
+            app_url = outreach.from_email.split("@")[-1] if "@" in outreach.from_email else "ekoai.io"
+            tracking_pixel = outreach._add_tracking_pixel("", lead.id, f"lead_{lead.id}") if hasattr(outreach, "_add_tracking_pixel") else ""
+            full_html = render_outreach_email(
+                subject=subject,
+                email_content=analysis_html,
+                unsubscribe_url=f"https://{app_url}/api/v1/webhooks/unsubscribe?lead_id={lead.id}",
+                tracking_pixel=tracking_pixel,
+            )
+            await outreach.send(
+                to_email=lead.email,
+                subject=subject,
+                body=full_html,
+                lead_id=lead.id,
+                business_name=lead.business_name,
+                ai_generated=True,
+                tags=["ai_analysis", "landing_page"],
+                is_full_html=True,
+            )
+            logger.info(f"[Celery] AI Analysis email sent to lead {lead_id}")
+        except Exception as e:
+            logger.error(f"[Celery] Failed to send analysis email to lead {lead_id}: {e}")
+            return {"status": "email_failed", "error": str(e)}
+
+        # 4. Advance nurture sequence enrollment to start next steps in 2 days
+        try:
+            seq_result = await db.execute(
+                select(EmailSequence).where(EmailSequence.name == "Landing Page Nurturing")
+            )
+            seq = seq_result.scalar_one_or_none()
+            if seq:
+                enr_result = await db.execute(
+                    select(SequenceEnrollment).where(
+                        SequenceEnrollment.sequence_id == seq.id,
+                        SequenceEnrollment.lead_id == lead.id,
+                        SequenceEnrollment.status == "active",
+                    )
+                )
+                enrollment = enr_result.scalar_one_or_none()
+                if enrollment:
+                    enrollment.next_step_at = datetime.utcnow() + timedelta(days=2)
+                    await db.commit()
+                    logger.info(f"[Celery] Lead {lead_id} nurture sequence advanced to {enrollment.next_step_at}")
+        except Exception as e:
+            logger.warning(f"[Celery] Failed to advance nurture sequence for lead {lead_id}: {e}")
+
+        return {"status": "sent", "lead_id": lead_id}
+
+
+@celery_app.task(bind=True, max_retries=2)
+def enrich_and_welcome_lead(self, lead_id: int):
+    """Celery task: enrich a landing-page lead and send the AI Analysis email."""
+    logger.info(f"[Celery] enrich_and_welcome_lead started for lead {lead_id}")
+    try:
+        result = _run_async_task(_enrich_and_welcome_lead_async(lead_id))
+        logger.info(f"[Celery] enrich_and_welcome_lead complete for {lead_id}: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"[Celery] enrich_and_welcome_lead failed for {lead_id}: {e}")
+        raise self.retry(exc=e, countdown=60)
 
 
 @celery_app.task(bind=True, max_retries=2)

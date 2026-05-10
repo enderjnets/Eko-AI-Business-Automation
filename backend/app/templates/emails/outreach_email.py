@@ -13,7 +13,20 @@ OUTREACH_EMAIL_HTML = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>{subject}</title>
+  <style>
+    @media only screen and (max-width: 600px) {
+      .mobile-full { width: 100% !important; display: block !important; }
+      .mobile-center { text-align: center !important; }
+      .mobile-stack { width: 100% !important; display: block !important; padding: 8px 0 !important; }
+      .mobile-hide { display: none !important; }
+      .mobile-text { font-size: 16px !important; line-height: 1.6 !important; }
+      .mobile-small { font-size: 14px !important; }
+      .mobile-gauge { width: 100px !important; height: 100px !important; line-height: 100px !important; }
+      .mobile-gauge span { font-size: 36px !important; }
+    }
+  </style>
 </head>
 <body style="margin:0;padding:0;background-color:#0B0F19;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#E2E8F0;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0B0F19;">
@@ -98,7 +111,7 @@ def _style_existing_p_tags(html: str) -> str:
         tag = match.group(0)
         if 'style=' in tag:
             return tag  # Already has styles, leave it
-        return '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#1a1a1a;">'
+        return '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#E2E8F0;">'
 
     return re.sub(r'<p(?![^>]*style=)[^>]*>', add_style_to_p, html, flags=re.IGNORECASE)
 
@@ -165,11 +178,11 @@ def format_plain_text_to_html(text: str) -> str:
 
         if is_signoff:
             html_parts.append(
-                f'<p style="margin:24px 0 0;font-size:15px;line-height:1.6;color:#555555;">{para}</p>'
+                f'<p style="margin:24px 0 0;font-size:15px;line-height:1.6;color:#94A3B8;">{para}</p>'
             )
         else:
             html_parts.append(
-                f'<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#1a1a1a;">{para}</p>'
+                f'<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#E2E8F0;">{para}</p>'
             )
 
     result = "\n".join(html_parts)
@@ -193,9 +206,11 @@ def render_outreach_email(
     Returns:
         Complete HTML email string ready to send via Resend
     """
-    return OUTREACH_EMAIL_HTML.format(
-        subject=subject,
-        email_content=email_content,
-        unsubscribe_url=unsubscribe_url,
-        tracking_pixel=tracking_pixel,
+    # Use .replace() instead of .format() because email_content may contain
+    # CSS braces (e.g. style="display:block") which would break .format()
+    return (OUTREACH_EMAIL_HTML
+        .replace("{subject}", subject)
+        .replace("{email_content}", email_content)
+        .replace("{unsubscribe_url}", unsubscribe_url)
+        .replace("{tracking_pixel}", tracking_pixel)
     )

@@ -137,6 +137,16 @@ AI analysis of email:
 
     custom = f"\nAdditional instructions: {custom_instructions}\n" if custom_instructions else ""
 
+    # Determine language: use lead.language or fall back to detected language from meta
+    language = lead.language or "en"
+    meta = inbound_email.meta or {}
+    detected_lang = meta.get("detected_language")
+    if detected_lang and detected_lang != language:
+        language = detected_lang
+
+    lang_names = {"en": "English", "es": "Spanish", "fr": "French", "de": "German", "pt": "Portuguese", "it": "Italian"}
+    lang_name = lang_names.get(language, language)
+
     system_prompt = f"""You are a B2B sales expert and commercial communication specialist. You generate replies to prospect emails that are:
 
 1. HIGHLY PERSONALIZED: Use the business name, references to their industry/city, and context from previous conversations.
@@ -144,7 +154,7 @@ AI analysis of email:
 3. APPROPRIATE TONE: {tone_guidance}
 4. APPROPRIATE LENGTH: {length_guidance}
 5. CLEAR CTA: Always end with a question or concrete next-step suggestion.
-6. LANGUAGE: The prospect wrote in English. You MUST reply in English ONLY. Do not use Spanish, Portuguese, or any other language.
+6. LANGUAGE: The prospect wrote in {lang_name}. You MUST reply in {lang_name} ONLY. Do not use any other language.
 
 RULES:
 - Never use "I hope this email finds you well" or generic openers.

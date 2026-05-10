@@ -1,5 +1,4 @@
 import logging
-import re
 from datetime import datetime
 from typing import Optional
 
@@ -53,35 +52,35 @@ EMAIL_TEMPLATES = {
     },
     "nurture_welcome": {
         "subject": "Tu análisis de automatización para {business_name}",
-        "context": "Welcome email for leads captured from the website. Thank them for their interest. Briefly introduce Eko AI as an automation company for ANY type of business (not just spas). Mention that AI agents can handle calls, appointments, and follow-ups 24/7. Include a soft CTA to book a free demo. Keep it under 150 words, warm and personal. Sign as 'Eko AI Team'. Use clear paragraph breaks (double line breaks) between each idea, example, and CTA. Write the email in SPANISH.",
+        "context": "Welcome email for leads captured from the website. Thank them for their interest. Briefly introduce Eko AI as an automation company for ANY type of business (not just spas). Mention that AI agents can handle calls, appointments, and follow-ups 24/7. Include a soft CTA to book a free demo. Keep it under 150 words, warm and personal. Sign as 'Eko AI Team'. Write the email in SPANISH.",
     },
     "nurture_social_proof": {
         "subject": "Cómo otros negocios como {business_name} ahorran 15+ horas/semana",
-        "context": "Share a brief, generic success story about how a business (adapt to their category) saved time and money with AI automation. Focus on specific results: hours saved, more bookings, fewer missed calls. Keep it under 150 words. No specific names unless generic. CTA: 'Want to see if this works for your business? Book a 15-min demo.' Use clear paragraph breaks (double line breaks) between each idea, example, and CTA. Sign as 'Eko AI Team'. Write the email in SPANISH.",
+        "context": "Share a brief, generic success story about how a business (adapt to their category) saved time and money with AI automation. Focus on specific results: hours saved, more bookings, fewer missed calls. Keep it under 150 words. No specific names unless generic. CTA: 'Want to see if this works for your business? Book a 15-min demo.' Write the email in SPANISH.",
     },
     "nurture_education": {
         "subject": "3 señales de que {business_name} necesita automatización",
-        "context": "Educational email listing 3 signs a business needs AI automation: 1) Missing calls after hours, 2) Spending too much time on scheduling/admin, 3) Losing leads due to slow follow-up. Frame it as helpful content, not salesy. Keep under 150 words. CTA: 'Book a free demo to see how AI can handle these for you.' Use clear paragraph breaks (double line breaks) between each idea, example, and CTA. Sign as 'Eko AI Team'. Write the email in SPANISH.",
+        "context": "Educational email listing 3 signs a business needs AI automation: 1) Missing calls after hours, 2) Spending too much time on scheduling/admin, 3) Losing leads due to slow follow-up. Frame it as helpful content, not salesy. Keep under 150 words. CTA: 'Book a free demo to see how AI can handle these for you.' Write the email in SPANISH.",
     },
     "nurture_demo_offer": {
         "subject": "15 minutos para transformar {business_name}",
-        "context": "Offer a free 15-minute personalized demo. Explain that in 15 minutes we'll show exactly how an AI agent would handle their specific type of business — their calls, appointments, FAQs. No commitment, no pressure. Keep under 125 words. Include direct Cal.com booking link if possible. Make it easy to say yes. Use clear paragraph breaks (double line breaks) between each idea, example, and CTA. Sign as 'Eko AI Team'. Write the email in SPANISH.",
+        "context": "Offer a free 15-minute personalized demo. Explain that in 15 minutes we'll show exactly how an AI agent would handle their specific type of business — their calls, appointments, FAQs. No commitment, no pressure. Keep under 125 words. Include direct Cal.com booking link if possible. Make it easy to say yes. Write the email in SPANISH.",
     },
     "nurture_urgency": {
         "subject": "Setup gratuito este mes para {business_name}",
-        "context": "Final nurturing email with a time-sensitive offer: waive the $499 setup fee if they book a demo and sign up this month. Be honest and direct — no fake urgency. Mention that spots are limited because each setup requires personalized training. Keep under 125 words. This is the last email in the sequence. CTA: strong push to book demo now. Use clear paragraph breaks (double line breaks) between each idea, example, and CTA. Sign as 'Eko AI Team'. Write the email in SPANISH.",
+        "context": "Final nurturing email with a time-sensitive offer: waive the $499 setup fee if they book a demo and sign up this month. Be honest and direct — no fake urgency. Mention that spots are limited because each setup requires personalized training. Keep under 125 words. This is the last email in the sequence. CTA: strong push to book demo now. Write the email in SPANISH.",
     },
     "welcome_onboarding": {
         "subject": "Bienvenido a Eko AI — tu negocio nunca será igual",
-        "context": "Welcome email for a NEW PAYING CUSTOMER who just completed checkout. Congratulate them warmly. Outline the next 3 onboarding steps: 1) We'll schedule the setup call within 48 hours, 2) We'll integrate their phone/channels during setup, 3) Their AI agent goes live. Include a direct reply-to email for questions. Keep it under 200 words, warm and exciting. Sign as 'Eko AI Team'. Use clear paragraph breaks (double line breaks) between each idea, example, and CTA. Write the email in SPANISH.",
+        "context": "Welcome email for a NEW PAYING CUSTOMER who just completed checkout. Congratulate them warmly. Outline the next 3 onboarding steps: 1) We'll schedule the setup call within 48 hours, 2) We'll integrate their phone/channels during setup, 3) Their AI agent goes live. Include a direct reply-to email for questions. Keep it under 200 words, warm and exciting. Sign as 'Eko AI Team'. Write the email in SPANISH.",
     },
     "payment_failed": {
         "subject": "Acción requerida: actualiza tu método de pago — {business_name}",
-        "context": "Payment failed email for a subscription customer. Explain calmly that the monthly charge could not be processed. Offer clear steps to update payment method via the customer portal. Reassure them their service is still active during the grace period. No guilt or pressure. Keep under 150 words. Include a direct link to the billing portal. Sign as 'Eko AI Team'. Use clear paragraph breaks (double line breaks) between each idea, example, and CTA. Write the email in SPANISH.",
+        "context": "Payment failed email for a subscription customer. Explain calmly that the monthly charge could not be processed. Offer clear steps to update payment method via the customer portal. Reassure them their service is still active during the grace period. No guilt or pressure. Keep under 150 words. Include a direct link to the billing portal. Sign as 'Eko AI Team'. Write the email in SPANISH.",
     },
     "subscription_canceled": {
         "subject": "Tu suscripción a Eko AI ha sido cancelada — {business_name}",
-        "context": "Subscription cancellation email. Confirm the cancellation professionally. Thank them for being a customer. Mention that their service will remain active until the end of the current billing period (if applicable). Leave the door open for reactivation. If this is a retention email (before final cancellation), offer a quick call to address concerns. Keep under 150 words. Sign as 'Eko AI Team'. Use clear paragraph breaks (double line breaks) between each idea, example, and CTA. Write the email in SPANISH.",
+        "context": "Subscription cancellation email. Confirm the cancellation professionally. Thank them for being a customer. Mention that their service will remain active until the end of the current billing period (if applicable). Leave the door open for reactivation. If this is a retention email (before final cancellation), offer a quick call to address concerns. Keep under 150 words. Sign as 'Eko AI Team'. Write the email in SPANISH.",
     },
 }
 
@@ -127,6 +126,11 @@ COMPLIANCE:
 - Include unsubscribe: "Reply STOP to opt out"
 - Do not make false claims"""
 
+        # Language-aware prompt
+        lang = lead.language or "en"
+        lang_names = {"en": "English", "es": "Spanish", "fr": "French", "de": "German", "pt": "Portuguese", "it": "Italian"}
+        lang_name = lang_names.get(lang, lang)
+
         user_prompt = f"""Write a personalized outreach email using template: {template_key}
 
 Business: {lead.business_name}
@@ -142,6 +146,8 @@ What we know about them:
 - Urgency score: {lead.urgency_score or 'N/A'}
 
 Campaign context: {campaign_context or template['context']}
+
+CRITICAL: Write the ENTIRE email in {lang_name} ({lang}). The subject, body, and all text must be in {lang_name}.
 
 Our services:
 - AI Voice Agent that answers calls 24/7
@@ -235,53 +241,6 @@ Return ONLY a JSON object with:
         # Insert before </body> to keep pixel inside the HTML document
         return body.replace("</body>", f"{pixel}</body>")
     
-    def _smart_paragraph_breaks(self, text: str) -> str:
-        """Insert paragraph breaks into flat AI-generated text that lacks them.
-
-        Many LLMs (especially Minimax) return the entire email body as a single
-        line of text with no paragraph breaks. This method detects common email
-        structural patterns — emojis that start examples, CTA phrases, sign-offs —
-        and inserts \n\n so that _body_to_html() can wrap each block in its own
-        <p> tag.
-        """
-        if "\n\n" in text:
-            return text  # Already has paragraphs
-
-        # Break before emojis that start new examples / items / CTAs
-        text = re.sub(
-            r'(?<=\S)\s+(?=[🏢🏋️🦷📅📞🎉💡✅🚀⭐🔥💰📊🤖👋✨📝🏆🎯💼📈🏠🚗🍽️💇🏥🏪🛠️🌟⚡🔧💻📱🎁🕐🕒🕕]\s+[A-Z])',
-            '\n\n',
-            text,
-        )
-
-        # Break before common transitional phrases / CTAs / sign-offs
-        transitions = [
-            "Book your free demo",
-            "Or call us",
-            "Which option works better",
-            "Cheers,",
-            "Best,",
-            "Regards,",
-            "Want to jump on a call",
-            "Want to see it",
-            "The best way to see it",
-            "Here's how",
-            "Ready to",
-            "Let's talk",
-            "Talk soon",
-            "Looking forward",
-        ]
-        for phrase in transitions:
-            text = re.sub(rf'(?<=[.!?—:\d])\s+({re.escape(phrase)})', rf'\n\n\1', text)
-
-        # Break after colons when introducing a new sentence/section
-        text = re.sub(r'(?<=:)\s+(?=[A-Z])', '\n\n', text)
-
-        # Clean up excessive breaks
-        text = re.sub(r'\n{3,}', '\n\n', text)
-
-        return text
-
     def _body_to_html(self, body: str, subject: str = "", lead_id: Optional[int] = None) -> str:
         """Convert plain text to minimal HTML for email delivery.
 
@@ -321,7 +280,6 @@ Return ONLY a JSON object with:
             body = _style_existing_p_tags(body)
         else:
             # Pure plain text — convert to minimal HTML paragraphs
-            body = self._smart_paragraph_breaks(body)
             paragraphs = body.split("\n\n")
             html_paras = []
             for p in paragraphs:
@@ -359,6 +317,7 @@ Denver, CO<br>
         attachments: Optional[list] = None,
         in_reply_to: Optional[str] = None,
         references: Optional[list] = None,
+        is_full_html: bool = False,
     ) -> dict:
         """
         Send an email via Resend with tracking pixel embedded.
@@ -380,12 +339,22 @@ Denver, CO<br>
                     email_tags.append({"name": tag, "value": "true"})
             
             # Build professional HTML body before sending
-            html_body = self._body_to_html(body, subject=subject, lead_id=lead_id)
+            if is_full_html:
+                # Body is already a complete HTML document (e.g. analysis email)
+                html_body = body
+            else:
+                html_body = self._body_to_html(body, subject=subject, lead_id=lead_id)
 
             # Add tracking pixel
             tracking_body = html_body
             if lead_id:
-                tracking_body = self._add_tracking_pixel(html_body, lead_id, f"lead_{lead_id}")
+                if is_full_html and "</body>" in tracking_body:
+                    app_url = settings.APP_URL.rstrip("/")
+                    pixel_url = f"{app_url}/api/v1/webhooks/track/open?lead_id={lead_id}&message_id=lead_{lead_id}"
+                    pixel = f'<img src="{pixel_url}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;" />'
+                    tracking_body = tracking_body.replace("</body>", f"{pixel}</body>")
+                else:
+                    tracking_body = self._add_tracking_pixel(html_body, lead_id, f"lead_{lead_id}")
             
             params = {
                 "from": self.from_email,

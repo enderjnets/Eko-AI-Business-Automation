@@ -1,7 +1,7 @@
 import logging
 import math
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, Body, Request
 from sqlalchemy import select, func, Integer, case, and_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +24,7 @@ from app.core.security import get_current_user
 from app.services.tenant_context import get_tenant_context_optional, TenantContext
 from app.api.v1.crm import VALID_TRANSITIONS
 from app.utils.geocoding import geocode_address as _geocode_address
+from app.tasks.scheduled import enrich_and_welcome_lead
 
 logger = logging.getLogger(__name__)
 
@@ -555,7 +556,7 @@ async def create_public_lead(
                         lead_id=lead.id,
                         status="active",
                         current_step_position=0,
-                        next_step_at=datetime.utcnow(),
+                        next_step_at=datetime.utcnow() + timedelta(days=2),
                         meta={"source": "website_landing_auto_enroll"},
                     )
                     db.add(enrollment)
@@ -567,9 +568,9 @@ async def create_public_lead(
     else:
         logger.info(f"Lead {lead.id} has no email, skipping nurture enrollment")
 
-    # Send welcome email immediately in background
+    # Queue enrichment + AI Analysis email via Celery (takes 1-2 min)
     if lead.email:
-        background_tasks.add_task(_send_welcome_email, lead.id)
+        enrich_and_welcome_lead.delay(lead.id)
 
     return {"status": "created", "lead_id": lead.id}
 

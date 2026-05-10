@@ -39,12 +39,15 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: eko-backend
+    env_file:
+      - .env
     restart: unless-stopped
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-eko}:${POSTGRES_PASSWORD:-eko_dev_pass}@db:5432/${POSTGRES_DB:-eko_ai}
       - REDIS_URL=redis://redis:6379/0
       - AI_PROVIDER=${AI_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ELEVENLABS_API_KEY=98b4670ec5f8658b81fbcf0d9a685b3f3348ac6420a6be261ee7d5ceaf656a8f
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
       - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
@@ -107,12 +110,15 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     # container_name: eko-celery (removed for scaling)
+    env_file:
+      - .env
     restart: unless-stopped
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-eko}:${POSTGRES_PASSWORD:-eko_dev_pass}@db:5432/${POSTGRES_DB:-eko_ai}
       - REDIS_URL=redis://redis:6379/0
       - AI_PROVIDER=${AI_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ELEVENLABS_API_KEY=98b4670ec5f8658b81fbcf0d9a685b3f3348ac6420a6be261ee7d5ceaf656a8f
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
       - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
@@ -179,6 +185,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - AI_PROVIDER=${AI_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ELEVENLABS_API_KEY=98b4670ec5f8658b81fbcf0d9a685b3f3348ac6420a6be261ee7d5ceaf656a8f
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
       - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}

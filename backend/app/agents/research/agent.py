@@ -66,6 +66,12 @@ class ResearchAgent:
                 enrichment.about_text = website_data.get("about_text")
                 enrichment.team_names = website_data.get("team_names", [])
 
+                # Detect and store language
+                detected_lang = website_data.get("detected_language", "en")
+                if detected_lang:
+                    lead.language = detected_lang
+                    logger.info(f"Lead language set to '{detected_lang}' from website analysis")
+
                 # Use email found on website if lead has none
                 if not lead.email and website_data.get("email_found"):
                     enrichment.email = website_data.get("email_found")
@@ -75,7 +81,7 @@ class ResearchAgent:
 
         # 3. AI-powered analysis and proposal generation
         try:
-            ai_analysis = await self._run_ai_analysis(lead, website_data)
+            ai_analysis = await self._run_ai_analysis(lead, website_data, language=lead.language or "en")
             enrichment.review_summary = ai_analysis.get("review_summary")
             enrichment.trigger_events = ai_analysis.get("trigger_events", [])
             enrichment.pain_points = ai_analysis.get("pain_points", [])
@@ -110,10 +116,14 @@ class ResearchAgent:
 
         return enrichment
 
-    async def _run_ai_analysis(self, lead: Lead, website_data: dict) -> dict:
+    async def _run_ai_analysis(self, lead: Lead, website_data: dict, language: str = "en") -> dict:
         """Use LLM to analyze the lead and generate insights + proposal."""
 
-        system_prompt = """You are an expert sales researcher, business analyst, and proposal writer for an AI automation agency called "Eko AI".
+        # Map common codes to full names for clearer prompting
+        lang_names = {"en": "English", "es": "Spanish", "fr": "French", "de": "German", "pt": "Portuguese", "it": "Italian"}
+        lang_name = lang_names.get(language, language)
+
+        system_prompt = f"""You are an expert sales researcher, business analyst, and proposal writer for an AI automation agency called "Eko AI".
 
 Your job is to deeply analyze a local business and produce a complete assessment that will be used to create a personalized sales proposal.
 
@@ -126,7 +136,9 @@ Analyze the following and return ONLY a valid JSON object with these exact keys:
 - scoring_reason: string (1-2 sentences explaining why you gave those scores)
 - proposal_suggestion: string (A 3-5 paragraph personalized proposal pitch. Address the business by name. Mention specific pain points we discovered, reference their services, and explain exactly how Eko AI can help them: missed call AI, appointment booking automation, follow-up sequences, review generation, and CRM pipeline. Be persuasive, specific, and professional.)
 
-Be concise. Keep proposal_suggestion to 3 paragraphs max so it fits in JSON."""
+Be concise. Keep proposal_suggestion to 3 paragraphs max so it fits in JSON.
+
+IMPORTANT: Write ALL output in {lang_name.upper()} ({language}). The review_summary, trigger_events, pain_points, scoring_reason, and proposal_suggestion must all be in {lang_name}."""
 
         context = f"""Business Name: {lead.business_name}
 Category: {lead.category or 'Unknown'}

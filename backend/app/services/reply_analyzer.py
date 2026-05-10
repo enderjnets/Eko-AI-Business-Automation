@@ -1,5 +1,6 @@
 import json
 from typing import Optional
+from langdetect import detect
 from app.utils.ai_client import generate_completion
 
 
@@ -47,6 +48,14 @@ Reply text:
 
 Analyze this reply and return JSON only."""
 
+    # Detect language of the reply
+    detected_language = "en"
+    try:
+        if reply_text and len(reply_text) > 10:
+            detected_language = detect(reply_text)
+    except Exception:
+        pass
+
     try:
         response = await generate_completion(
             system_prompt=system_prompt,
@@ -56,7 +65,7 @@ Analyze this reply and return JSON only."""
             json_mode=True,
         )
         result = json.loads(response)
-        
+
         # Normalize and validate
         return {
             "sentiment": result.get("sentiment", "neutral").lower(),
@@ -65,6 +74,7 @@ Analyze this reply and return JSON only."""
             "next_action": result.get("next_action", ""),
             "priority": result.get("priority", "medium").lower(),
             "key_points": result.get("key_points", []),
+            "detected_language": detected_language,
         }
     except Exception:
         # Fallback if AI fails
@@ -75,6 +85,7 @@ Analyze this reply and return JSON only."""
             "next_action": "Review reply manually",
             "priority": "medium",
             "key_points": [],
+            "detected_language": detected_language,
         }
 
 
