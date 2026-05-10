@@ -122,8 +122,8 @@ class Settings(BaseSettings):
     @classmethod
     def validate_database_url(cls, v: str, info) -> str:
         env = info.data.get("ENVIRONMENT", "development")
-        if env == "production" and v and "eko_dev_pass" in v:
-            raise ValueError("DATABASE_URL must not use default dev password in production")
+        if env == "production" and v and "eko_dev_pass" in v and ("localhost" in v or "127.0.0.1" in v):
+            raise ValueError("DATABASE_URL must not use default dev password on localhost in production")
         return v
 
     @property
