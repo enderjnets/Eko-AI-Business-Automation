@@ -30,6 +30,21 @@ TIMEOUT = 10
 log = logging.getLogger(__name__)
 
 
+def _check_paperclip_health() -> bool:
+    """Verify Paperclip API key is valid by hitting the issues endpoint."""
+    if not PAPERCLIP_API_KEY:
+        return False
+    try:
+        r = requests.get(
+            f"{PAPERCLIP_API}/api/companies/{COMPANY_ID}/issues?limit=1",
+            headers=HEADERS,
+            timeout=TIMEOUT,
+        )
+        return r.status_code != 401
+    except Exception:
+        return False
+
+
 def _create_issue(
     title: str,
     description: str,
@@ -58,10 +73,12 @@ def _create_issue(
             identifier = issue.get("identifier", "?")
             log.info(f"📋 Paperclip: {identifier} — {title}")
             return issue.get("id")
+        elif r.status_code == 401:
+            log.error(f"Paperclip 401 Unauthorized — API key may be expired or invalid: {r.text}")
         else:
             log.warning(f"Paperclip issue creation failed: {r.status_code} {r.text}")
     except Exception as e:
-        log.debug(f"Paperclip unavailable: {e}")
+        log.warning(f"Paperclip unavailable: {e}")
     return None
 
 

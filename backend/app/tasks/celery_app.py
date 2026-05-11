@@ -1,5 +1,5 @@
 from celery import Celery
-from celery.signals import worker_process_init
+from celery.signals import worker_process_init, task_prerun
 from celery.schedules import crontab
 from app.config import get_settings
 
@@ -24,6 +24,20 @@ def init_worker_process(**kwargs):
     """
     from app.db.base import recreate_engine
     recreate_engine()
+    import logging
+    logging.getLogger(__name__).info("Celery worker process initialized, engine recreated")
+
+
+@task_prerun.connect
+def task_prerun_handler(**kwargs):
+    """Recreate the SQLAlchemy engine before every task.
+    This ensures each task gets a fresh asyncpg connection pool bound to
+    the current event loop, preventing 'Event loop is closed' errors.
+    We do NOT dispose() the old engine (it's async and bound to a closed loop);
+    we simply drop the reference and let GC clean it up.
+    """
+    from app.db.base import recreate_engine
+    recreate_engine()
 
 celery_app.conf.update(
     task_serializer="json",
@@ -34,6 +48,7 @@ celery_app.conf.update(
     task_track_started=True,
     task_time_limit=3600,
     worker_prefetch_multiplier=1,
+    worker_max_tasks_per_child=100,
     # Beat schedule
     beat_schedule={
         "process-follow-ups-every-5-min": {

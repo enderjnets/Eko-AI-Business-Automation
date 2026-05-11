@@ -31,12 +31,13 @@ def _get_engine():
 
 
 def recreate_engine():
-    """Dispose existing engine and reset globals so a fresh engine is created.
-    Called by Celery worker_process_init to avoid 'Future attached to a different loop'.
+    """Reset engine globals so a fresh engine is created on next use.
+    Called before every Celery task to avoid 'Future attached to a different loop'.
+    We do NOT dispose() the old engine (AsyncEngine.dispose is async and bound to
+    a closed event loop here); we drop the reference and let GC clean it up.
+    Workers restart every 100 tasks via worker_max_tasks_per_child.
     """
     global _engine, _AsyncSessionLocal
-    if _engine is not None:
-        _engine.dispose()
     _engine = None
     _AsyncSessionLocal = None
 

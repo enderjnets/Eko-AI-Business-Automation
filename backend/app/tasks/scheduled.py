@@ -784,14 +784,6 @@ def backup_processed_leads():
         raise
 
 
-def _run_async_task(coro):
-    """Run an async coroutine inside a Celery task with a fresh event loop.
-    Calls recreate_engine() so SQLAlchemy asyncpg connections bind to the
-    correct loop and avoid 'Event loop is closed' errors.
-    """
-    from app.db.base import recreate_engine
-    recreate_engine()
-    return asyncio.run(coro)
 
 
 @celery_app.task
@@ -823,7 +815,7 @@ def remind_scheduled_calls():
 @celery_app.task
 def enrich_single_lead(lead_id: int):
     """Enrich a single lead by ID."""
-    _run_async_task(_enrich_single_lead_async(lead_id))
+    asyncio.run(_enrich_single_lead_async(lead_id))
 
 
 @celery_app.task
@@ -1153,7 +1145,8 @@ async def _enrich_and_welcome_lead_async(lead_id: int):
                 await db.commit()
                 logger.info(f"[Celery] Email interaction recorded for lead {lead_id}")
             except Exception as ie:
-                logger.warning(f"[Celery] Failed to record email interaction for lead {lead_id}: {ie}")
+                await db.rollback()
+                logger.exception(f"[Celery] Failed to record email interaction for lead {lead_id}")
         except Exception as e:
             logger.error(f"[Celery] Failed to send analysis email to lead {lead_id}: {e}")
             return {"status": "email_failed", "error": str(e)}
@@ -1188,7 +1181,7 @@ def enrich_and_welcome_lead(self, lead_id: int):
     """Celery task: enrich a landing-page lead and send the AI Analysis email."""
     logger.info(f"[Celery] enrich_and_welcome_lead started for lead {lead_id}")
     try:
-        result = _run_async_task(_enrich_and_welcome_lead_async(lead_id))
+        result = asyncio.run(_enrich_and_welcome_lead_async(lead_id))
         logger.info(f"[Celery] enrich_and_welcome_lead complete for {lead_id}: {result}")
         return result
     except Exception as e:
@@ -1201,7 +1194,7 @@ def run_lead_pipeline(self, lead_id: int):
     """Celery task: enrich lead and send initial outreach email."""
     logger.info(f"[Celery] Running lead pipeline for lead {lead_id}...")
     try:
-        result = _run_async_task(_run_lead_pipeline_async(lead_id))
+        result = asyncio.run(_run_lead_pipeline_async(lead_id))
         logger.info(f"[Celery] Lead pipeline complete for {lead_id}")
         return result
     except Exception as e:
