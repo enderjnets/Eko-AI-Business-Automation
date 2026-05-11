@@ -56,6 +56,14 @@ interface Lead {
   business_hours?: string;
   about_text?: string;
   team_names?: string[];
+  // Website feature flags
+  has_booking?: boolean;
+  has_chatbot?: boolean;
+  has_ecommerce?: boolean;
+  has_blog?: boolean;
+  has_newsletter?: boolean;
+  has_online_ordering?: boolean;
+  has_contact_form?: boolean;
 }
 
 export default function LeadDetailPage() {
@@ -380,9 +388,23 @@ export default function LeadDetailPage() {
                     </div>
                   </div>
                 )}
+                {/* Website Features */}
+                {(lead.has_booking || lead.has_chatbot || lead.has_ecommerce || lead.has_blog || lead.has_newsletter || lead.has_online_ordering || lead.has_contact_form) && (
+                  <div className="mt-4">
+                    <h4 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Website Features</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {lead.has_booking && <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400">Online Booking</span>}
+                      {lead.has_chatbot && <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400">Chatbot</span>}
+                      {lead.has_ecommerce && <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400">E-commerce</span>}
+                      {lead.has_blog && <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400">Blog</span>}
+                      {lead.has_newsletter && <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400">Newsletter</span>}
+                      {lead.has_online_ordering && <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400">Online Ordering</span>}
+                      {lead.has_contact_form && <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400">Contact Form</span>}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-
             {/* Email Composer */}
             {showEmailComposer && (
               <EmailComposer

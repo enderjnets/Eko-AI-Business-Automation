@@ -65,6 +65,14 @@ class ResearchAgent:
                 enrichment.business_hours = website_data.get("hours")
                 enrichment.about_text = website_data.get("about_text")
                 enrichment.team_names = website_data.get("team_names", [])
+                # Website feature flags
+                enrichment.has_booking = website_data.get("has_booking")
+                enrichment.has_chatbot = website_data.get("has_chatbot")
+                enrichment.has_ecommerce = website_data.get("has_ecommerce")
+                enrichment.has_blog = website_data.get("has_blog")
+                enrichment.has_newsletter = website_data.get("has_newsletter")
+                enrichment.has_online_ordering = website_data.get("has_online_ordering")
+                enrichment.has_contact_form = website_data.get("has_contact_form")
 
                 # Detect and store language
                 detected_lang = website_data.get("detected_language", "en")

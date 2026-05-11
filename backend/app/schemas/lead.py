@@ -48,6 +48,14 @@ class LeadUpdate(BaseModel):
     next_call_at: Optional[datetime] = None
     call_attempts: Optional[int] = None
     last_call_result: Optional[str] = None
+    # Website feature flags
+    has_booking: Optional[bool] = None
+    has_chatbot: Optional[bool] = None
+    has_ecommerce: Optional[bool] = None
+    has_blog: Optional[bool] = None
+    has_newsletter: Optional[bool] = None
+    has_online_ordering: Optional[bool] = None
+    has_contact_form: Optional[bool] = None
 
 
 class LeadEnrichment(BaseModel):
@@ -68,6 +76,15 @@ class LeadEnrichment(BaseModel):
     about_text: Optional[str] = None
     team_names: Optional[list] = None
     proposal_suggestion: Optional[str] = None
+    # Website feature flags (detected by WebsiteAnalyzer)
+    has_booking: Optional[bool] = None
+    has_chatbot: Optional[bool] = None
+    has_ecommerce: Optional[bool] = None
+    has_blog: Optional[bool] = None
+    has_newsletter: Optional[bool] = None
+    has_online_ordering: Optional[bool] = None
+    has_contact_form: Optional[bool] = None
+    # Website feature flags (detected by WebsiteAnalyzer)
 
 
 class LeadResponse(LeadBase):
@@ -92,6 +109,15 @@ class LeadResponse(LeadBase):
     about_text: Optional[str] = None
     team_names: Optional[list] = None
     proposal_suggestion: Optional[str] = None
+    # Website feature flags (detected by WebsiteAnalyzer)
+    has_booking: Optional[bool] = None
+    has_chatbot: Optional[bool] = None
+    has_ecommerce: Optional[bool] = None
+    has_blog: Optional[bool] = None
+    has_newsletter: Optional[bool] = None
+    has_online_ordering: Optional[bool] = None
+    has_contact_form: Optional[bool] = None
+    # Website feature flags (detected by WebsiteAnalyzer)
     email_opened_count: int
     email_clicked_count: int
     call_count: int
