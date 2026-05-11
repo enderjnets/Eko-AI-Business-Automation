@@ -77,3 +77,4 @@ backups/
 
 # TypeScript
 *.tsbuildinfo
+backend/static/
