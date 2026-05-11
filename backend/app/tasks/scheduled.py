@@ -1132,6 +1132,28 @@ async def _enrich_and_welcome_lead_async(lead_id: int):
                 is_full_html=True,
             )
             logger.info(f"[Celery] AI Analysis email sent to lead {lead_id}")
+            
+            # Record the email interaction in the database
+            try:
+                interaction = Interaction(
+                    lead_id=lead.id,
+                    interaction_type="email",
+                    direction="outbound",
+                    subject=subject,
+                    content=analysis_html[:500] if analysis_html else "",
+                    email_status="sent",
+                    meta={
+                        "source": "landing_page",
+                        "ai_generated": True,
+                        "audio_url": audio_url,
+                        "tags": ["ai_analysis", "landing_page"],
+                    },
+                )
+                db.add(interaction)
+                await db.commit()
+                logger.info(f"[Celery] Email interaction recorded for lead {lead_id}")
+            except Exception as ie:
+                logger.warning(f"[Celery] Failed to record email interaction for lead {lead_id}: {ie}")
         except Exception as e:
             logger.error(f"[Celery] Failed to send analysis email to lead {lead_id}: {e}")
             return {"status": "email_failed", "error": str(e)}

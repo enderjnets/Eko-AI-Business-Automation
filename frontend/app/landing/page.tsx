@@ -190,7 +190,7 @@ function SuccessModal({ open, onClose, name }: { open: boolean; onClose: () => v
 /* ═══════════════════════─ MAIN PAGE ═══════════════════════*/
 export default function LandingPage() {
   const [form, setForm] = useState({ first_name: "", last_name: "", email: "", phone: "", website: "" });
-  const [heroForm, setHeroForm] = useState({ first_name: "", last_name: "", email: "", phone: "" });
+  const [heroForm, setHeroForm] = useState({ first_name: "", last_name: "", email: "", phone: "", website: "" });
   const [submitted, setSubmitted] = useState(false);
   const [heroSubmitted, setHeroSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -199,6 +199,8 @@ export default function LandingPage() {
   const [heroLoaded, setHeroLoaded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalName, setModalName] = useState("");
+  const [error, setError] = useState("");
+  const [heroError, setHeroError] = useState("");
 
   const statsRef = useScrollAnimation(0.3);
   const statCounts = STATS.map((s) => useCountUp(s.value, 1500, statsRef.isVisible));
@@ -210,10 +212,14 @@ export default function LandingPage() {
 
   const handleHeroSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!heroForm.email || !heroForm.first_name) return;
+    setHeroError("");
+    if (!heroForm.email || !heroForm.first_name) {
+      setHeroError("Please fill in your first name and email.");
+      return;
+    }
     setHeroLoading(true);
     try {
-      await fetch("/api/v1/leads/public", {
+      const res = await fetch("/api/v1/leads/public", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -221,18 +227,22 @@ export default function LandingPage() {
           last_name: heroForm.last_name,
           email: heroForm.email,
           phone: heroForm.phone,
-          business_name: "Landing Page Lead",
+          website: heroForm.website,
+          business_name: `${heroForm.first_name} ${heroForm.last_name}`,
           notes: `Lead from landing page hero. Name: ${heroForm.first_name} ${heroForm.last_name}`,
           source: "landing_page_hero",
         }),
       });
-      setHeroSubmitted(true);
-      setModalName(heroForm.first_name);
-      setShowModal(true);
-    } catch {
-      setHeroSubmitted(true);
-      setModalName(heroForm.first_name);
-      setShowModal(true);
+      const data = await res.json();
+      if (!res.ok) {
+        setHeroError(data.detail || "Something went wrong. Please try again.");
+      } else {
+        setHeroSubmitted(true);
+        setModalName(heroForm.first_name);
+        setShowModal(true);
+      }
+    } catch (err) {
+      setHeroError("Network error. Please check your connection and try again.");
     } finally {
       setHeroLoading(false);
     }
@@ -240,10 +250,14 @@ export default function LandingPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!form.email || !form.first_name || !form.last_name) return;
+    setError("");
+    if (!form.email || !form.first_name || !form.last_name) {
+      setError("Please fill in all required fields (first name, last name, email).");
+      return;
+    }
     setLoading(true);
     try {
-      await fetch("/api/v1/leads/public", {
+      const res = await fetch("/api/v1/leads/public", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -257,13 +271,16 @@ export default function LandingPage() {
           source: "landing_page",
         }),
       });
-      setSubmitted(true);
-      setModalName(form.first_name);
-      setShowModal(true);
-    } catch {
-      setSubmitted(true);
-      setModalName(form.first_name);
-      setShowModal(true);
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.detail || "Something went wrong. Please try again.");
+      } else {
+        setSubmitted(true);
+        setModalName(form.first_name);
+        setShowModal(true);
+      }
+    } catch (err) {
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -412,6 +429,11 @@ export default function LandingPage() {
             )}
           </div>
 
+          {heroError && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center text-red-400 text-sm mb-4">
+              {heroError}
+            </div>
+          )}
           {/* Trust microcopy */}
           <div className={`flex items-center justify-center gap-2 text-sm text-[#64748B] ${heroLoaded ? "animate-fade-in delay-700" : "opacity-0"}`}>
             <Lock className="w-3.5 h-3.5" />
@@ -699,6 +721,11 @@ export default function LandingPage() {
                     <><Zap className="w-5 h-5" />Get My Free AI Analysis</>
                   )}
                 </button>
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center text-red-400 text-sm mt-4">
+                    {error}
+                  </div>
+                )}
                 <div className="flex items-center justify-center gap-2 text-sm text-[#64748B] pt-2">
                   <Lock className="w-3.5 h-3.5" />
                   <span>Your information is secure. We never share your data.</span>

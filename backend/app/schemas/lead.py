@@ -143,6 +143,9 @@ class PublicLeadCreate(BaseModel):
     last_name: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
+    website: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
     category: Optional[str] = None
     notes: Optional[str] = None
 

@@ -1119,6 +1119,7 @@ async def resend_inbound_webhook(request: Request, db: AsyncSession = Depends(ge
         "next_action": analysis.get("next_action"),
         "priority": analysis.get("priority", "medium"),
         "key_points": analysis.get("key_points", []),
+        "detected_language": analysis.get("detected_language"),
         "read": False,
         "auto_status_changed": new_status is not None,
         "previous_status": previous_status,
@@ -1168,12 +1169,14 @@ async def resend_inbound_webhook(request: Request, db: AsyncSession = Depends(ge
             conversation = await get_conversation_history(lead.id, db, limit=10)
             
             # Generate AI reply
+            detected_language = analysis.get("detected_language") or lead.language or "en"
             reply = await generate_ai_reply(
                 lead=lead,
                 inbound_email=interaction,
                 conversation_history=conversation,
                 tone="friendly",
                 max_length="medium",
+                language=detected_language,
             )
             
             # Send email
