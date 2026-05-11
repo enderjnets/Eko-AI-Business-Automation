@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.1";
+export const CURRENT_VERSION = "0.7.3";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,31 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.3",
+    date: "2026-05-11",
+    title: "Delete Lead Fix + Celery Stability",
+    changes: [
+      "Fix: botón Eliminar ahora borra leads correctamente (cascade delete de 7 tablas relacionadas)",
+      "Fix: frontend muestra alert() cuando delete falla en vez de silenciar el error",
+      "Fix: Celery worker RuntimeError 'Event loop is closed' — migrado a prefork pool + engine recreation",
+      "Fix: WebsiteAnalyzer 403 bypass — retry sin User-Agent cuando sitio bloquea bots",
+      "Fix: feature flags de website (booking, chatbot, etc.) ahora persisten en Lead model",
+    ],
+  },
+  {
+    version: "0.7.2",
+    date: "2026-05-10",
+    title: "Landing Page Hardening + Feature Flags",
+    changes: [
+      "Landing page envía Free AI Analysis email inmediatamente tras captura de lead",
+      "Fix: hero form recargaba página por falta de e.preventDefault()",
+      "Fix: schema PublicLeadCreate ahora acepta website, city, state",
+      "Fix: auto-reply con caracteres chinos en español — language detection persistido",
+      "Emails de bienvenida ahora crean Interaction record con email_status=sent",
+      "Website feature flags persistidos: has_booking, has_chatbot, has_ecommerce, etc.",
+    ],
+  },
   {
     version: "0.7.1",
     date: "2026-05-05",
