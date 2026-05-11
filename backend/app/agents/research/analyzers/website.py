@@ -57,6 +57,12 @@ class WebsiteAnalyzer:
 
         try:
             response = await self.client.get(url)
+            if response.status_code == 403:
+                # Some sites block browser UAs but allow empty UA
+                logger.info(f"Got 403 for {url}, retrying without User-Agent")
+                temp_client = httpx.AsyncClient(timeout=15.0, follow_redirects=True)
+                response = await temp_client.get(url)
+                await temp_client.aclose()
             response.raise_for_status()
         except Exception as e:
             logger.warning(f"Failed to fetch {url}: {e}")
@@ -140,7 +146,7 @@ class WebsiteAnalyzer:
 
         has_booking = any(
             indicator in html_text
-            for indicator in ["book now", "schedule", "appointment", "reservation", "calendly"]
+            for indicator in ["book now", "schedule", "appointment", "reservation", "calendly", "autoops", "book online", "schedule service", "request appointment", "service scheduler"]
         )
 
         has_contact_form = bool(soup.find("form")) or "contact" in html_text
