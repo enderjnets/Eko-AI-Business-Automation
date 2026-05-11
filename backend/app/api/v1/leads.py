@@ -3,7 +3,7 @@ import math
 from typing import Optional, List
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, Body, Request
-from sqlalchemy import select, func, Integer, case, and_
+from sqlalchemy import select, func, Integer, case, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 
@@ -12,6 +12,11 @@ from app.models.lead import Lead, LeadStatus, LeadSource, Interaction
 from app.models.user import User
 from app.models.workspace import Workspace, WorkspaceMember
 from app.models.sequence import EmailSequence, SequenceEnrollment, SequenceStatus
+from app.models.payment import Payment
+from app.models.deal import Deal
+from app.models.phone_call import PhoneCall
+from app.models.booking import Booking
+from app.models.campaign import CampaignLead
 from app.schemas.lead import LeadCreate, LeadUpdate, LeadResponse, LeadPreviewResponse, LeadListResponse, DiscoveryRequest, LeadSearchRequest, PublicLeadCreate
 from app.agents.discovery.agent import DiscoveryAgent
 from app.agents.research.analyzers.website import WebsiteAnalyzer
@@ -507,9 +512,6 @@ async def create_public_lead(
         business_name=lead_data.business_name,
         email=lead_data.email,
         phone=lead_data.phone,
-        website=lead_data.website,
-        city=lead_data.city,
-        state=lead_data.state,
         category=lead_data.category,
         source=LeadSource.MANUAL,
         status=LeadStatus.DISCOVERED,
@@ -633,12 +635,21 @@ async def delete_lead(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Delete a lead."""
+    """Delete a lead and all related records."""
     result = await db.execute(select(Lead).where(Lead.id == lead_id))
     lead = result.scalar_one_or_none()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     _check_lead_access(lead, current_user)
+
+    # Explicitly delete related records to avoid FK constraint violations
+    await db.execute(delete(Interaction).where(Interaction.lead_id == lead_id))
+    await db.execute(delete(Payment).where(Payment.lead_id == lead_id))
+    await db.execute(delete(Deal).where(Deal.lead_id == lead_id))
+    await db.execute(delete(PhoneCall).where(PhoneCall.lead_id == lead_id))
+    await db.execute(delete(SequenceEnrollment).where(SequenceEnrollment.lead_id == lead_id))
+    await db.execute(delete(Booking).where(Booking.lead_id == lead_id))
+    await db.execute(delete(CampaignLead).where(CampaignLead.lead_id == lead_id))
 
     await db.delete(lead)
     await db.commit()

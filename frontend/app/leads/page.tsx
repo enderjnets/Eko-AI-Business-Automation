@@ -463,10 +463,7 @@ export default function LeadsPage() {
     if (!deleteConfirm) return;
     try {
       await Promise.all(
-        deleteConfirm.ids.map((id) => leadsApi.delete(id).catch((err: any) => {
-          console.error(`Error eliminando lead ${id}:`, err);
-          return null;
-        }))
+        deleteConfirm.ids.map((id) => leadsApi.delete(id))
       );
       setSelectedLeads(new Set());
       loadLeads();
