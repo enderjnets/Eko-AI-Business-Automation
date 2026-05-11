@@ -27,7 +27,7 @@ import PipelineBoard from "@/components/PipelineBoard";
 import DiscoveryForm from "@/components/DiscoveryForm";
 import RecentLeads from "@/components/RecentLeads";
 import { analyticsApi, emailsApi, dealsApi } from "@/lib/api";
-import VersionBadge from "@/components/VersionBadge";
+
 
 const MODULES = [
   { href: "/leads", label: "Leads", subtitle: "Gestión de prospectos", icon: Users, color: "text-eko-blue bg-eko-blue/10 border-eko-blue/20" },
@@ -217,7 +217,7 @@ export default function Dashboard() {
         </div>
       </main>
 
-      <VersionBadge />
+
     </div>
   );
 }
