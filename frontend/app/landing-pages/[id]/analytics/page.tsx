@@ -15,6 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { landingPagesApi } from "@/lib/api";
+import Navbar from "@/components/Navbar";
 
 interface AnalyticsData {
   landing_page_id: number;
@@ -68,7 +69,7 @@ export default function LandingPageAnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0F172A] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#0F172A] text-white flex items-center justify-center pt-16">
         <Loader2 className="w-8 h-8 animate-spin text-[#0B4FD8]" />
       </div>
     );
@@ -76,7 +77,7 @@ export default function LandingPageAnalyticsPage() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-[#0F172A] text-white p-8">
+      <div className="min-h-screen bg-[#0F172A] text-white p-8 pt-20">
         <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400">
           {error || "No data"}
         </div>
@@ -98,7 +99,7 @@ export default function LandingPageAnalyticsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-white">
+    <div className="min-h-screen bg-[#0F172A] text-white pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link
           href="/landing-pages"

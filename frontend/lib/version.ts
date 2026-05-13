@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.3";
+export const CURRENT_VERSION = "0.7.4";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,24 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.4",
+    date: "2026-05-13",
+    title: "Landing Page Builder v2 — UI + Generation + SEO",
+    changes: [
+      "Landing Pages: Navbar agregado para navegación completa",
+      "Landing Pages: card 'Landing Page en Uso' con preview thumbnail y stats",
+      "Landing Pages: card fallback 'Sistema' cuando no hay páginas dinámicas",
+      "Landing Pages: botón 'Generate with AI' prominente y siempre visible",
+      "Landing Pages: 4 templates de prompt pre-cargados (Restaurante, Clínica, Gym, Spa)",
+      "Landing Pages: tabs Pages / Compare con comparación A/B de conversiones",
+      "Fix: generación con IA usa modelo del sistema (evita 400 Bad Request por mismatch de proveedor)",
+      "Fix: lista se refresca automáticamente tras crear draft desde 'Generate with AI'",
+      "Fix: workspace filter backward compatibility para landing pages legacy",
+      "SEO: URLs limpias /lp/{slug} vía nginx rewrite para bots y crawlers",
+      "Cal.com link dinámico en HTML generado (lee settings de app)",
+    ],
+  },
   {
     version: "0.7.3",
     date: "2026-05-11",

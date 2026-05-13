@@ -85,6 +85,7 @@ export const landingPagesApi = {
   preview: (id: number) => api.get(`/landing-pages/${id}/preview`),
   analytics: (id: number) => api.get(`/landing-pages/${id}/analytics`),
   clone: (id: number) => api.post(`/landing-pages/${id}/clone`),
+  compare: () => api.get("/landing-pages/compare"),
 };
 
 // CRM API

@@ -27,7 +27,7 @@ BUSINESS CONTEXT:
 - Target: Local business owners (restaurants, clinics, spas, gyms, retail, professionals)
 - Value prop: Never lose a customer to a missed call. Your AI works 24/7.
 - Main CTA: "Get My Free AI Analysis"
-- Cal.com link: https://cal.com/ender-ocando-lfxtkn/15min
+- Cal.com link: {cal_com_link}
 
 OUTPUT FORMAT:
 Return ONLY the raw HTML code. No markdown fences, no explanations, no comments outside the HTML. Start directly with <!DOCTYPE html>."""
@@ -74,6 +74,7 @@ class LandingPageGenerator:
         landing_page_id: int,
         provider: Optional[str] = None,
         model: Optional[str] = None,
+        cal_com_link: Optional[str] = None,
     ) -> dict:
         """Generate a landing page from a user prompt.
 
@@ -88,12 +89,13 @@ class LandingPageGenerator:
         )
 
         system = _SYSTEM_PROMPT.replace("{landing_page_id}", str(landing_page_id))
+        system = system.replace("{cal_com_link}", cal_com_link or "https://cal.com/ender-ocando-lfxtkn/15min")
 
         try:
             raw_html = await generate_completion(
                 system_prompt=system,
                 user_prompt=user_prompt,
-                model=model,
+                model=None,  # Use system-configured model (matches AI_PROVIDER)
                 temperature=0.7,
                 max_tokens=8000,
                 json_mode=False,

@@ -6,7 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, Request
 from fastapi.responses import HTMLResponse, Response
-from sqlalchemy import select, func, delete, update, desc, and_
+from sqlalchemy import select, func, delete, update, desc, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
@@ -17,6 +17,7 @@ from app.models.user import User
 from app.models.booking import Booking
 from app.models.deal import Deal
 from app.models.phone_call import PhoneCall
+from app.models.setting import AppSetting
 from app.schemas.landing_page import (
     LandingPageCreate,
     LandingPageUpdate,
@@ -62,14 +63,129 @@ async def list_landing_pages(
     query = select(LandingPage)
     if tenant and tenant.workspace_id:
         query = query.where(
-            and_(
+            or_(
                 LandingPage.workspace_id == tenant.workspace_id,
+                LandingPage.workspace_id.is_(None),
             )
         )
     query = query.order_by(desc(LandingPage.created_at))
     result = await db.execute(query)
     items = result.scalars().all()
     return LandingPageListResponse(items=items, total=len(items))
+
+
+@router.get("/compare")
+async def compare_landing_pages(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    tenant: Optional[TenantContext] = Depends(get_tenant_context_optional),
+):
+    """Compare analytics across all landing pages."""
+    query = select(LandingPage)
+    if tenant and tenant.workspace_id:
+        query = query.where(
+            or_(
+                LandingPage.workspace_id == tenant.workspace_id,
+                LandingPage.workspace_id.is_(None),
+            )
+        )
+    query = query.order_by(desc(LandingPage.created_at))
+    result = await db.execute(query)
+    pages = result.scalars().all()
+
+    if not pages:
+        return []
+
+    page_ids = [p.id for p in pages]
+
+    # Aggregate visits per page
+    visits_result = await db.execute(
+        select(
+            LandingPageVisit.landing_page_id,
+            func.count().label("total_visits"),
+            func.count(func.distinct(LandingPageVisit.session_id)).label("unique_visits"),
+        )
+        .where(LandingPageVisit.landing_page_id.in_(page_ids))
+        .group_by(LandingPageVisit.landing_page_id)
+    )
+    visits_map = {
+        row.landing_page_id: {
+            "total_visits": row.total_visits or 0,
+            "unique_visits": row.unique_visits or 0,
+        }
+        for row in visits_result.all()
+    }
+
+    # Aggregate form fills (leads) per page
+    leads_result = await db.execute(
+        select(
+            Lead.landing_page_id,
+            func.count().label("form_fills"),
+        )
+        .where(Lead.landing_page_id.in_(page_ids))
+        .group_by(Lead.landing_page_id)
+    )
+    leads_map = {row.landing_page_id: row.form_fills or 0 for row in leads_result.all()}
+
+    # Aggregate bookings per page
+    bookings_result = await db.execute(
+        select(
+            Booking.lead_id,
+            func.count().label("bookings"),
+        )
+        .join(Lead, Booking.lead_id == Lead.id)
+        .where(Lead.landing_page_id.in_(page_ids))
+        .group_by(Booking.lead_id)
+    )
+    # We need per landing_page_id, not per lead
+    bookings_per_lp = await db.execute(
+        select(
+            Lead.landing_page_id,
+            func.count().label("bookings"),
+        )
+        .join(Booking, Booking.lead_id == Lead.id)
+        .where(Lead.landing_page_id.in_(page_ids))
+        .group_by(Lead.landing_page_id)
+    )
+    bookings_map = {row.landing_page_id: row.bookings or 0 for row in bookings_per_lp.all()}
+
+    # Aggregate deals closed per page
+    deals_result = await db.execute(
+        select(
+            Lead.landing_page_id,
+            func.count().label("deals"),
+        )
+        .join(Deal, Deal.lead_id == Lead.id)
+        .where(Lead.landing_page_id.in_(page_ids))
+        .where(Deal.status == "closed_won")
+        .group_by(Lead.landing_page_id)
+    )
+    deals_map = {row.landing_page_id: row.deals or 0 for row in deals_result.all()}
+
+    compare_items = []
+    for p in pages:
+        v = visits_map.get(p.id, {"total_visits": 0, "unique_visits": 0})
+        form_fills = leads_map.get(p.id, 0)
+        unique_visits = v["unique_visits"]
+        conversion_rate = round((form_fills / unique_visits * 100), 2) if unique_visits > 0 else 0.0
+        compare_items.append({
+            "id": p.id,
+            "name": p.name,
+            "slug": p.slug,
+            "is_active": p.is_active,
+            "is_random_pool": p.is_random_pool,
+            "analytics": {
+                "total_visits": v["total_visits"],
+                "unique_visits": unique_visits,
+                "form_fills": form_fills,
+                "conversion_rate": conversion_rate,
+                "bookings_created": bookings_map.get(p.id, 0),
+                "deals_closed": deals_map.get(p.id, 0),
+            },
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+        })
+
+    return compare_items
 
 
 @router.post("", response_model=LandingPageResponse, status_code=201)
@@ -202,6 +318,28 @@ async def generate_landing_page(
         raise HTTPException(status_code=404, detail="Landing page not found")
 
     prompt = data.prompt or lp.prompt or "Generate a modern, high-converting landing page for Eko AI."
+
+    # Read Cal.com settings dynamically
+    cal_username = "ender-ocando-lfxtkn"
+    cal_event = "15min"
+    try:
+        cal_user_setting = await db.execute(
+            select(AppSetting).where(AppSetting.key == "cal_com_username")
+        )
+        cal_user_row = cal_user_setting.scalar_one_or_none()
+        if cal_user_row and cal_user_row.value:
+            cal_username = cal_user_row.value
+
+        cal_event_setting = await db.execute(
+            select(AppSetting).where(AppSetting.key == "cal_com_event_slug")
+        )
+        cal_event_row = cal_event_setting.scalar_one_or_none()
+        if cal_event_row and cal_event_row.value:
+            cal_event = cal_event_row.value
+    except Exception:
+        pass
+    cal_com_link = f"https://cal.com/{cal_username}/{cal_event}"
+
     generator = LandingPageGenerator()
 
     try:
@@ -210,6 +348,7 @@ async def generate_landing_page(
             landing_page_id=lp.id,
             provider=data.provider or lp.ai_provider,
             model=data.model or lp.ai_model,
+            cal_com_link=cal_com_link,
         )
     except Exception as e:
         logger.error(f"Generation failed for landing page {landing_page_id}: {e}")
