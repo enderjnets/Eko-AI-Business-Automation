@@ -26,6 +26,22 @@ class WebsiteAnalyzer:
             },
         )
 
+    def _clean_text_for_matching(self, html_text: str) -> str:
+        """Strip <style>, <script>, inline styles, and HTML comments to avoid false positives."""
+        # Remove <style> blocks
+        text = re.sub(r'<style[^>]*>.*?</style>', '', html_text, flags=re.DOTALL)
+        # Remove <script> blocks
+        text = re.sub(r'<script[^>]*>.*?</script>', '', text, flags=re.DOTALL)
+        # Remove <noscript> blocks
+        text = re.sub(r'<noscript[^>]*>.*?</noscript>', '', text, flags=re.DOTALL)
+        # Remove HTML comments (often contain CSS/JS)
+        text = re.sub(r'<!--.*?-->', '', text, flags=re.DOTALL)
+        # Remove inline style attributes
+        text = re.sub(r'\s+style="[^"]*"', '', text)
+        # Remove other inline style-like attributes (e.g. style='...')
+        text = re.sub(r"\s+style='[^']*'", '', text)
+        return text
+
     async def close(self):
         await self.client.aclose()
 
@@ -70,6 +86,7 @@ class WebsiteAnalyzer:
 
         soup = BeautifulSoup(response.text, "html.parser")
         html_text = response.text.lower()
+        clean_text = self._clean_text_for_matching(html_text)
 
         # Extract basic info
         title = soup.title.string.strip() if soup.title else ""
@@ -135,21 +152,21 @@ class WebsiteAnalyzer:
         }
 
         for tech, indicator in tech_indicators.items():
-            if indicator in html_text:
+            if indicator in clean_text:
                 technologies.append(tech)
 
-        # Detect features
+        # Detect features (use clean_text to avoid false positives from CSS/JS)
         has_chatbot = any(
-            indicator in html_text
+            indicator in clean_text
             for indicator in ["chatbot", "livechat", "intercom", "drift", "tawk", "crisp", "tidio"]
         )
 
         has_booking = any(
-            indicator in html_text
+            indicator in clean_text
             for indicator in ["book now", "schedule", "appointment", "reservation", "calendly", "autoops", "book online", "schedule service", "request appointment", "service scheduler"]
         )
 
-        has_contact_form = bool(soup.find("form")) or "contact" in html_text
+        has_contact_form = bool(soup.find("form")) or "contact" in clean_text
 
         # Extract social links
         social_links = {}
@@ -186,10 +203,10 @@ class WebsiteAnalyzer:
         services = self._extract_services(soup)
 
         # Extract pricing mentions
-        pricing_info = self._extract_pricing(soup, html_text)
+        pricing_info = self._extract_pricing(soup, clean_text)
 
         # Extract business hours
-        hours = self._extract_hours(soup, html_text)
+        hours = self._extract_hours(soup, clean_text)
 
         # Extract about text
         about_text = self._extract_about(soup)
@@ -199,21 +216,21 @@ class WebsiteAnalyzer:
 
         # Detect additional features
         has_ecommerce = any(
-            indicator in html_text
+            indicator in clean_text
             for indicator in ["cart", "checkout", "shop", "product", "buy now", "add to cart"]
         )
         has_blog = any(
-            indicator in html_text
+            indicator in clean_text
             for indicator in ["/blog", "blog.", "latest posts", "articles"]
         )
         has_newsletter = any(
-            indicator in html_text
+            indicator in clean_text
             for indicator in ["newsletter", "subscribe", "join our list", "email list"]
         )
 
         # Check for online ordering / delivery
         has_online_ordering = any(
-            indicator in html_text
+            indicator in clean_text
             for indicator in ["order online", "online ordering", "delivery", "pickup"]
         )
 
