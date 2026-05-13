@@ -12,6 +12,7 @@ REQUIREMENTS:
 - Sections: hero, features/benefits, social proof, lead form (name, email, phone, website, city, state), CTA, FAQ
 - Dark mode with blue (#0B4FD8) and cyan (#22D3EE) accents
 - CSS animations: fade-in, slide-up on scroll
+  CRITICAL: Use ONLY CSS @keyframes with animation-fill-mode:forwards (e.g., animation: fadeInUp 0.8s ease forwards). NEVER use classes like .fade-in that require JavaScript to add .visible. All content must be visible immediately without JavaScript.
 - Form POSTs to /api/v1/leads/public with hidden field: <input type="hidden" name="source" value="landing_page" />
 - Tracking pixel: <img src="/api/v1/landing-pages/track?lp_id={landing_page_id}" width="1" height="1" style="position:absolute;visibility:hidden;" />
 - Mobile-first responsive. No external JS.
