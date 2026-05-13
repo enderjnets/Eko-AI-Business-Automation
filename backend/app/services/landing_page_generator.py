@@ -6,31 +6,27 @@ from app.utils.ai_client import generate_completion
 
 logger = logging.getLogger(__name__)
 
-_SYSTEM_PROMPT = """You are an expert web designer and conversion copywriter specializing in landing pages for local businesses.
+_SYSTEM_PROMPT = """You are an expert web designer. Generate ONE compact, complete landing page as a single self-contained HTML file with inline CSS in a <style> block.
 
-Your task is to generate ONE complete, modern, responsive landing page in a single HTML file with inline CSS (Tailwind-like utility classes inside a <style> block).
-
-CRITICAL RULES:
-1. The HTML must be a SINGLE self-contained file (inline CSS in <style>)
-2. Must include: hero section, features/benefits, social proof, lead capture form (name, email, phone, website, city, state), CTA, optional FAQ
-3. Modern aesthetic: dark mode with blue (#0B4FD8) and cyan (#22D3EE) accents, clean typography
-4. Subtle CSS animations (fade-in, slide-up on scroll)
-5. The form must POST to /api/v1/leads/public with fields: business_name, email, phone, website, city, state
-6. Include hidden field: <input type="hidden" name="source" value="landing_page" />
-7. Include tracking pixel: <img src="/api/v1/landing-pages/track?lp_id={landing_page_id}" width="1" height="1" style="position:absolute;visibility:hidden;" />
-8. Responsive: mobile-first
-9. NO external JavaScript (only inline if necessary)
-10. The HTML must be ready to serve directly (real content, no placeholders)
+REQUIREMENTS:
+- Sections: hero, features/benefits, social proof, lead form (name, email, phone, website, city, state), CTA, FAQ
+- Dark mode with blue (#0B4FD8) and cyan (#22D3EE) accents
+- CSS animations: fade-in, slide-up on scroll
+- Form POSTs to /api/v1/leads/public with hidden field: <input type="hidden" name="source" value="landing_page" />
+- Tracking pixel: <img src="/api/v1/landing-pages/track?lp_id={landing_page_id}" width="1" height="1" style="position:absolute;visibility:hidden;" />
+- Mobile-first responsive. No external JS.
+- Real content, no placeholders.
 
 BUSINESS CONTEXT:
-- Service: Eko AI — AI agent for local businesses (answers calls, WhatsApp, emails, books appointments, follow-ups)
+- Service: Eko AI — 24/7 AI agent for local businesses (calls, WhatsApp, emails, bookings, follow-ups)
 - Target: Local business owners (restaurants, clinics, spas, gyms, retail, professionals)
-- Value prop: Never lose a customer to a missed call. Your AI works 24/7.
 - Main CTA: "Get My Free AI Analysis"
 - Cal.com link: {cal_com_link}
 
+COMPACT CODE: Use efficient CSS, avoid verbose comments and unnecessary whitespace. The complete HTML must fit within 7000 tokens.
+
 OUTPUT FORMAT:
-Return ONLY the raw HTML code. No markdown fences, no explanations, no comments outside the HTML. Start directly with <!DOCTYPE html>."""
+Return ONLY raw HTML. No markdown fences, no explanations, no comments outside HTML. Start with <!DOCTYPE html> and end with </html>."""
 
 # Prompt template for user input
 _USER_PROMPT_TEMPLATE = """Generate a high-converting landing page for Eko AI with the following custom instructions:
@@ -94,24 +90,37 @@ class LandingPageGenerator:
         system = _SYSTEM_PROMPT.replace("{landing_page_id}", str(landing_page_id))
         system = system.replace("{cal_com_link}", cal_com_link or "https://cal.com/ender-ocando-lfxtkn/15min")
 
-        try:
-            raw_html = await generate_completion(
-                system_prompt=system,
-                user_prompt=user_prompt,
-                model=None,  # Use system-configured model (matches AI_PROVIDER)
-                temperature=0.7,
-                max_tokens=12000,
-                json_mode=False,
-            )
-        except Exception as e:
-            logger.error(f"AI generation failed: {e}")
-            raise RuntimeError(f"AI generation failed: {e}")
-
-        # Extract HTML from markdown fences if present
+        # First generation attempt
+        raw_html = await self._generate_html(system, user_prompt)
         html = self._extract_html(raw_html)
 
         # Validate structure
         validation_errors = self._validate_html(html)
+
+        # If truncated, attempt continuation
+        continuation_attempts = 0
+        max_continuations = 2
+        while "incomplete html" in [e.lower() for e in validation_errors] and continuation_attempts < max_continuations:
+            continuation_attempts += 1
+            logger.warning(f"HTML incomplete, attempting continuation #{continuation_attempts}")
+            try:
+                cont_prompt = f"Continue this HTML from exactly where it was cut off. Do not repeat any already-generated content. Output ONLY the continuation, ending with </html>.\n\n{html[-2000:]}"
+                cont_raw = await generate_completion(
+                    system_prompt="You are a code completion assistant. Continue the HTML exactly from where it was cut off. Output ONLY raw HTML continuation, no explanations.",
+                    user_prompt=cont_prompt,
+                    model=None,
+                    temperature=0.3,
+                    max_tokens=8192,
+                    json_mode=False,
+                )
+                cont_html = self._extract_html(cont_raw)
+                # Remove duplicate overlap
+                html = self._merge_continuation(html, cont_html)
+                validation_errors = self._validate_html(html)
+            except Exception as e:
+                logger.error(f"Continuation attempt {continuation_attempts} failed: {e}")
+                break
+
         if validation_errors:
             logger.warning(f"Generated HTML validation issues: {validation_errors}")
 
@@ -123,6 +132,7 @@ class LandingPageGenerator:
             "validation_errors": validation_errors,
             "has_form": "<form" in html.lower(),
             "has_tracking_pixel": "landing-pages/track" in html,
+            "continuation_attempts": continuation_attempts,
         }
 
         return {
@@ -131,6 +141,22 @@ class LandingPageGenerator:
             "js_content": parts.get("js"),
             "metadata": metadata,
         }
+
+    async def _generate_html(self, system: str, user_prompt: str) -> str:
+        """Generate HTML from AI with error handling."""
+        try:
+            raw_html = await generate_completion(
+                system_prompt=system,
+                user_prompt=user_prompt,
+                model=None,
+                temperature=0.7,
+                max_tokens=8192,
+                json_mode=False,
+            )
+            return raw_html
+        except Exception as e:
+            logger.error(f"AI generation failed: {e}")
+            raise RuntimeError(f"AI generation failed: {e}")
 
     def _extract_html(self, raw: str) -> str:
         """Extract HTML from markdown fences or return raw if no fences."""
@@ -145,6 +171,22 @@ class LandingPageGenerator:
         if "<body" not in raw.lower() and "<div" in raw.lower():
             return f"<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"UTF-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/><title>Eko AI</title></head>\n<body>\n{raw}\n</body>\n</html>"
         return raw
+
+    def _merge_continuation(self, original: str, continuation: str) -> str:
+        """Merge continuation HTML with original, removing duplicate overlap."""
+        original = original.strip()
+        continuation = continuation.strip()
+        # If continuation already contains the full HTML, use it
+        if continuation.lower().startswith(("<!doctype", "<html")):
+            # Find where original ends in continuation
+            orig_tail = original[-500:].lower()
+            cont_lower = continuation.lower()
+            idx = cont_lower.find(orig_tail)
+            if idx != -1:
+                return original + continuation[idx + len(orig_tail):]
+            return continuation
+        # Continuation is just the tail — append directly
+        return original + "\n" + continuation
 
     def _validate_html(self, html: str) -> list:
         """Check for required elements and completeness."""

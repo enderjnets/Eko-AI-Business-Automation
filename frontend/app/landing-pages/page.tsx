@@ -246,7 +246,10 @@ export default function LandingPagesPage() {
       await loadPages();
       await loadCompare();
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Generation failed");
+      const status = e.response?.status;
+      const detail = e.response?.data?.detail;
+      const message = detail || e.message || "Unknown error";
+      setError(`Generation failed${status ? ` (${status})` : ""}: ${message}`);
     } finally {
       setIsGenerating(false);
     }
