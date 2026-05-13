@@ -9,11 +9,11 @@ logger = logging.getLogger(__name__)
 _SYSTEM_PROMPT = """You are an expert web designer. Generate ONE compact, complete landing page as a single self-contained HTML file with inline CSS in a <style> block.
 
 REQUIREMENTS:
-- Sections: hero, features/benefits, social proof, lead form (name, email, phone, website, city, state), CTA, FAQ
+- EXACTLY 4 sections: (1) Hero with inline lead form, (2) Features/Benefits (3-4 cards max), (3) Social proof (1-2 short testimonials), (4) Footer with CTA
+- Hero form fields: name, email, phone, website, city, state. POST to /api/v1/leads/public with hidden field: <input type="hidden" name="source" value="landing_page" />
 - Dark mode with blue (#0B4FD8) and cyan (#22D3EE) accents
-- CSS animations: fade-in, slide-up on scroll
-  CRITICAL: Use ONLY CSS @keyframes with animation-fill-mode:forwards (e.g., animation: fadeInUp 0.8s ease forwards). NEVER use classes like .fade-in that require JavaScript to add .visible. All content must be visible immediately without JavaScript.
-- Form POSTs to /api/v1/leads/public with hidden field: <input type="hidden" name="source" value="landing_page" />
+- Minimal CSS: use simple selectors, avoid nested rules, no verbose comments
+- CRITICAL: Use ONLY CSS @keyframes with animation-fill-mode:forwards. NEVER use classes that require JS to add .visible. All content visible immediately.
 - Tracking pixel: <img src="/api/v1/landing-pages/track?lp_id={landing_page_id}" width="1" height="1" style="position:absolute;visibility:hidden;" />
 - Mobile-first responsive. No external JS.
 - Real content, no placeholders.
@@ -101,11 +101,12 @@ class LandingPageGenerator:
         # If truncated, attempt continuation
         continuation_attempts = 0
         max_continuations = 2
-        while "incomplete html" in [e.lower() for e in validation_errors] and continuation_attempts < max_continuations:
+        while any("incomplete html" in e.lower() for e in validation_errors) and continuation_attempts < max_continuations:
             continuation_attempts += 1
-            logger.warning(f"HTML incomplete, attempting continuation #{continuation_attempts}")
+            logger.warning(f"[LP-{landing_page_id}] HTML incomplete ({validation_errors}), attempting continuation #{continuation_attempts}")
             try:
-                cont_prompt = f"Continue this HTML from exactly where it was cut off. Do not repeat any already-generated content. Output ONLY the continuation, ending with </html>.\n\n{html[-2000:]}"
+                tail = html[-2000:] if len(html) > 2000 else html
+                cont_prompt = f"Continue this HTML from exactly where it was cut off. Do not repeat any already-generated content. Output ONLY the continuation, ending with </html>.\n\nLAST 2000 CHARS:\n{tail}"
                 cont_raw = await generate_completion(
                     system_prompt="You are a code completion assistant. Continue the HTML exactly from where it was cut off. Output ONLY raw HTML continuation, no explanations.",
                     user_prompt=cont_prompt,
@@ -115,11 +116,13 @@ class LandingPageGenerator:
                     json_mode=False,
                 )
                 cont_html = self._extract_html(cont_raw)
+                logger.info(f"[LP-{landing_page_id}] Continuation #{continuation_attempts} received {len(cont_html)} chars")
                 # Remove duplicate overlap
                 html = self._merge_continuation(html, cont_html)
                 validation_errors = self._validate_html(html)
+                logger.info(f"[LP-{landing_page_id}] After merge: {len(html)} chars, errors: {validation_errors}")
             except Exception as e:
-                logger.error(f"Continuation attempt {continuation_attempts} failed: {e}")
+                logger.error(f"[LP-{landing_page_id}] Continuation attempt {continuation_attempts} failed: {e}")
                 break
 
         if validation_errors:
