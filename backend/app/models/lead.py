@@ -85,6 +85,7 @@ class Lead(Base):
     
     # Extended enrichment (AI-powered research)
     website_real: Mapped[Optional[str]] = mapped_column(String(500))
+    website_title: Mapped[Optional[str]] = mapped_column(String(255))
     services: Mapped[Optional[list]] = mapped_column(JSON)
     pricing_info: Mapped[Optional[str]] = mapped_column(Text)
     business_hours: Mapped[Optional[str]] = mapped_column(Text)

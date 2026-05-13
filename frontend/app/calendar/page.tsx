@@ -48,6 +48,7 @@ interface Booking {
   location_type: string | null;
   notes: string | null;
   lead_id: number;
+  cal_com_uid: string | null;
   lead?: LeadSnippet | null;
   meta?: Record<string, any> | null;
 }
@@ -58,6 +59,10 @@ export default function CalendarPage() {
   const [filter, setFilter] = useState<"upcoming" | "all" | "past">("upcoming");
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
 
   useEffect(() => {
     loadBookings();
@@ -65,13 +70,16 @@ export default function CalendarPage() {
 
   const loadBookings = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const params: any = {};
       if (filter === "upcoming") params.upcoming = true;
+      if (filter === "past") params.past = true;
       const res = await calendarApi.listBookings(params);
       setBookings(res.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load bookings:", err);
+      setError(err?.response?.data?.detail || "Failed to load meetings. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -85,8 +93,37 @@ export default function CalendarPage() {
       await loadBookings();
     } catch (err) {
       console.error("Failed to cancel:", err);
+      alert("Failed to cancel meeting.");
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const handleUpdateNotes = async () => {
+    if (!selectedBooking) return;
+    setSavingNotes(true);
+    try {
+      await calendarApi.updateBooking(selectedBooking.id, { notes: notesDraft });
+      setSelectedBooking({ ...selectedBooking, notes: notesDraft });
+      setEditingNotes(false);
+      await loadBookings();
+    } catch (err) {
+      console.error("Failed to update notes:", err);
+      alert("Failed to save notes.");
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this meeting permanently? This cannot be undone.")) return;
+    try {
+      await calendarApi.deleteBooking(id);
+      setSelectedBooking(null);
+      await loadBookings();
+    } catch (err) {
+      console.error("Failed to delete:", err);
+      alert("Failed to delete meeting.");
     }
   };
 
@@ -209,6 +246,14 @@ export default function CalendarPage() {
             ))}
           </div>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="mb-4 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            <AlertCircle className="w-4 h-4 inline mr-2" />
+            {error}
+          </div>
+        )}
 
         {/* Bookings list */}
         {isLoading ? (
@@ -489,41 +534,104 @@ export default function CalendarPage() {
                 </div>
               )}
 
-              {/* Raw Notes fallback */}
-              {selectedBooking.notes && !selectedBooking.meta?.sales_brief && (
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                  <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
+              {/* Notes Section with Edit */}
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                     <ShieldAlert className="w-4 h-4 text-orange-400" />
                     Notes
                   </h3>
-                  <p className="text-sm text-gray-300 whitespace-pre-wrap">
-                    {selectedBooking.notes}
-                  </p>
+                  {!editingNotes ? (
+                    <button
+                      onClick={() => {
+                        setNotesDraft(selectedBooking.notes || "");
+                        setEditingNotes(true);
+                      }}
+                      className="text-xs text-eko-blue hover:underline"
+                    >
+                      Edit
+                    </button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleUpdateNotes}
+                        disabled={savingNotes}
+                        className="text-xs px-2 py-1 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                      >
+                        {savingNotes ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        onClick={() => setEditingNotes(false)}
+                        className="text-xs px-2 py-1 rounded bg-gray-500/10 text-gray-400 hover:bg-gray-500/20"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
+                {editingNotes ? (
+                  <textarea
+                    value={notesDraft}
+                    onChange={(e) => setNotesDraft(e.target.value)}
+                    className="w-full h-24 rounded-lg bg-white/5 border border-white/10 text-sm text-white p-3 focus:outline-none focus:border-eko-blue resize-none"
+                    placeholder="Add notes about this meeting..."
+                  />
+                ) : (
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">
+                    {selectedBooking.notes || "No notes added yet."}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-white/10">
-              <button
-                onClick={() => setSelectedBooking(null)}
-                className="px-4 py-2 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                Close
-              </button>
-              {selectedBooking.status !== "cancelled" &&
-                selectedBooking.status !== "completed" && (
-                  <button
-                    onClick={() => {
-                      handleCancel(selectedBooking.id);
-                      setSelectedBooking(null);
-                    }}
-                    disabled={cancellingId === selectedBooking.id}
-                    className="px-4 py-2 rounded-lg text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors disabled:opacity-50"
-                  >
-                    Cancel Meeting
-                  </button>
-                )}
+            <div className="flex items-center justify-between gap-3 p-6 border-t border-white/10">
+              <div className="flex gap-2">
+                {/* Delete button */}
+                <button
+                  onClick={() => {
+                    handleDelete(selectedBooking.id);
+                  }}
+                  className="px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  title="Delete permanently"
+                >
+                  Delete
+                </button>
+                {/* Reschedule button */}
+                {selectedBooking.status !== "cancelled" &&
+                  selectedBooking.status !== "completed" && (
+                    <a
+                      href={`https://cal.com/ender-ocando-lfxtkn/15min?rescheduleUid=${selectedBooking.cal_com_uid || ""}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-3 py-2 rounded-lg text-sm text-eko-blue hover:bg-eko-blue/10 transition-colors"
+                    >
+                      Reschedule
+                    </a>
+                  )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSelectedBooking(null)}
+                  className="px-4 py-2 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  Close
+                </button>
+                {selectedBooking.status !== "cancelled" &&
+                  selectedBooking.status !== "completed" && (
+                    <button
+                      onClick={() => {
+                        handleCancel(selectedBooking.id);
+                        setSelectedBooking(null);
+                      }}
+                      disabled={cancellingId === selectedBooking.id}
+                      className="px-4 py-2 rounded-lg text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors disabled:opacity-50"
+                    >
+                      Cancel Meeting
+                    </button>
+                  )}
+              </div>
             </div>
           </div>
         </div>

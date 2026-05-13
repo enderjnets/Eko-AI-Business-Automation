@@ -3,6 +3,7 @@ import hmac
 import hashlib
 import json
 import logging
+import re
 from datetime import datetime, timedelta
 
 import httpx
@@ -224,7 +225,7 @@ async def calcom_webhook(request: Request, db: AsyncSession = Depends(get_db)):
 <li><strong>Growth:</strong> $299/mes — 2 agentes, horario extendido</li>
 <li><strong>Enterprise:</strong> $399/mes — Agentes ilimitados, 24/7</li>
 </ul>
-<p>Si estás listo para empezar, responde a este email o agenda una llamada de onboarding aquí: <a href="https://cal.com/ender-ocando-lfxtkn/15min/onboarding">https://cal.com/ender-ocando-lfxtkn/15min/onboarding</a></p>
+<p>Si estás listo para empezar, responde a este email o agenda una llamada de onboarding aquí: <a href="https://cal.com/ender-ocando-lfxtkn/15min">https://cal.com/ender-ocando-lfxtkn/15min</a></p>
 <p>Saludos,<br>Eko AI Team</p>"""
                     await email.send(
                         to_email=lead.email,
@@ -286,15 +287,9 @@ async def track_email_open(
     
     if lead:
         lead.email_opened_count += 1
-        
-        interaction = Interaction(
-            lead_id=lead.id,
-            interaction_type="email",
-            direction="inbound",
-            email_status="opened",
-            email_message_id=message_id,
-        )
-        db.add(interaction)
+        # Do NOT create an Interaction record for tracking opens.
+        # Tracking events are not conversation messages and would pollute
+        # the inbox with empty "(sin asunto)" entries.
         await db.commit()
     
     # Return 1x1 transparent pixel
@@ -646,6 +641,33 @@ async def _process_book_demo_tool(
     )
     db.add(interaction)
     await db.commit()
+
+    # Sync booking to Cal.com
+    try:
+        from app.services.cal_com import CalComClient
+        cal_client = CalComClient()
+        cal_result = await cal_client.create_booking(
+            start_time=start_time.isoformat(),
+            attendee_email=lead.email or "",
+            attendee_name=caller_name,
+            event_type_slug=settings.CAL_COM_EVENT_TYPE_SLUG or "15min",
+            attendee_phone=phone,
+            metadata={"lead_id": lead.id, "source": "vapi_inbound", "business_name": business_name},
+        )
+        if "error" not in cal_result:
+            booking.cal_com_booking_id = cal_result.get("id")
+            booking.cal_com_uid = cal_result.get("uid")
+            if cal_result.get("location"):
+                booking.location = cal_result.get("location")
+            if cal_result.get("meetingUrl"):
+                booking.location = cal_result.get("meetingUrl")
+            await db.commit()
+            logger.info(f"VAPI booking synced to Cal.com: {cal_result.get('uid')}")
+        else:
+            logger.warning(f"Cal.com booking creation returned error: {cal_result}")
+        await cal_client.close()
+    except Exception:
+        logger.exception("Failed to sync VAPI booking to Cal.com")
 
     # Generate Google Calendar link
     calendar_link = ""
@@ -1024,6 +1046,19 @@ async def resend_inbound_webhook(request: Request, db: AsyncSession = Depends(ge
     if from_email.endswith(f"@{inbound_domain}") or from_email.endswith("@ekoai.com"):
         logger.info(f"Ignoring email from own domain: {from_email}")
         return {"status": "ignored", "reason": "own domain"}
+    
+    # Skip system / non-lead emails (DMARC reports, bounces, postmaster, etc.)
+    local_part = from_email.split("@")[0]
+    SYSTEM_EMAIL_PATTERNS = re.compile(
+        r"^(noreply|no-reply|donotreply|postmaster|mailer-daemon|dmarc|dmarc-support|"
+        r"bounce|returns|abuse|list-|owner-|newsletter|marketing|support|info|admin|"
+        r"help|feedback|survey|alerts|notifications|system|autoresponder|verify|"
+        r"confirm|unsubscribe|subscribe|billing|invoice|receipt|sales|team)$",
+        re.IGNORECASE,
+    )
+    if SYSTEM_EMAIL_PATTERNS.match(local_part):
+        logger.info(f"Ignoring system email from {from_email}")
+        return {"status": "ignored", "reason": "system sender"}
     
     # Fetch full email body from Resend API
     email_body_data = {}

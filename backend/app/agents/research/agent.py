@@ -65,6 +65,7 @@ class ResearchAgent:
                 enrichment.business_hours = website_data.get("hours")
                 enrichment.about_text = website_data.get("about_text")
                 enrichment.team_names = website_data.get("team_names", [])
+                enrichment.website_title = website_data.get("title")
                 # Website feature flags
                 enrichment.has_booking = website_data.get("has_booking")
                 enrichment.has_chatbot = website_data.get("has_chatbot")

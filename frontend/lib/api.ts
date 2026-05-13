@@ -217,11 +217,13 @@ export const calendarApi = {
   eventTypes: () => api.get("/calendar/event-types"),
   availability: (data: { event_type_id: number; start_date: string; end_date: string }) =>
     api.post("/calendar/availability", data),
-  listBookings: (params?: { status?: string; lead_id?: number; upcoming?: boolean }) =>
+  listBookings: (params?: { status?: string; lead_id?: number; upcoming?: boolean; past?: boolean }) =>
     api.get("/calendar/bookings", { params }),
   createBooking: (data: any) => api.post("/calendar/bookings", data),
+  updateBooking: (id: number, data: any) => api.patch(`/calendar/bookings/${id}`, data),
   cancelBooking: (id: number, reason?: string) =>
     api.post(`/calendar/bookings/${id}/cancel`, null, { params: { reason } }),
+  deleteBooking: (id: number) => api.delete(`/calendar/bookings/${id}`),
   sendLink: (data: { lead_id: number; event_type_id?: number; message?: string }) =>
     api.post("/calendar/send-link", data),
 };

@@ -62,6 +62,7 @@ async def list_bookings(
     status: Optional[BookingStatus] = None,
     lead_id: Optional[int] = None,
     upcoming: bool = False,
+    past: bool = False,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -76,6 +77,11 @@ async def list_bookings(
         now = datetime.utcnow()
         query = query.where(
             and_(Booking.start_time >= now, Booking.status.not_in([BookingStatus.CANCELLED, BookingStatus.NO_SHOW]))
+        )
+    if past:
+        now = datetime.utcnow()
+        query = query.where(
+            and_(Booking.start_time < now, Booking.status.not_in([BookingStatus.CANCELLED, BookingStatus.NO_SHOW]))
         )
 
     # Non-admin users only see bookings for their leads
@@ -246,6 +252,37 @@ async def cancel_booking(
     return booking
 
 
+@router.delete("/bookings/{booking_id}", status_code=204)
+async def delete_booking(
+    booking_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a booking permanently."""
+    result = await db.execute(select(Booking).where(Booking.id == booking_id))
+    booking = result.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    # Cancel on Cal.com if we have a booking ID before deleting
+    if booking.cal_com_uid:
+        client = CalComClient()
+        try:
+            await client.cancel_booking(
+                booking_uid=booking.cal_com_uid,
+                reason="Deleted from system",
+            )
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Failed to cancel Cal.com booking before delete")
+        finally:
+            await client.close()
+
+    await db.delete(booking)
+    await db.commit()
+    return None
+
+
 @router.post("/send-link")
 async def send_booking_link(
     data: BookingLinkRequest,
@@ -266,7 +303,7 @@ async def send_booking_link(
 
     # Build booking link
     # In a real implementation, this would be fetched from Cal.com or configured
-    booking_link = f"https://cal.com/ender-ocando-lfxtkn/15min/demo?email={lead.email}&name={lead.business_name}"
+    booking_link = f"https://cal.com/ender-ocando-lfxtkn/15min?email={lead.email}&name={lead.business_name}"
 
     email = EmailOutreach()
     subject = f"Let's schedule a quick call — {lead.business_name}"
@@ -367,5 +404,28 @@ async def book_demo(
     )
     db.add(interaction)
     await db.commit()
-    
+
+    # Sync booking to Cal.com
+    try:
+        cal_client = CalComClient()
+        cal_result = await cal_client.create_booking(
+            start_time=start_time.isoformat(),
+            attendee_email=request.email,
+            attendee_name=request.name,
+            event_type_slug="15min",
+            metadata={"lead_id": lead.id, "source": "book_demo_page"},
+        )
+        if "error" not in cal_result:
+            booking.cal_com_booking_id = cal_result.get("id")
+            booking.cal_com_uid = cal_result.get("uid")
+            if cal_result.get("location"):
+                booking.location = cal_result.get("location")
+            if cal_result.get("meetingUrl"):
+                booking.location = cal_result.get("meetingUrl")
+            await db.commit()
+        await cal_client.close()
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Failed to sync public booking to Cal.com")
+
     return {"status": "booked", "booking_id": booking.id}

@@ -84,6 +84,7 @@ class LeadEnrichment(BaseModel):
     has_newsletter: Optional[bool] = None
     has_online_ordering: Optional[bool] = None
     has_contact_form: Optional[bool] = None
+    website_title: Optional[str] = None
     # Website feature flags (detected by WebsiteAnalyzer)
 
 

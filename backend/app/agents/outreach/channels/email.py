@@ -35,7 +35,7 @@ EMAIL_TEMPLATES = {
         "context": "Final follow-up before breakup. Offer a valuable resource (case study, tip, or insight) relevant to their industry. No guilt trips.",
     },
     "breakup": {
-        "subject": "Cerrando tu archivo — {business_name}",
+        "subject": "Closing your file — {business_name}",
         "context": "Pattern-interrupt breakup email. Tell them you're closing their file but leave the door open. Unexpected, honest tone. This often gets replies from busy people.",
     },
     "booking_confirmation": {
@@ -51,36 +51,36 @@ EMAIL_TEMPLATES = {
         "context": "Sending pricing and service details",
     },
     "nurture_welcome": {
-        "subject": "Tu análisis de automatización para {business_name}",
-        "context": "Welcome email for leads captured from the website. Thank them for their interest. Briefly introduce Eko AI as an automation company for ANY type of business (not just spas). Mention that AI agents can handle calls, appointments, and follow-ups 24/7. Include a soft CTA to book a free demo. Keep it under 150 words, warm and personal. Sign as 'Eko AI Team'. Write the email in SPANISH.",
+        "subject": "Your AI automation analysis for {business_name}",
+        "context": "Welcome email for leads captured from the website. Thank them for their interest. Briefly introduce Eko AI as an automation company for ANY type of business (not just spas). Mention that AI agents can handle calls, appointments, and follow-ups 24/7. Include a soft CTA to book a free demo. Keep it under 150 words, warm and personal. Sign as 'Eko AI Team'. Write the email in ENGLISH.",
     },
     "nurture_social_proof": {
-        "subject": "Cómo otros negocios como {business_name} ahorran 15+ horas/semana",
-        "context": "Share a brief, generic success story about how a business (adapt to their category) saved time and money with AI automation. Focus on specific results: hours saved, more bookings, fewer missed calls. Keep it under 150 words. No specific names unless generic. CTA: 'Want to see if this works for your business? Book a 15-min demo.' Write the email in SPANISH.",
+        "subject": "How businesses like {business_name} save 15+ hours/week",
+        "context": "Share a brief, generic success story about how a business (adapt to their category) saved time and money with AI automation. Focus on specific results: hours saved, more bookings, fewer missed calls. Keep it under 150 words. No specific names unless generic. CTA: 'Want to see if this works for your business? Book a 15-min demo.' Write the email in ENGLISH.",
     },
     "nurture_education": {
-        "subject": "3 señales de que {business_name} necesita automatización",
-        "context": "Educational email listing 3 signs a business needs AI automation: 1) Missing calls after hours, 2) Spending too much time on scheduling/admin, 3) Losing leads due to slow follow-up. Frame it as helpful content, not salesy. Keep under 150 words. CTA: 'Book a free demo to see how AI can handle these for you.' Write the email in SPANISH.",
+        "subject": "3 signs {business_name} needs automation",
+        "context": "Educational email listing 3 signs a business needs AI automation: 1) Missing calls after hours, 2) Spending too much time on scheduling/admin, 3) Losing leads due to slow follow-up. Frame it as helpful content, not salesy. Keep under 150 words. CTA: 'Book a free demo to see how AI can handle these for you.' Write the email in ENGLISH.",
     },
     "nurture_demo_offer": {
-        "subject": "15 minutos para transformar {business_name}",
-        "context": "Offer a free 15-minute personalized demo. Explain that in 15 minutes we'll show exactly how an AI agent would handle their specific type of business — their calls, appointments, FAQs. No commitment, no pressure. Keep under 125 words. Include direct Cal.com booking link if possible. Make it easy to say yes. Write the email in SPANISH.",
+        "subject": "15 minutes to transform {business_name}",
+        "context": "Offer a free 15-minute personalized demo. Explain that in 15 minutes we'll show exactly how an AI agent would handle their specific type of business — their calls, appointments, FAQs. No commitment, no pressure. Keep under 125 words. Include direct Cal.com booking link if possible. Make it easy to say yes. Write the email in ENGLISH.",
     },
     "nurture_urgency": {
-        "subject": "Setup gratuito este mes para {business_name}",
-        "context": "Final nurturing email with a time-sensitive offer: waive the $499 setup fee if they book a demo and sign up this month. Be honest and direct — no fake urgency. Mention that spots are limited because each setup requires personalized training. Keep under 125 words. This is the last email in the sequence. CTA: strong push to book demo now. Write the email in SPANISH.",
+        "subject": "Free setup this month for {business_name}",
+        "context": "Final nurturing email with a time-sensitive offer: waive the $499 setup fee if they book a demo and sign up this month. Be honest and direct — no fake urgency. Mention that spots are limited because each setup requires personalized training. Keep under 125 words. This is the last email in the sequence. CTA: strong push to book demo now. Write the email in ENGLISH.",
     },
     "welcome_onboarding": {
-        "subject": "Bienvenido a Eko AI — tu negocio nunca será igual",
-        "context": "Welcome email for a NEW PAYING CUSTOMER who just completed checkout. Congratulate them warmly. Outline the next 3 onboarding steps: 1) We'll schedule the setup call within 48 hours, 2) We'll integrate their phone/channels during setup, 3) Their AI agent goes live. Include a direct reply-to email for questions. Keep it under 200 words, warm and exciting. Sign as 'Eko AI Team'. Write the email in SPANISH.",
+        "subject": "Welcome to Eko AI — your business will never be the same",
+        "context": "Welcome email for a NEW PAYING CUSTOMER who just completed checkout. Congratulate them warmly. Outline the next 3 onboarding steps: 1) We'll schedule the setup call within 48 hours, 2) We'll integrate their phone/channels during setup, 3) Their AI agent goes live. Include a direct reply-to email for questions. Keep it under 200 words, warm and exciting. Sign as 'Eko AI Team'. Write the email in ENGLISH.",
     },
     "payment_failed": {
-        "subject": "Acción requerida: actualiza tu método de pago — {business_name}",
-        "context": "Payment failed email for a subscription customer. Explain calmly that the monthly charge could not be processed. Offer clear steps to update payment method via the customer portal. Reassure them their service is still active during the grace period. No guilt or pressure. Keep under 150 words. Include a direct link to the billing portal. Sign as 'Eko AI Team'. Write the email in SPANISH.",
+        "subject": "Action required: update your payment method — {business_name}",
+        "context": "Payment failed email for a subscription customer. Explain calmly that the monthly charge could not be processed. Offer clear steps to update payment method via the customer portal. Reassure them their service is still active during the grace period. No guilt or pressure. Keep under 150 words. Include a direct link to the billing portal. Sign as 'Eko AI Team'. Write the email in ENGLISH.",
     },
     "subscription_canceled": {
-        "subject": "Tu suscripción a Eko AI ha sido cancelada — {business_name}",
-        "context": "Subscription cancellation email. Confirm the cancellation professionally. Thank them for being a customer. Mention that their service will remain active until the end of the current billing period (if applicable). Leave the door open for reactivation. If this is a retention email (before final cancellation), offer a quick call to address concerns. Keep under 150 words. Sign as 'Eko AI Team'. Write the email in SPANISH.",
+        "subject": "Your Eko AI subscription has been canceled — {business_name}",
+        "context": "Subscription cancellation email. Confirm the cancellation professionally. Thank them for being a customer. Mention that their service will remain active until the end of the current billing period (if applicable). Leave the door open for reactivation. If this is a retention email (before final cancellation), offer a quick call to address concerns. Keep under 150 words. Sign as 'Eko AI Team'. Write the email in ENGLISH.",
     },
 }
 

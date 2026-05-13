@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, field_validator
 
 from app.models.booking import BookingStatus
 
@@ -29,12 +29,19 @@ class BookingBase(BaseModel):
     start_time: datetime
     end_time: Optional[datetime] = None
     timezone: str = "America/Denver"
-    attendee_email: EmailStr
+    attendee_email: Optional[EmailStr] = None
     attendee_name: str = Field(..., min_length=1, max_length=255)
     attendee_phone: Optional[str] = None
     location: Optional[str] = None
     location_type: Optional[str] = None
     notes: Optional[str] = None
+
+    @field_validator("attendee_email", mode="before")
+    @classmethod
+    def empty_email_to_none(cls, v):
+        if v == "":
+            return None
+        return v
 
 
 class BookingCreate(BaseModel):

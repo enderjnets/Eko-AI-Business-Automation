@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     # App
     APP_NAME: str = "Eko AI Business Automation"
-    APP_VERSION: str = "0.5.1"
+    APP_VERSION: str = "0.7.3"
     APP_URL: str = "http://localhost:8000"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
@@ -76,6 +76,7 @@ class Settings(BaseSettings):
     # Phase 2: Calendar
     CAL_COM_API_KEY: str = ""
     CAL_COM_USERNAME: str = "ender-ocando-lfxtkn"
+    CAL_COM_EVENT_TYPE_SLUG: str = "15min"
     GOOGLE_MEET_LINK: str = ""
 
     # Phase 4: Payments

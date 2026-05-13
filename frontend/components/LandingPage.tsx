@@ -130,7 +130,7 @@ export default function LandingPage() {
             <a href="#como-funciona" className="text-sm text-gray-400 hover:text-white transition-colors">Cómo funciona</a>
             <a href="#industrias" className="text-sm text-gray-400 hover:text-white transition-colors">Industrias</a>
             <Link href="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">Precios</Link>
-            <a href="https://cal.com/ender-ocando-lfxtkn/15min/demo" target="_blank" rel="noopener noreferrer" className="text-sm px-4 py-2 rounded-lg bg-eko-blue text-white font-medium hover:bg-eko-blue-dark transition-colors">
+            <a href="https://cal.com/ender-ocando-lfxtkn/15min" target="_blank" rel="noopener noreferrer" className="text-sm px-4 py-2 rounded-lg bg-eko-blue text-white font-medium hover:bg-eko-blue-dark transition-colors">
               Agenda tu Demo
             </a>
           </div>
@@ -156,7 +156,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Link
-              href="https://cal.com/ender-ocando-lfxtkn/15min/demo"
+              href="https://cal.com/ender-ocando-lfxtkn/15min"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-eko-blue text-white font-semibold hover:bg-eko-blue-dark transition-all flex items-center justify-center gap-2"
@@ -201,7 +201,7 @@ export default function LandingPage() {
               <p className="text-gray-400 mb-4">
                 Hemos recibido tu información. Nuestro equipo te contactará en menos de 24 horas.
               </p>
-              <a href="https://cal.com/ender-ocando-lfxtkn/15min/demo" target="_blank" rel="noopener noreferrer" className="text-eko-blue hover:underline text-sm">
+              <a href="https://cal.com/ender-ocando-lfxtkn/15min" target="_blank" rel="noopener noreferrer" className="text-eko-blue hover:underline text-sm">
                 O agenda tu demo ahora →
               </a>
             </div>
@@ -363,7 +363,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="https://cal.com/ender-ocando-lfxtkn/15min/demo"
+              href="https://cal.com/ender-ocando-lfxtkn/15min"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-eko-blue text-white font-semibold hover:bg-eko-blue-dark transition-all flex items-center justify-center gap-2 text-lg"

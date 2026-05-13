@@ -165,23 +165,24 @@ def _mini_score_badge(score: float, label: str) -> str:
 
 
 def _tech_stack_bars(lead: Lead, lang: str) -> str:
-    """Generate horizontal progress bars using table cells — Gmail-safe."""
-    tech = lead.tech_stack or []
-    tech_lower = [t.lower() for t in tech]
+    """Generate horizontal progress bars using table cells — Gmail-safe.
 
+    Uses boolean feature flags from the Lead model instead of searching
+    technology names in tech_stack.
+    """
     features = [
-        (_t(lang, "chatbot"), "chatbot"),
-        (_t(lang, "booking"), "booking"),
-        (_t(lang, "contact_form"), "contact form"),
-        (_t(lang, "ecommerce"), "ecommerce"),
-        (_t(lang, "blog"), "blog"),
-        (_t(lang, "newsletter"), "newsletter"),
-        (_t(lang, "online_ordering"), "online ordering"),
+        (_t(lang, "chatbot"), lead.has_chatbot),
+        (_t(lang, "booking"), lead.has_booking),
+        (_t(lang, "contact_form"), lead.has_contact_form),
+        (_t(lang, "ecommerce"), lead.has_ecommerce),
+        (_t(lang, "blog"), lead.has_blog),
+        (_t(lang, "newsletter"), lead.has_newsletter),
+        (_t(lang, "online_ordering"), lead.has_online_ordering),
     ]
 
     rows = []
-    for label, keyword in features:
-        has_it = any(keyword in t for t in tech_lower)
+    for label, flag in features:
+        has_it = bool(flag)
         color = "#10B981" if has_it else "#EF4444"
         emoji = "✅" if has_it else "❌"
         status = _t(lang, "detected") if has_it else _t(lang, "not_detected")
@@ -266,7 +267,7 @@ def generate_analysis_email(lead: Lead, audio_url: str = None) -> str:
     hours = lead.business_hours or ""
     about = lead.about_text or ""
     team = lead.team_names or []
-    business_name = lead.business_name or _t(lang, "default_business_name")
+    business_name = lead.website_title or lead.business_name or _t(lang, "default_business_name")
     first_name = lead.source_data.get("first_name") if lead.source_data else None
     if not first_name:
         first_name = business_name
@@ -275,12 +276,18 @@ def generate_analysis_email(lead: Lead, audio_url: str = None) -> str:
     # Internal 80/100  →  Client sees 20/100 (big gap = red = motivation to buy)
     client_score = 100 - total_score
 
-    # Tech stack gap concrete metric
+    # Tech stack gap concrete metric (uses boolean feature flags)
     _FEATURES_TOTAL = 7
-    tech_stack = lead.tech_stack or []
-    tech_lower = [t.lower() for t in tech_stack]
-    _feature_keywords = ["chatbot", "booking", "contact form", "ecommerce", "blog", "newsletter", "online ordering"]
-    detected_count = sum(1 for kw in _feature_keywords if any(kw in t for t in tech_lower))
+    _feature_flags = [
+        lead.has_chatbot,
+        lead.has_booking,
+        lead.has_contact_form,
+        lead.has_ecommerce,
+        lead.has_blog,
+        lead.has_newsletter,
+        lead.has_online_ordering,
+    ]
+    detected_count = sum(1 for f in _feature_flags if f)
     gap_concrete_text = _t(lang, "tech_gap_concrete").format(detected=detected_count, total=_FEATURES_TOTAL)
 
     # Audio section
@@ -316,19 +323,17 @@ def generate_analysis_email(lead: Lead, audio_url: str = None) -> str:
     # Tech stack rows
     tech_rows = _tech_stack_bars(lead, lang)
 
-    # Insight cards
-    tech_stack = lead.tech_stack or []
-    tech_lower = [t.lower() for t in tech_stack]
+    # Insight cards — missing features from boolean flags
     all_features = {
-        _t(lang, "chatbot"): "chatbot",
-        _t(lang, "booking"): "booking",
-        _t(lang, "contact_form"): "contact form",
-        _t(lang, "ecommerce"): "ecommerce",
-        _t(lang, "blog"): "blog",
-        _t(lang, "newsletter"): "newsletter",
-        _t(lang, "online_ordering"): "online ordering",
+        _t(lang, "chatbot"): lead.has_chatbot,
+        _t(lang, "booking"): lead.has_booking,
+        _t(lang, "contact_form"): lead.has_contact_form,
+        _t(lang, "ecommerce"): lead.has_ecommerce,
+        _t(lang, "blog"): lead.has_blog,
+        _t(lang, "newsletter"): lead.has_newsletter,
+        _t(lang, "online_ordering"): lead.has_online_ordering,
     }
-    missing = [name for name, keyword in all_features.items() if not any(keyword in t for t in tech_lower)]
+    missing = [name for name, flag in all_features.items() if not flag]
 
     pain_card = _insight_card("🚨", _t(lang, "pain_points"), pain_points, "#EF4444", lang)
     trigger_card = _insight_card("💡", _t(lang, "trigger_events"), trigger_events, "#F59E0B", lang)

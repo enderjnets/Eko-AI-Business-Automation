@@ -329,7 +329,7 @@ async def send_booking_link_from_crm(
     from app.config import get_settings
     settings = get_settings()
     cal_username = getattr(settings, 'CAL_COM_USERNAME', 'eko-ai')
-    booking_link = f"https://cal.com/{cal_username}/demo?email={lead.email}&name={lead.business_name}"
+    booking_link = f"https://cal.com/{cal_username}/15min?email={lead.email}&name={lead.business_name}"
 
     email = EmailOutreach()
     subject = f"Let's schedule a quick call — {lead.business_name}"

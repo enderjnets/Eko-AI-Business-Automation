@@ -1104,7 +1104,11 @@ async def _enrich_and_welcome_lead_async(lead_id: int):
         # 3. Wrap in professional email template and send
         try:
             outreach = EmailOutreach()
-            subject = f"Tu análisis de automatización para {lead.business_name}"
+            lang = (lead.language or "en").lower()[:2]
+            if lang == "es":
+                subject = f"Tu análisis de automatización para {lead.business_name}"
+            else:
+                subject = f"Your AI automation analysis for {lead.business_name}"
             app_url = outreach.from_email.split("@")[-1] if "@" in outreach.from_email else "ekoai.io"
             tracking_pixel = outreach._add_tracking_pixel("", lead.id, f"lead_{lead.id}") if hasattr(outreach, "_add_tracking_pixel") else ""
             full_html = render_outreach_email(
