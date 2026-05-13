@@ -21,6 +21,7 @@ import {
   FileText,
   Mic,
   Layers,
+  LayoutTemplate,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -43,6 +44,7 @@ const MORE_LINKS = [
   { href: "/campaigns", icon: Mail, label: "Campañas" },
   { href: "/calendar", icon: Calendar, label: "Calendar" },
   { href: "/analytics", icon: TrendingUp, label: "Analytics" },
+  { href: "/landing-pages", icon: LayoutTemplate, label: "Landing Pages" },
   { href: "/settings", icon: Settings, label: "Config" },
 ];
 

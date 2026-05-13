@@ -31,6 +31,7 @@ class LeadSource(str, PyEnum):
     COLORADO_SOS = "colorado_sos"
     MANUAL = "manual"
     REFERRAL = "referral"
+    LANDING_PAGE = "landing_page"
 
 
 class Lead(Base):
@@ -69,6 +70,11 @@ class Lead(Base):
         Enum(LeadStatus), default=LeadStatus.DISCOVERED, index=True
     )
     source_data: Mapped[Optional[dict]] = mapped_column(JSON)  # Raw data from scraper
+    
+    # Landing page attribution
+    landing_page_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("landing_pages.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     
     # Enrichment data
     tech_stack: Mapped[Optional[list]] = mapped_column(JSON)

@@ -23,8 +23,13 @@ def _get_missing_columns(sync_conn):
         existing_columns = {col["name"] for col in inspector.get_columns(table_name)}
         for column in table.columns:
             if column.name not in existing_columns:
-                col_spec = str(column.compile(dialect=sync_conn.dialect))
-                sql = f'ALTER TABLE "{table_name}" ADD COLUMN IF NOT EXISTS {col_spec}'
+                # Compile column type only, not the full table-qualified name
+                col_type = column.type.compile(dialect=sync_conn.dialect)
+                nullable = "" if column.nullable else " NOT NULL"
+                default = ""
+                if column.default is not None and hasattr(column.default, 'arg'):
+                    default = f" DEFAULT {column.default.arg}"
+                sql = f'ALTER TABLE "{table_name}" ADD COLUMN IF NOT EXISTS "{column.name}" {col_type}{nullable}{default}'
                 missing.append(sql)
                 logger.info(f"Missing column detected: {table_name}.{column.name}")
     return missing

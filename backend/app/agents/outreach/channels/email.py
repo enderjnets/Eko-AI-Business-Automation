@@ -197,7 +197,7 @@ Return ONLY a JSON object with:
                     f"<p>Gracias por tu interés en Eko AI. Hemos recibido tu solicitud de análisis gratuito para <strong>{lead.business_name}</strong>.</p>"
                     f"<p>Nuestros agentes de IA pueden atender llamadas 24/7, capturar leads, agendar citas y recuperar llamadas perdidas — todo automáticamente.</p>"
                     f"<p>En las próximas 24 horas te enviaremos un análisis personalizado de cómo la IA puede ayudar a tu negocio. Mientras tanto, si tienes alguna pregunta, solo responde a este email.</p>"
-                    f"<p>Si prefieres hablar directamente, agenda una demo gratuita de 15 minutos aquí: <a href='https://cal.com/ender-ocando-lfxtkn/15min/15min'>https://cal.com/ender-ocando-lfxtkn/15min/15min</a></p>"
+                    f"<p>Si prefieres hablar directamente, agenda una demo gratuita de 15 minutos aquí: <a href='https://cal.com/ender-ocando-lfxtkn/15min'>https://cal.com/ender-ocando-lfxtkn/15min</a></p>"
                 )
             elif template_key.startswith("nurture_"):
                 subject = template["subject"].format(business_name=lead.business_name)
@@ -205,7 +205,7 @@ Return ONLY a JSON object with:
                     f"<p>Hola {first_name},</p>"
                     f"<p>Quería compartir algo relevante para <strong>{lead.business_name}</strong>.</p>"
                     f"<p>En Eko AI ayudamos a negocios como el tuyo a automatizar llamadas, agendar citas y capturar leads 24/7 con agentes de inteligencia artificial.</p>"
-                    f"<p>¿Te gustaría ver una demo de 15 minutos sin compromiso? Agenda aquí: <a href='https://cal.com/ender-ocando-lfxtkn/15min/15min'>https://cal.com/ender-ocando-lfxtkn/15min/15min</a></p>"
+                    f"<p>¿Te gustaría ver una demo de 15 minutos sin compromiso? Agenda aquí: <a href='https://cal.com/ender-ocando-lfxtkn/15min'>https://cal.com/ender-ocando-lfxtkn/15min</a></p>"
                 )
             else:
                 subject = template["subject"].format(business_name=lead.business_name)

@@ -367,7 +367,7 @@ async def _send_demo_reminders_async():
 <li><strong>Duración:</strong> 15 minutos</li>
 </ul>
 <p>En esta demo te mostraremos exactamente cómo un agente de IA puede manejar las llamadas, citas y seguimiento de <strong>{lead.business_name}</strong>.</p>
-<p><strong>¿Necesitas reagendar?</strong> <a href="https://cal.com/ender-ocando-lfxtkn/15min/demo">Haz clic aquí</a></p>
+<p><strong>¿Necesitas reagendar?</strong> <a href="https://cal.com/ender-ocando-lfxtkn/15min">Haz clic aquí</a></p>
 <p>¡Nos vemos pronto!<br>Eko AI Team</p>"""
                 try:
                     await email.send(
@@ -396,7 +396,7 @@ async def _send_demo_reminders_async():
 <li><strong>Duración:</strong> 15 minutos</li>
 </ul>
 <p>Te mostraremos cómo la IA puede automatizar <strong>{lead.business_name}</strong> — llamadas, citas, seguimiento, todo automático.</p>
-<p><strong>¿Necesitas reagendar?</strong> <a href="https://cal.com/ender-ocando-lfxtkn/15min/demo">Haz clic aquí</a></p>
+<p><strong>¿Necesitas reagendar?</strong> <a href="https://cal.com/ender-ocando-lfxtkn/15min">Haz clic aquí</a></p>
 <p>¡Nos vemos en un momento!<br>Eko AI Team</p>"""
                 try:
                     await email.send(
