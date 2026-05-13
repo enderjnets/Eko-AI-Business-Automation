@@ -64,6 +64,9 @@ _REQUIRED_ELEMENTS = [
     "</html>",
 ]
 
+# Elements that must appear at the END (completeness check)
+_CLOSING_ELEMENTS = ["</body>", "</html>"]
+
 
 class LandingPageGenerator:
     """Generate landing page HTML using AI."""
@@ -144,12 +147,20 @@ class LandingPageGenerator:
         return raw
 
     def _validate_html(self, html: str) -> list:
-        """Check for required elements."""
+        """Check for required elements and completeness."""
         errors = []
         lower = html.lower()
         for elem in _REQUIRED_ELEMENTS:
             if elem.lower() not in lower:
                 errors.append(f"Missing: {elem}")
+        # Check HTML is complete (not truncated)
+        for closing in _CLOSING_ELEMENTS:
+            if not lower.rstrip().endswith(closing):
+                # Also allow trailing whitespace after the closing tag
+                stripped = lower.rstrip()
+                if not any(stripped.endswith(c) for c in _CLOSING_ELEMENTS):
+                    errors.append(f"Incomplete HTML: does not end with {closing}")
+                    break
         return errors
 
     def _split_parts(self, html: str) -> dict:

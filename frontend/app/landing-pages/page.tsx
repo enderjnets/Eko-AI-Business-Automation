@@ -897,11 +897,12 @@ export default function LandingPagesPage() {
                         </div>
                       </div>
                       <div
-                        className={`border border-[#334155] rounded-lg overflow-hidden ${
+                        className={`border border-[#334155] rounded-lg ${
                           previewMode === "mobile" ? "max-w-[375px] mx-auto" : "w-full"
                         }`}
                         style={{
                           height: "500px",
+                          overflow: "auto",
                           backgroundImage: "radial-gradient(circle, #334155 1px, transparent 1px)",
                           backgroundSize: "20px 20px",
                         }}
