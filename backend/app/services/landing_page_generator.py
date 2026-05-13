@@ -100,7 +100,7 @@ class LandingPageGenerator:
                 user_prompt=user_prompt,
                 model=None,  # Use system-configured model (matches AI_PROVIDER)
                 temperature=0.7,
-                max_tokens=8000,
+                max_tokens=12000,
                 json_mode=False,
             )
         except Exception as e:
