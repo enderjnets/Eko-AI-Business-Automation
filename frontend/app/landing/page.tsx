@@ -207,11 +207,13 @@ export default function LandingPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const slug = params.get("lp");
-    const url = slug
-      ? `/api/v1/landing-pages/public/${slug}`
-      : "/api/v1/landing-pages/public/active";
+    if (!slug) {
+      // Default: show hardcoded landing page
+      setDynamicLoading(false);
+      return;
+    }
 
-    fetch(url)
+    fetch(`/api/v1/landing-pages/public/${slug}`)
       .then((r) => {
         if (!r.ok) throw new Error("No landing page");
         return r.text();
