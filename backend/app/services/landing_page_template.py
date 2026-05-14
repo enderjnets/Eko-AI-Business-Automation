@@ -18,7 +18,7 @@ a{color:var(--accent);text-decoration:none}
 .nav-inner{max-width:1200px;margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between}
 .logo{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.5px}
 .logo span{color:var(--primary)}
-.nav-links{display:flex;gap:32px;list-style:none}
+.nav-links{display:flex;gap:28px;list-style:none;align-items:center}
 .nav-links a{color:var(--muted);font-size:14px;transition:color .2s}
 .nav-links a:hover{color:var(--text)}
 .nav-cta{background:var(--primary);color:#fff!important;padding:8px 18px;border-radius:8px;font-weight:500}
@@ -37,35 +37,49 @@ a{color:var(--accent);text-decoration:none}
 .stats{display:flex;justify-content:center;gap:48px;margin-top:40px;flex-wrap:wrap}
 .stat-num{font-size:36px;font-weight:800;color:var(--text)}
 .stat-label{font-size:14px;color:var(--muted)}
-.features{padding:80px 24px;max-width:1200px;margin:0 auto}
-.section-header{text-align:center;margin-bottom:48px;animation:fadeInUp .8s ease both}
+.section{padding:80px 24px;max-width:1200px;margin:0 auto}
+.section-alt{background:radial-gradient(ellipse at 50% 0%,rgba(11,79,216,.06) 0%,transparent 60%)}
+.section-header{text-align:center;margin-bottom:56px;animation:fadeInUp .8s ease both}
 .section-header h2{font-size:clamp(28px,4vw,40px);font-weight:700;margin-bottom:12px}
 .section-header p{color:var(--muted);font-size:18px;max-width:500px;margin:0 auto}
-.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
 .feature-card{padding:32px;border-radius:16px;background:var(--surface);border:1px solid rgba(255,255,255,.06);transition:transform .2s,border-color .2s;animation:fadeInUp .6s ease both}
 .feature-card:nth-child(2){animation-delay:.1s}
 .feature-card:nth-child(3){animation-delay:.2s}
+.feature-card:nth-child(4){animation-delay:.3s}
 .feature-card:hover{transform:translateY(-4px);border-color:rgba(11,79,216,.3)}
 .feature-icon{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
 .feature-card h3{font-size:18px;font-weight:600;margin-bottom:8px}
 .feature-card p{color:var(--muted);font-size:15px;line-height:1.5}
-.testimonials{padding:80px 24px;background:radial-gradient(ellipse at 50% 0%,rgba(11,79,216,.08) 0%,transparent 60%)}
-.testimonials-inner{max-width:1200px;margin:0 auto}
-.testimonials-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;margin-top:40px}
-.testimonial-card{padding:28px;border-radius:16px;background:var(--surface);border:1px solid rgba(255,255,255,.06);animation:fadeInUp .6s ease both}
-.testimonial-card:nth-child(2){animation-delay:.15s}
-.testimonial-stars{color:#fbbf24;font-size:18px;margin-bottom:12px}
-.testimonial-card p{color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:20px;font-style:italic}
-.testimonial-author{display:flex;align-items:center;gap:12px}
-.testimonial-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600}
-.testimonial-author div:last-child{font-size:14px;color:var(--muted)}
-.testimonial-author strong{color:var(--text);display:block}
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:32px;margin-top:40px}
+.step-card{text-align:center;padding:32px;animation:fadeInUp .6s ease both}
+.step-card:nth-child(2){animation-delay:.15s}
+.step-card:nth-child(3){animation-delay:.3s}
+.step-num{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;margin:0 auto 20px}
+.step-card h3{font-size:20px;font-weight:600;margin-bottom:10px}
+.step-card p{color:var(--muted);font-size:15px;line-height:1.6}
+.reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;margin-top:40px}
+.review-card{padding:28px;border-radius:16px;background:var(--surface);border:1px solid rgba(255,255,255,.06);animation:fadeInUp .6s ease both}
+.review-card:nth-child(2){animation-delay:.15s}
+.review-stars{color:#fbbf24;font-size:18px;margin-bottom:12px}
+.review-card p{color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:20px;font-style:italic}
+.review-author{display:flex;align-items:center;gap:12px}
+.review-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600}
+.review-author div:last-child{font-size:14px;color:var(--muted)}
+.review-author strong{color:var(--text);display:block}
+.faq-list{max-width:800px;margin:40px auto 0}
+.faq-item{border-bottom:1px solid rgba(255,255,255,.08)}
+.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;padding:20px 0;background:none;border:none;color:var(--text);font-size:17px;font-weight:500;text-align:left;cursor:pointer}
+.faq-q::after{content:'+';font-size:22px;color:var(--accent);transition:transform .3s}
+.faq-item.active .faq-q::after{transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;color:var(--muted);font-size:15px;line-height:1.6}
+.faq-item.active .faq-a{max-height:200px;padding-bottom:20px}
 .footer{padding:60px 24px;text-align:center;border-top:1px solid rgba(255,255,255,.06)}
 .footer h2{font-size:clamp(24px,3vw,32px);font-weight:700;margin-bottom:16px}
 .footer p{color:var(--muted);margin-bottom:24px;max-width:500px;margin-left:auto;margin-right:auto}
 .footer-btn{display:inline-block;padding:14px 32px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;font-size:16px;font-weight:600}
 .footer-copy{margin-top:32px;font-size:14px;color:var(--muted)}
-@media(max-width:640px){.nav-links{display:none}.hero{padding-top:80px}.stats{gap:24px}.features-grid,.testimonials-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.nav-links{display:none}.hero{padding-top:80px}.stats{gap:24px}.features-grid,.steps-grid,.reviews-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -75,8 +89,10 @@ a{color:var(--accent);text-decoration:none}
   <div class="nav-inner">
     <a href="#" class="logo">eko <span>AI</span></a>
     <ul class="nav-links">
-      <li><a href="#features">Features</a></li>
-      <li><a href="#testimonials">Testimonials</a></li>
+      <li><a href="#benefits">Benefits</a></li>
+      <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#reviews">Reviews</a></li>
+      <li><a href="#faq">FAQ</a></li>
       <li><a href="#form" class="nav-cta">Get Started</a></li>
     </ul>
   </div>
@@ -87,7 +103,7 @@ a{color:var(--accent);text-decoration:none}
     <div class="badge">⚡ {{BADGE}}</div>
     <h1>{{HERO_TITLE}}</h1>
     <p>{{HERO_SUBTITLE}}</p>
-    <form class="hero-form" action="/api/v1/leads/public" method="POST">
+    <form class="hero-form" action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST">
       <input type="hidden" name="source" value="landing_page">
       <input type="text" name="business_name" placeholder="Business name" required>
       <input type="email" name="email" placeholder="Email" required>
@@ -104,53 +120,105 @@ a{color:var(--accent);text-decoration:none}
   </div>
 </section>
 
-<section class="features" id="features">
+<section class="section" id="benefits">
   <div class="section-header">
-    <h2>{{FEATURES_HEADLINE}}</h2>
-    <p>{{FEATURES_SUBHEADLINE}}</p>
+    <h2>{{BENEFITS_HEADLINE}}</h2>
+    <p>{{BENEFITS_SUBHEADLINE}}</p>
   </div>
   <div class="features-grid">
     <div class="feature-card">
-      <div class="feature-icon">{{FEATURE_1_ICON}}</div>
-      <h3>{{FEATURE_1_TITLE}}</h3>
-      <p>{{FEATURE_1_DESC}}</p>
+      <div class="feature-icon">{{BENEFIT_1_ICON}}</div>
+      <h3>{{BENEFIT_1_TITLE}}</h3>
+      <p>{{BENEFIT_1_DESC}}</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">{{FEATURE_2_ICON}}</div>
-      <h3>{{FEATURE_2_TITLE}}</h3>
-      <p>{{FEATURE_2_DESC}}</p>
+      <div class="feature-icon">{{BENEFIT_2_ICON}}</div>
+      <h3>{{BENEFIT_2_TITLE}}</h3>
+      <p>{{BENEFIT_2_DESC}}</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">{{FEATURE_3_ICON}}</div>
-      <h3>{{FEATURE_3_TITLE}}</h3>
-      <p>{{FEATURE_3_DESC}}</p>
+      <div class="feature-icon">{{BENEFIT_3_ICON}}</div>
+      <h3>{{BENEFIT_3_TITLE}}</h3>
+      <p>{{BENEFIT_3_DESC}}</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">{{BENEFIT_4_ICON}}</div>
+      <h3>{{BENEFIT_4_TITLE}}</h3>
+      <p>{{BENEFIT_4_DESC}}</p>
     </div>
   </div>
 </section>
 
-<section class="testimonials" id="testimonials">
-  <div class="testimonials-inner">
-    <div class="section-header">
-      <h2>{{TESTIMONIALS_HEADLINE}}</h2>
-      <p>{{TESTIMONIALS_SUBHEADLINE}}</p>
+<section class="section section-alt" id="how-it-works">
+  <div class="section-header">
+    <h2>{{HOW_HEADLINE}}</h2>
+    <p>{{HOW_SUBHEADLINE}}</p>
+  </div>
+  <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <h3>{{STEP_1_TITLE}}</h3>
+      <p>{{STEP_1_DESC}}</p>
     </div>
-    <div class="testimonials-grid">
-      <div class="testimonial-card">
-        <div class="testimonial-stars">★★★★★</div>
-        <p>"{{TESTIMONIAL_1_QUOTE}}"</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">{{TESTIMONIAL_1_INITIALS}}</div>
-          <div><strong>{{TESTIMONIAL_1_NAME}}</strong>{{TESTIMONIAL_1_ROLE}}</div>
-        </div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <h3>{{STEP_2_TITLE}}</h3>
+      <p>{{STEP_2_DESC}}</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <h3>{{STEP_3_TITLE}}</h3>
+      <p>{{STEP_3_DESC}}</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="reviews">
+  <div class="section-header">
+    <h2>{{REVIEWS_HEADLINE}}</h2>
+    <p>{{REVIEWS_SUBHEADLINE}}</p>
+  </div>
+  <div class="reviews-grid">
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <p>"{{REVIEW_1_QUOTE}}"</p>
+      <div class="review-author">
+        <div class="review-avatar">{{REVIEW_1_INITIALS}}</div>
+        <div><strong>{{REVIEW_1_NAME}}</strong>{{REVIEW_1_ROLE}}</div>
       </div>
-      <div class="testimonial-card">
-        <div class="testimonial-stars">★★★★★</div>
-        <p>"{{TESTIMONIAL_2_QUOTE}}"</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">{{TESTIMONIAL_2_INITIALS}}</div>
-          <div><strong>{{TESTIMONIAL_2_NAME}}</strong>{{TESTIMONIAL_2_ROLE}}</div>
-        </div>
+    </div>
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <p>"{{REVIEW_2_QUOTE}}"</p>
+      <div class="review-author">
+        <div class="review-avatar">{{REVIEW_2_INITIALS}}</div>
+        <div><strong>{{REVIEW_2_NAME}}</strong>{{REVIEW_2_ROLE}}</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt" id="faq">
+  <div class="section-header">
+    <h2>{{FAQ_HEADLINE}}</h2>
+    <p>{{FAQ_SUBHEADLINE}}</p>
+  </div>
+  <div class="faq-list">
+    <div class="faq-item active">
+      <button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_1_Q}}</button>
+      <div class="faq-a">{{FAQ_1_A}}</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_2_Q}}</button>
+      <div class="faq-a">{{FAQ_2_A}}</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_3_Q}}</button>
+      <div class="faq-a">{{FAQ_3_A}}</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_4_Q}}</button>
+      <div class="faq-a">{{FAQ_4_A}}</div>
     </div>
   </div>
 </section>
@@ -179,27 +247,48 @@ _DEFAULT_COPY = {
     "STAT_2_LABEL": "Businesses Served",
     "STAT_3_NUM": "98%",
     "STAT_3_LABEL": "Customer Satisfaction",
-    "FEATURES_HEADLINE": "Everything Your Business Needs",
-    "FEATURES_SUBHEADLINE": "One AI agent that handles it all",
-    "FEATURE_1_ICON": "📞",
-    "FEATURE_1_TITLE": "Answer Calls 24/7",
-    "FEATURE_1_DESC": "Never miss a call again. Your AI answers, qualifies leads, and transfers when needed.",
-    "FEATURE_2_ICON": "💬",
-    "FEATURE_2_TITLE": "Respond on WhatsApp",
-    "FEATURE_2_DESC": "Instant replies to customer inquiries. Product questions, pricing, availability—all automatic.",
-    "FEATURE_3_ICON": "📅",
-    "FEATURE_3_TITLE": "Book Appointments",
-    "FEATURE_3_DESC": "Connects directly to your calendar. Customers book, reschedule, or cancel without human help.",
-    "TESTIMONIALS_HEADLINE": "Loved by Business Owners",
-    "TESTIMONIALS_SUBHEADLINE": "See what our customers say",
-    "TESTIMONIAL_1_QUOTE": "We went from missing 30% of calls to booking every single one. Eko AI paid for itself in the first week.",
-    "TESTIMONIAL_1_INITIALS": "MR",
-    "TESTIMONIAL_1_NAME": "Maria Rodriguez",
-    "TESTIMONIAL_1_ROLE": "Spa Owner, Miami",
-    "TESTIMONIAL_2_QUOTE": "Finally, an AI that actually sounds like me! Clients don't even know they're talking to a bot.",
-    "TESTIMONIAL_2_INITIALS": "JC",
-    "TESTIMONIAL_2_NAME": "James Chen",
-    "TESTIMONIAL_2_ROLE": "Gym Owner, San Francisco",
+    "BENEFITS_HEADLINE": "Why Business Owners Love Eko AI",
+    "BENEFITS_SUBHEADLINE": "Everything you need to never miss a customer",
+    "BENEFIT_1_ICON": "📞",
+    "BENEFIT_1_TITLE": "Answer Calls 24/7",
+    "BENEFIT_1_DESC": "Never miss a call again. Your AI answers, qualifies leads, and transfers when needed.",
+    "BENEFIT_2_ICON": "💬",
+    "BENEFIT_2_TITLE": "Respond on WhatsApp",
+    "BENEFIT_2_DESC": "Instant replies to customer inquiries. Product questions, pricing, availability—all automatic.",
+    "BENEFIT_3_ICON": "📅",
+    "BENEFIT_3_TITLE": "Book Appointments",
+    "BENEFIT_3_DESC": "Connects directly to your calendar. Customers book, reschedule, or cancel without human help.",
+    "BENEFIT_4_ICON": "🤝",
+    "BENEFIT_4_TITLE": "Follow Up Automatically",
+    "BENEFIT_4_DESC": "No lead falls through the cracks. Automated follow-ups nurture prospects until they convert.",
+    "HOW_HEADLINE": "How It Works",
+    "HOW_SUBHEADLINE": "Get started in 3 simple steps",
+    "STEP_1_TITLE": "Book Your Demo",
+    "STEP_1_DESC": "15 minutes. We learn about your business and show you exactly how AI will work for you.",
+    "STEP_2_TITLE": "We Configure Everything",
+    "STEP_2_DESC": "Our team trains your AI agent with your business info, services, pricing, and brand voice.",
+    "STEP_3_TITLE": "Go Live & Scale",
+    "STEP_3_DESC": "Your AI starts working immediately. Answer calls, book appointments, follow up—24/7 from day one.",
+    "REVIEWS_HEADLINE": "Loved by Business Owners",
+    "REVIEWS_SUBHEADLINE": "See what our customers say",
+    "REVIEW_1_QUOTE": "We went from missing 30% of calls to booking every single one. Eko AI paid for itself in the first week.",
+    "REVIEW_1_INITIALS": "MR",
+    "REVIEW_1_NAME": "Maria Rodriguez",
+    "REVIEW_1_ROLE": "Spa Owner, Miami",
+    "REVIEW_2_QUOTE": "Finally, an AI that actually sounds like me! Clients don't even know they're talking to a bot.",
+    "REVIEW_2_INITIALS": "JC",
+    "REVIEW_2_NAME": "James Chen",
+    "REVIEW_2_ROLE": "Gym Owner, San Francisco",
+    "FAQ_HEADLINE": "Frequently Asked Questions",
+    "FAQ_SUBHEADLINE": "Everything you need to know",
+    "FAQ_1_Q": "How quickly can Eko AI be set up?",
+    "FAQ_1_A": "Most businesses are live within 48 hours of their demo. We handle all the configuration, training, and integration.",
+    "FAQ_2_Q": "Does it work with my existing tools?",
+    "FAQ_2_A": "Yes. Eko AI integrates with Google Calendar, Outlook, Cal.com, most CRMs, and popular business phone systems.",
+    "FAQ_3_Q": "What if the AI can't answer a question?",
+    "FAQ_3_A": "Your AI is trained specifically on your business. For edge cases, it can transfer to you or take a message with full context.",
+    "FAQ_4_Q": "Can I cancel anytime?",
+    "FAQ_4_A": "Yes. No long-term contracts, no cancellation fees. We earn your business every month.",
     "FOOTER_HEADLINE": "Ready to never miss a customer again?",
     "FOOTER_SUBHEADLINE": "Join 500+ businesses already using Eko AI to automate their customer interactions.",
     "FOOTER_CTA": "Get Your Free AI Analysis",
@@ -215,37 +304,58 @@ Return ONLY a JSON object with these exact keys. No markdown, no explanations ou
 Required JSON structure:
 {
   "TITLE": "Page title (50 chars max)",
-  "BADGE": "Short badge text above headline (e.g., 'AI-Powered Automation for Local Businesses')",
-  "HERO_TITLE": "Main headline with HTML span for gradient word: 'Your Business Never Sleeps With <span class=\\'gradient\\'>Eko AI</span>'",
-  "HERO_SUBTITLE": "One paragraph explaining the value prop (max 200 chars)",
+  "BADGE": "Short badge above headline (e.g., 'AI-Powered Automation for Salons')",
+  "HERO_TITLE": "Main headline with HTML span: 'Your Salon Never Sleeps With <span class=\\'gradient\\'>Eko AI</span>'",
+  "HERO_SUBTITLE": "One paragraph value prop (max 200 chars)",
   "CTA_BUTTON": "Button text (e.g., 'Get Your Free AI Analysis')",
   "STAT_1_NUM": "First stat number (e.g., '24/7')",
-  "STAT_1_LABEL": "First stat label (e.g., 'Always Available')",
+  "STAT_1_LABEL": "First stat label",
   "STAT_2_NUM": "Second stat number",
   "STAT_2_LABEL": "Second stat label",
   "STAT_3_NUM": "Third stat number",
   "STAT_3_LABEL": "Third stat label",
-  "FEATURES_HEADLINE": "Features section headline",
-  "FEATURES_SUBHEADLINE": "Features section subheadline",
-  "FEATURE_1_ICON": "Single emoji for feature 1",
-  "FEATURE_1_TITLE": "Feature 1 title (3-4 words)",
-  "FEATURE_1_DESC": "Feature 1 description (max 120 chars)",
-  "FEATURE_2_ICON": "Single emoji for feature 2",
-  "FEATURE_2_TITLE": "Feature 2 title",
-  "FEATURE_2_DESC": "Feature 2 description",
-  "FEATURE_3_ICON": "Single emoji for feature 3",
-  "FEATURE_3_TITLE": "Feature 3 title",
-  "FEATURE_3_DESC": "Feature 3 description",
-  "TESTIMONIALS_HEADLINE": "Testimonials section headline",
-  "TESTIMONIALS_SUBHEADLINE": "Testimonials subheadline",
-  "TESTIMONIAL_1_QUOTE": "First testimonial quote (max 150 chars)",
-  "TESTIMONIAL_1_INITIALS": "2-letter initials (e.g., 'MR')",
-  "TESTIMONIAL_1_NAME": "First person name",
-  "TESTIMONIAL_1_ROLE": "First person role + location",
-  "TESTIMONIAL_2_QUOTE": "Second testimonial quote",
-  "TESTIMONIAL_2_INITIALS": "2-letter initials",
-  "TESTIMONIAL_2_NAME": "Second person name",
-  "TESTIMONIAL_2_ROLE": "Second person role + location",
+  "BENEFITS_HEADLINE": "Benefits section headline",
+  "BENEFITS_SUBHEADLINE": "Benefits section subheadline",
+  "BENEFIT_1_ICON": "Single emoji",
+  "BENEFIT_1_TITLE": "Benefit 1 title (3-4 words)",
+  "BENEFIT_1_DESC": "Benefit 1 description (max 120 chars)",
+  "BENEFIT_2_ICON": "Single emoji",
+  "BENEFIT_2_TITLE": "Benefit 2 title",
+  "BENEFIT_2_DESC": "Benefit 2 description",
+  "BENEFIT_3_ICON": "Single emoji",
+  "BENEFIT_3_TITLE": "Benefit 3 title",
+  "BENEFIT_3_DESC": "Benefit 3 description",
+  "BENEFIT_4_ICON": "Single emoji",
+  "BENEFIT_4_TITLE": "Benefit 4 title",
+  "BENEFIT_4_DESC": "Benefit 4 description",
+  "HOW_HEADLINE": "How It Works headline",
+  "HOW_SUBHEADLINE": "How It Works subheadline",
+  "STEP_1_TITLE": "Step 1 title (3-4 words)",
+  "STEP_1_DESC": "Step 1 description (max 120 chars)",
+  "STEP_2_TITLE": "Step 2 title",
+  "STEP_2_DESC": "Step 2 description",
+  "STEP_3_TITLE": "Step 3 title",
+  "STEP_3_DESC": "Step 3 description",
+  "REVIEWS_HEADLINE": "Reviews headline",
+  "REVIEWS_SUBHEADLINE": "Reviews subheadline",
+  "REVIEW_1_QUOTE": "First testimonial quote (max 150 chars)",
+  "REVIEW_1_INITIALS": "2-letter initials (e.g., 'MR')",
+  "REVIEW_1_NAME": "First person name",
+  "REVIEW_1_ROLE": "First person role + location",
+  "REVIEW_2_QUOTE": "Second testimonial quote",
+  "REVIEW_2_INITIALS": "2-letter initials",
+  "REVIEW_2_NAME": "Second person name",
+  "REVIEW_2_ROLE": "Second person role + location",
+  "FAQ_HEADLINE": "FAQ headline",
+  "FAQ_SUBHEADLINE": "FAQ subheadline",
+  "FAQ_1_Q": "FAQ question 1",
+  "FAQ_1_A": "FAQ answer 1 (max 150 chars)",
+  "FAQ_2_Q": "FAQ question 2",
+  "FAQ_2_A": "FAQ answer 2",
+  "FAQ_3_Q": "FAQ question 3",
+  "FAQ_3_A": "FAQ answer 3",
+  "FAQ_4_Q": "FAQ question 4",
+  "FAQ_4_A": "FAQ answer 4",
   "FOOTER_HEADLINE": "Footer headline",
   "FOOTER_SUBHEADLINE": "Footer subheadline (max 120 chars)",
   "FOOTER_CTA": "Footer button text"
