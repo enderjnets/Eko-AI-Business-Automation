@@ -496,12 +496,26 @@ async def _send_welcome_email(lead_id: int):
 
 @router.post("/public", response_model=dict, status_code=201)
 async def create_public_lead(
-    lead_data: PublicLeadCreate,
+    request: Request,
     background_tasks: BackgroundTasks,
     landing_page_id: Optional[int] = Query(None, description="ID of landing page that referred this lead"),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new lead from the public marketing website (no auth required)."""
+    # Parse body: support both JSON and form-encoded (browser form submissions)
+    content_type = request.headers.get("content-type", "").lower()
+    if "application/json" in content_type:
+        data = await request.json()
+    else:
+        form_data = await request.form()
+        data = dict(form_data)
+    
+    try:
+        lead_data = PublicLeadCreate(**data)
+    except Exception as e:
+        logger.warning(f"Public lead validation failed: {e}. Data: {data}")
+        raise HTTPException(status_code=422, detail=f"Invalid lead data: {e}")
+
     # Check for duplicate by email
     if lead_data.email:
         result = await db.execute(select(Lead).where(Lead.email == lead_data.email))
