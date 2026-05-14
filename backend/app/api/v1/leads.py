@@ -3,6 +3,7 @@ import math
 from typing import Optional, List
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, Body, Request
+from fastapi.responses import HTMLResponse
 from sqlalchemy import select, func, Integer, case, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
@@ -521,6 +522,14 @@ async def create_public_lead(
         result = await db.execute(select(Lead).where(Lead.email == lead_data.email))
         existing = result.scalar_one_or_none()
         if existing:
+            # Browser-friendly response
+            accept = request.headers.get("accept", "")
+            if "application/json" not in accept:
+                return HTMLResponse(content=f"""<!DOCTYPE html>
+<html><head><meta http-equiv="refresh" content="3;url=/landing?lp=eko-ai-landing&msg=existing"></head>
+<body style="background:#0a0e1a;color:#f1f5f9;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;">
+<div><h1>You're already on our list!</h1><p>We'll reach out to you soon. Redirecting...</p></div>
+</body></html>""", status_code=200)
             return {"status": "existing", "lead_id": existing.id, "message": "Lead already exists"}
 
     # Fallback: if no business_name, use first_name + last_name
@@ -601,6 +610,15 @@ async def create_public_lead(
     # Queue enrichment + AI Analysis email via Celery (takes 1-2 min)
     if lead.email:
         enrich_and_welcome_lead.delay(lead.id)
+
+    # Browser-friendly response
+    accept = request.headers.get("accept", "")
+    if "application/json" not in accept:
+        return HTMLResponse(content=f"""<!DOCTYPE html>
+<html><head><meta http-equiv="refresh" content="3;url=/landing?lp=eko-ai-landing&msg=created"></head>
+<body style="background:#0a0e1a;color:#f1f5f9;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;">
+<div><h1>Thanks! We received your info.</h1><p>We'll send your AI analysis to your email within 24 hours. Redirecting...</p></div>
+</body></html>""", status_code=200)
 
     return {"status": "created", "lead_id": lead.id}
 
