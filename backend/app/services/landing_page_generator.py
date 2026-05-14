@@ -114,6 +114,7 @@ class LandingPageGenerator:
                     temperature=0.3,
                     max_tokens=8192,
                     json_mode=False,
+                    provider="kimi",
                 )
                 cont_html = self._extract_html(cont_raw)
                 logger.info(f"[LP-{landing_page_id}] Continuation #{continuation_attempts} received {len(cont_html)} chars")
@@ -156,6 +157,7 @@ class LandingPageGenerator:
                 temperature=0.7,
                 max_tokens=8192,
                 json_mode=False,
+                provider="kimi",
             )
             return raw_html
         except Exception as e:
