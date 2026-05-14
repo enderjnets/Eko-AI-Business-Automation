@@ -3,6 +3,7 @@ import math
 from typing import Optional, List
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, Body, Request
+from fastapi.responses import HTMLResponse
 from sqlalchemy import select, func, Integer, case, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
@@ -496,21 +497,48 @@ async def _send_welcome_email(lead_id: int):
 
 @router.post("/public", response_model=dict, status_code=201)
 async def create_public_lead(
-    lead_data: PublicLeadCreate,
+    request: Request,
     background_tasks: BackgroundTasks,
     landing_page_id: Optional[int] = Query(None, description="ID of landing page that referred this lead"),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new lead from the public marketing website (no auth required)."""
+    # Parse body: support both JSON and form-encoded (browser form submissions)
+    content_type = request.headers.get("content-type", "").lower()
+    if "application/json" in content_type:
+        data = await request.json()
+    else:
+        form_data = await request.form()
+        data = dict(form_data)
+    
+    try:
+        lead_data = PublicLeadCreate(**data)
+    except Exception as e:
+        logger.warning(f"Public lead validation failed: {e}. Data: {data}")
+        raise HTTPException(status_code=422, detail=f"Invalid lead data: {e}")
+
     # Check for duplicate by email
     if lead_data.email:
         result = await db.execute(select(Lead).where(Lead.email == lead_data.email))
         existing = result.scalar_one_or_none()
         if existing:
+            # Browser-friendly response
+            accept = request.headers.get("accept", "")
+            if "application/json" not in accept:
+                return HTMLResponse(content=f"""<!DOCTYPE html>
+<html><head><meta http-equiv="refresh" content="3;url=/landing?lp=eko-ai-landing&msg=existing"></head>
+<body style="background:#0a0e1a;color:#f1f5f9;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;">
+<div><h1>You're already on our list!</h1><p>We'll reach out to you soon. Redirecting...</p></div>
+</body></html>""", status_code=200)
             return {"status": "existing", "lead_id": existing.id, "message": "Lead already exists"}
 
+    # Fallback: if no business_name, use first_name + last_name
+    business_name = lead_data.business_name or f"{lead_data.first_name or ''} {lead_data.last_name or ''}".strip()
+    if not business_name:
+        business_name = "Unknown Business"
+
     lead = Lead(
-        business_name=lead_data.business_name,
+        business_name=business_name,
         email=lead_data.email,
         phone=lead_data.phone,
         website=lead_data.website,
@@ -582,6 +610,15 @@ async def create_public_lead(
     # Queue enrichment + AI Analysis email via Celery (takes 1-2 min)
     if lead.email:
         enrich_and_welcome_lead.delay(lead.id)
+
+    # Browser-friendly response
+    accept = request.headers.get("accept", "")
+    if "application/json" not in accept:
+        return HTMLResponse(content=f"""<!DOCTYPE html>
+<html><head><meta http-equiv="refresh" content="3;url=/landing?lp=eko-ai-landing&msg=created"></head>
+<body style="background:#0a0e1a;color:#f1f5f9;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;">
+<div><h1>Thanks! We received your info.</h1><p>We'll send your AI analysis to your email within 24 hours. Redirecting...</p></div>
+</body></html>""", status_code=200)
 
     return {"status": "created", "lead_id": lead.id}
 

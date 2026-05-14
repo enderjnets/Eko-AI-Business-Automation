@@ -1,6 +1,7 @@
 import logging
 import json
 import re
+import asyncio
 from typing import Optional
 
 from app.utils.ai_client import generate_completion
@@ -10,6 +11,9 @@ logger = logging.getLogger(__name__)
 
 # Regex to extract JSON from markdown fences or raw text
 _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
+
+# Regex to extract text from Kimi CLI --quiet output
+_RESUME_SESSION_RE = re.compile(r"To resume this session:.*", re.IGNORECASE)
 
 
 class LandingPageGenerator:
@@ -59,6 +63,9 @@ class LandingPageGenerator:
 
     async def _generate_copy(self, system: str, user_prompt: str, provider: Optional[str] = None) -> str:
         """Generate copy JSON from AI with error handling."""
+        if provider == "kimi":
+            return await self._generate_copy_kimi(system, user_prompt)
+
         try:
             raw = await generate_completion(
                 system_prompt=system,
@@ -73,6 +80,65 @@ class LandingPageGenerator:
         except Exception as e:
             logger.error(f"AI copy generation failed: {e}")
             raise RuntimeError(f"AI copy generation failed: {e}")
+
+    async def _generate_copy_kimi(self, system: str, user_prompt: str) -> str:
+        """Generate copy using Kimi CLI via subprocess."""
+        import shutil
+
+        kimi_bin = shutil.which("kimi") or "/root/.local/bin/kimi"
+
+        # Combine system prompt and user prompt into a single prompt for Kimi CLI
+        full_prompt = f"""{system}
+
+USER REQUEST:
+{user_prompt}
+
+IMPORTANT: Respond with ONLY a valid JSON object. No markdown fences, no explanations, no comments. Just pure JSON starting with {{ and ending with }}."""
+
+        cmd = [
+            kimi_bin,
+            "--quiet",
+            "--yolo",
+            "--max-steps-per-turn", "1",
+            "--prompt", full_prompt,
+        ]
+
+        logger.info(f"Running Kimi CLI: {' '.join(cmd)}")
+
+        try:
+            import os
+            env = os.environ.copy()
+            env["PATH"] = "/root/.local/bin:/home/enderj/.local/bin:" + env.get("PATH", "/usr/local/bin:/usr/bin:/bin")
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=env,
+            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
+        except asyncio.TimeoutError:
+            logger.error("Kimi CLI timed out after 120 seconds")
+            if proc.returncode is None:
+                proc.kill()
+            raise RuntimeError("Kimi CLI timed out after 120 seconds")
+        except Exception as e:
+            logger.error(f"Kimi CLI subprocess failed: {e}")
+            raise RuntimeError(f"Kimi CLI subprocess failed: {e}")
+
+        if proc.returncode != 0:
+            err = stderr.decode("utf-8", errors="ignore")[:500]
+            logger.error(f"Kimi CLI exited with code {proc.returncode}: {err}")
+            raise RuntimeError(f"Kimi CLI failed (exit {proc.returncode}): {err}")
+
+        output = stdout.decode("utf-8", errors="ignore")
+
+        # Clean up output — remove "To resume this session" line
+        output = _RESUME_SESSION_RE.sub("", output).strip()
+
+        logger.info(f"Kimi CLI output length: {len(output)} chars")
+        logger.debug(f"Kimi CLI raw output: {output[:500]}")
+
+        return output
 
     def _parse_json(self, raw: str) -> dict:
         """Extract and parse JSON from AI response."""

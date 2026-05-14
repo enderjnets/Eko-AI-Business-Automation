@@ -97,6 +97,8 @@ services:
     volumes:
       - ./backend:/app
       - ./backups:/app/backups
+      - /home/enderj/.local/share/uv/tools/kimi-cli:/opt/kimi-cli
+      - /home/enderj/.kimi:/root/.kimi
     depends_on:
       db:
         condition: service_healthy
@@ -165,6 +167,8 @@ services:
     volumes:
       - ./backend:/app
       - ./backups:/app/backups
+      - /home/enderj/.local/share/uv/tools/kimi-cli:/opt/kimi-cli
+      - /home/enderj/.kimi:/root/.kimi
     depends_on:
       db:
         condition: service_healthy
@@ -233,6 +237,8 @@ services:
     volumes:
       - ./backend:/app
       - ./backups:/app/backups
+      - /home/enderj/.local/share/uv/tools/kimi-cli:/opt/kimi-cli
+      - /home/enderj/.kimi:/root/.kimi
     depends_on:
       db:
         condition: service_healthy

@@ -6,7 +6,7 @@ from app.models.lead import LeadStatus, LeadSource
 
 
 class LeadBase(BaseModel):
-    business_name: str = Field(..., min_length=1, max_length=255)
+    business_name: Optional[str] = Field(None, max_length=255)
     category: Optional[str] = None
     description: Optional[str] = None
     email: Optional[EmailStr] = None
@@ -165,7 +165,7 @@ class LeadSearchRequest(BaseModel):
 
 class PublicLeadCreate(BaseModel):
     """Schema for public lead capture from the marketing website."""
-    business_name: str = Field(..., min_length=1, max_length=255)
+    business_name: Optional[str] = Field(None, max_length=255)
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     email: Optional[EmailStr] = None

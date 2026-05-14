@@ -104,12 +104,11 @@ a{color:var(--accent);text-decoration:none}
     <h1>{{HERO_TITLE}}</h1>
     <p>{{HERO_SUBTITLE}}</p>
     <form class="hero-form" action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST">
-      <input type="hidden" name="source" value="landing_page">
-      <input type="text" name="business_name" placeholder="Business name" required>
+      <input type="text" name="first_name" placeholder="First Name" required>
+      <input type="text" name="last_name" placeholder="Last Name" required>
       <input type="email" name="email" placeholder="Email" required>
       <input type="tel" name="phone" placeholder="Phone" required>
-      <input type="text" name="city" placeholder="City">
-      <input type="text" name="state" placeholder="State">
+      <input type="url" name="website" placeholder="Website" required>
       <button type="submit">{{CTA_BUTTON}}</button>
     </form>
     <div class="stats">
@@ -230,6 +229,63 @@ a{color:var(--accent);text-decoration:none}
   <div class="footer-copy">© {{YEAR}} Eko AI. contact@biz.ekoaiautomation.com</div>
 </footer>
 
+<script>
+(function(){
+  const form = document.querySelector('.hero-form');
+  const msgDiv = document.createElement('div');
+  msgDiv.style.cssText = 'flex:1 1 100%;text-align:center;padding:12px 18px;border-radius:10px;font-size:15px;font-weight:500;margin-top:8px;display:none;';
+  form.insertBefore(msgDiv, form.querySelector('button').nextSibling);
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    msgDiv.style.display = 'none';
+    const btn = form.querySelector('button');
+    const originalText = btn.textContent;
+    btn.textContent = 'Sending...';
+    btn.disabled = true;
+
+    const data = new URLSearchParams(new FormData(form));
+    fetch(form.action, {
+      method: 'POST',
+      body: data,
+      headers: {'Accept': 'application/json'}
+    })
+    .then(r => r.json().catch(() => ({})))
+    .then(res => {
+      if (res.status === 'created') {
+        msgDiv.textContent = "Thanks! We'll send your AI analysis to your email within 24 hours.";
+        msgDiv.style.background = 'rgba(16,185,129,0.15)';
+        msgDiv.style.color = '#10b981';
+        msgDiv.style.border = '1px solid rgba(16,185,129,0.3)';
+        form.reset();
+      } else if (res.status === 'existing') {
+        msgDiv.textContent = "You're already on our list! We'll reach out to you soon.";
+        msgDiv.style.background = 'rgba(251,191,36,0.15)';
+        msgDiv.style.color = '#fbbf24';
+        msgDiv.style.border = '1px solid rgba(251,191,36,0.3)';
+        form.reset();
+      } else {
+        msgDiv.textContent = "Something went wrong. Please try again.";
+        msgDiv.style.background = 'rgba(239,68,68,0.15)';
+        msgDiv.style.color = '#ef4444';
+        msgDiv.style.border = '1px solid rgba(239,68,68,0.3)';
+      }
+      msgDiv.style.display = 'block';
+    })
+    .catch(() => {
+      msgDiv.textContent = "Something went wrong. Please try again.";
+      msgDiv.style.background = 'rgba(239,68,68,0.15)';
+      msgDiv.style.color = '#ef4444';
+      msgDiv.style.border = '1px solid rgba(239,68,68,0.3)';
+      msgDiv.style.display = 'block';
+    })
+    .finally(() => {
+      btn.textContent = originalText;
+      btn.disabled = false;
+    });
+  });
+})();
+</script>
 </body>
 </html>"""
 
@@ -360,6 +416,8 @@ Required JSON structure:
   "FOOTER_SUBHEADLINE": "Footer subheadline (max 120 chars)",
   "FOOTER_CTA": "Footer button text"
 }
+
+IMPORTANT: All copy MUST be written in English only. No Spanish, no other languages.
 
 USER INSTRUCTIONS:
 {custom_prompt}

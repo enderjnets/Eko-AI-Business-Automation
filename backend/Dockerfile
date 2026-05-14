@@ -7,7 +7,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Install uv (Python package manager)
+RUN curl -LsSf https://astral.sh/uv/install.sh | bash
+ENV PATH="/root/.local/bin:${PATH}"
+
+# Install Kimi CLI
+RUN uv tool install kimi-cli
 
 # Install Python dependencies
 COPY requirements.txt .

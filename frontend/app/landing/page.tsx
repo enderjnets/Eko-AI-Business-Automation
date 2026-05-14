@@ -71,18 +71,6 @@ function useCountUp(end: number, duration = 1500, isVisible = false) {
   return count;
 }
 
-function StatCounter({ value, suffix, label, isVisible }: { value: number; suffix: string; label: string; isVisible: boolean }) {
-  const count = useCountUp(value, 1500, isVisible);
-  return (
-    <div className="text-center">
-      <div className="text-4xl sm:text-5xl font-bold text-[#F8FAFC] font-display mb-2">
-        {value >= 1000 ? `${(count / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k` : count}{suffix}
-      </div>
-      <div className="text-[#64748B] text-sm">{label}</div>
-    </div>
-  );
-}
-
 /* ──────────────────────── Data ──────────────────────── */
 const INDUSTRIES = [
   { icon: Sparkle, label: "Spas & Salons" },
@@ -206,14 +194,10 @@ export default function LandingPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const slug = params.get("lp");
-    if (!slug) {
-      // Default: show hardcoded landing page
-      setDynamicLoading(false);
-      return;
-    }
+    const slug = params.get("lp") || "eko-ai-landing";
+    const url = `/api/v1/landing-pages/public/${slug}`;
 
-    fetch(`/api/v1/landing-pages/public/${slug}`)
+    fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error("No landing page");
         return r.text();
@@ -260,6 +244,7 @@ export default function LandingPage() {
   const [heroError, setHeroError] = useState("");
 
   const statsRef = useScrollAnimation(0.3);
+  const statCounts = STATS.map((s) => useCountUp(s.value, 1500, statsRef.isVisible));
 
   useEffect(() => {
     const timer = setTimeout(() => setHeroLoaded(true), 100);
@@ -664,14 +649,13 @@ export default function LandingPage() {
       <section className="py-24 md:py-32 px-4 sm:px-6 lg:px-8 bg-[#1E293B]">
         <div className="max-w-6xl mx-auto">
           <div ref={statsRef.ref} className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
-            {STATS.map((stat) => (
-              <StatCounter
-                key={stat.label}
-                value={stat.value}
-                suffix={stat.suffix}
-                label={stat.label}
-                isVisible={statsRef.isVisible}
-              />
+            {STATS.map((stat, i) => (
+              <div key={stat.label} className="text-center">
+                <div className="text-4xl sm:text-5xl font-bold text-[#F8FAFC] font-display mb-2">
+                  {stat.value >= 1000 ? `${(statCounts[i] / 1000).toFixed(stat.value % 1000 === 0 ? 0 : 1)}k` : statCounts[i]}{stat.suffix}
+                </div>
+                <div className="text-[#64748B] text-sm">{stat.label}</div>
+              </div>
             ))}
           </div>
 
