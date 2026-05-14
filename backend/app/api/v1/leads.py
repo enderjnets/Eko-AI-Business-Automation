@@ -498,6 +498,7 @@ async def _send_welcome_email(lead_id: int):
 async def create_public_lead(
     lead_data: PublicLeadCreate,
     background_tasks: BackgroundTasks,
+    landing_page_id: Optional[int] = Query(None, description="ID of landing page that referred this lead"),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new lead from the public marketing website (no auth required)."""
@@ -516,11 +517,13 @@ async def create_public_lead(
         city=lead_data.city,
         state=lead_data.state,
         category=lead_data.category,
-        source=LeadSource.MANUAL,
+        source=LeadSource.LANDING_PAGE if landing_page_id else LeadSource.MANUAL,
+        landing_page_id=landing_page_id,
         status=LeadStatus.DISCOVERED,
         notes=lead_data.notes or "Captured from public landing page",
         source_data={
             "origin": "website_landing",
+            "landing_page_id": landing_page_id,
             "captured_at": datetime.utcnow().isoformat(),
             "first_name": lead_data.first_name,
             "last_name": lead_data.last_name,

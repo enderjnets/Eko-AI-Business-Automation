@@ -88,12 +88,10 @@ async def init_db():
     """Create all tables on startup. In production, use Alembic migrations."""
     logger = logging.getLogger(__name__)
 
+    # Step 1: Enable pgvector and create all tables (separate transaction)
     async with _get_engine().begin() as conn:
-        # Enable pgvector extension
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
 
-        # Create all tables via SQLAlchemy first (new models like Workspace need to exist)
-        # Some indexes may already exist from previous runs — ignore those errors
         try:
             await conn.run_sync(Base.metadata.create_all)
         except Exception as e:
@@ -102,21 +100,27 @@ async def init_db():
             else:
                 raise
 
-        # Sync missing columns from models to existing tables
-        from app.db.sync_schema import sync_schema
-        async with AsyncSessionLocal() as sync_db:
-            try:
-                await sync_schema(sync_db)
-            except Exception:
-                logger.exception("Schema sync failed")
+    # Step 2: Sync missing columns (separate session/transaction)
+    from app.db.sync_schema import sync_schema
+    async with AsyncSessionLocal() as sync_db:
+        try:
+            await sync_schema(sync_db)
+        except Exception:
+            logger.exception("Schema sync failed")
 
-        # Add workspace_id columns to existing legacy tables (idempotent fallback)
+    # Step 3: Run idempotent SQL migrations (separate transaction)
+    async with _get_engine().begin() as conn:
         import pathlib
         migrate_path = pathlib.Path(__file__).parent / "migrate_add_workspace_columns.sql"
         if migrate_path.exists():
-            await conn.execute(text(migrate_path.read_text()))
+            try:
+                await conn.execute(text(migrate_path.read_text()))
+            except Exception as e:
+                if "already exists" in str(e).lower():
+                    logger.warning(f"Ignoring existing workspace column: {e}")
+                else:
+                    raise
 
-        # Create metadata engine tables idempotently via raw SQL
         sql_path = pathlib.Path(__file__).parent / "init_metadata.sql"
         if sql_path.exists():
             sql = sql_path.read_text()
@@ -131,10 +135,15 @@ async def init_db():
                         else:
                             raise
 
-        # Apply Row-Level Security policies for workspace isolation
         rls_path = pathlib.Path(__file__).parent / "init_rls.sql"
         if rls_path.exists():
-            await conn.execute(text(rls_path.read_text()))
+            try:
+                await conn.execute(text(rls_path.read_text()))
+            except Exception as e:
+                if "already exists" in str(e).lower():
+                    logger.warning(f"Ignoring existing RLS policy: {e}")
+                else:
+                    raise
 
     # Register workspace auto-injection hooks
     from app.db.workspace_hooks import register_workspace_hooks

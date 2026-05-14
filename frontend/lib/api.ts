@@ -73,6 +73,21 @@ export const leadsApi = {
     api.post("/leads/bulk/contact", { lead_ids: leadIds, template, custom_subject: customSubject, custom_body: customBody }),
 };
 
+// Landing Pages API
+export const landingPagesApi = {
+  list: () => api.get("/landing-pages"),
+  get: (id: number) => api.get(`/landing-pages/${id}`),
+  create: (data: any) => api.post("/landing-pages", data),
+  update: (id: number, data: any) => api.patch(`/landing-pages/${id}`, data),
+  delete: (id: number) => api.delete(`/landing-pages/${id}`),
+  generate: (id: number, data: { prompt?: string }) => api.post(`/landing-pages/${id}/generate`, data),
+  activate: (id: number) => api.post(`/landing-pages/${id}/activate`),
+  preview: (id: number) => api.get(`/landing-pages/${id}/preview`),
+  analytics: (id: number) => api.get(`/landing-pages/${id}/analytics`),
+  clone: (id: number) => api.post(`/landing-pages/${id}/clone`),
+  compare: () => api.get("/landing-pages/compare"),
+};
+
 // CRM API
 export const crmApi = {
   transition: (id: number, new_status: string, note?: string) =>

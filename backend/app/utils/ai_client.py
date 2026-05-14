@@ -124,14 +124,33 @@ async def generate_completion(
     temperature: float = 0.7,
     max_tokens: int = 2000,
     json_mode: bool = False,
+    provider: str = None,
 ) -> str:
-    """Generate a completion using configured AI provider with Kimi fallback."""
+    """Generate a completion using configured AI provider with Kimi fallback.
+    
+    Args:
+        provider: If specified, force use of this provider ("minimax", "kimi", "openai", "ollama").
+                  Otherwise uses primary provider with fallback.
+    """
     model = model or CHAT_MODEL
 
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
+
+    # If provider is explicitly specified, use it directly
+    if provider:
+        if provider == "kimi" and _fallback_client and settings.AI_PROVIDER != "kimi":
+            return await _try_completion(
+                _fallback_client, model or _fallback_model, messages, temperature, max_tokens, json_mode, "kimi"
+            )
+        elif provider == settings.AI_PROVIDER:
+            return await _try_completion(
+                openai_client, model, messages, temperature, max_tokens, json_mode, provider
+            )
+        else:
+            raise ValueError(f"Provider '{provider}' not available or not configured")
 
     # Try primary provider first
     primary_provider = settings.AI_PROVIDER
