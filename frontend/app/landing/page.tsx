@@ -194,10 +194,8 @@ export default function LandingPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const slug = params.get("lp");
-    const url = slug
-      ? `/api/v1/landing-pages/public/${slug}`
-      : "/api/v1/landing-pages/public/active";
+    const slug = params.get("lp") || "eko-ai-landing";
+    const url = `/api/v1/landing-pages/public/${slug}`;
 
     fetch(url)
       .then((r) => {
