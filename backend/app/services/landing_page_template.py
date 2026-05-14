@@ -105,11 +105,10 @@ a{color:var(--accent);text-decoration:none}
     <p>{{HERO_SUBTITLE}}</p>
     <form class="hero-form" action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST">
       <input type="hidden" name="source" value="landing_page">
-      <input type="text" name="business_name" placeholder="Business name" required>
+      <input type="text" name="business_name" placeholder="Business Name" required>
       <input type="email" name="email" placeholder="Email" required>
       <input type="tel" name="phone" placeholder="Phone" required>
-      <input type="text" name="city" placeholder="City">
-      <input type="text" name="state" placeholder="State">
+      <input type="url" name="website" placeholder="Website" required>
       <button type="submit">{{CTA_BUTTON}}</button>
     </form>
     <div class="stats">
