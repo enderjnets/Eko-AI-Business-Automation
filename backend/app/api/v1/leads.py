@@ -523,8 +523,13 @@ async def create_public_lead(
         if existing:
             return {"status": "existing", "lead_id": existing.id, "message": "Lead already exists"}
 
+    # Fallback: if no business_name, use first_name + last_name
+    business_name = lead_data.business_name or f"{lead_data.first_name or ''} {lead_data.last_name or ''}".strip()
+    if not business_name:
+        business_name = "Unknown Business"
+
     lead = Lead(
-        business_name=lead_data.business_name,
+        business_name=business_name,
         email=lead_data.email,
         phone=lead_data.phone,
         website=lead_data.website,
