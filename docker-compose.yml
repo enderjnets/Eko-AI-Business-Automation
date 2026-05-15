@@ -257,7 +257,7 @@ services:
     ports:
       - "3001:3000"
     volumes:
-      - ./frontend:/app
+      - ~/EkoContentStudio:/Users/enderj/EkoContentStudio:ro
     environment:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://eko-backend:8000}
       - INTERNAL_API_URL=http://eko-backend:8000
@@ -281,6 +281,35 @@ services:
     command: ["sh", "-c", "npm install && npm run dev"]
     depends_on:
       - backend
+
+  pipeline:
+    build:
+      context: /home/enderj/EkoContentStudio
+      dockerfile: Dockerfile.pipeline
+    container_name: eko-pipeline
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    volumes:
+      - ~/EkoContentStudio/config:/app/config
+      - ~/EkoContentStudio/output:/app/output
+    environment:
+      - BUFFER_API_KEY=${BUFFER_API_KEY:-au7VyBXcqYkOpftcaLuE7awhoSHBoXEAM-WPJWh06Fv}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-sk_448865ab97d9012f53c3ddf4edfdfd49d5ff796cff05f24f}
+      - ELEVENLABS_VOICE_ID=${ELEVENLABS_VOICE_ID:-Cpm6N9BNC1M75bYS7kO1}
+      - HF_API_TOKEN=${HF_API_TOKEN:-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}
+      - MINIMAX_API_KEY=${MINIMAX_API_KEY:-}
+      - MINIMAX_BASE_URL=${MINIMAX_BASE_URL:-https://api.minimax.io/anthropic}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - KIMI_API_KEY=${KIMI_API_KEY:-}
+      - KIMI_BASE_URL=${KIMI_BASE_URL:-https://api.kimi.com/coding/v1}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      - PAPERCLIP_API_KEY=${PAPERCLIP_API_KEY:-pcp_board_68ed2bc4520167360cb1ae178b2b3285692f536e08aa7300}
+      - PAPERCLIP_API_URL=${PAPERCLIP_API_URL:-http://100.88.47.99:3100}
+      - PAPERCLIP_CNT_COMPANY_ID=${PAPERCLIP_CNT_COMPANY_ID:-211df8dd-5c40-4407-86d0-33d3983e031a}
 
 volumes:
   pgdata:

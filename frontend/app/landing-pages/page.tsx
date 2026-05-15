@@ -246,7 +246,10 @@ export default function LandingPagesPage() {
       await loadPages();
       await loadCompare();
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Generation failed");
+      const status = e.response?.status;
+      const detail = e.response?.data?.detail;
+      const message = detail || e.message || "Unknown error";
+      setError(`Generation failed${status ? ` (${status})` : ""}: ${message}`);
     } finally {
       setIsGenerating(false);
     }
@@ -441,19 +444,8 @@ export default function LandingPagesPage() {
                 </div>
                 <div className="p-4">
                   {/* Thumbnail */}
-                  <div className="relative w-full h-24 rounded-lg overflow-hidden bg-white mb-3 border border-[#334155]">
-                    <iframe
-                      src="/landing"
-                      className="absolute top-0 left-0 border-0"
-                      style={{
-                        width: "800px",
-                        height: "600px",
-                        transform: "scale(0.15)",
-                        transformOrigin: "top left",
-                      }}
-                      sandbox="allow-scripts"
-                      title="Default preview"
-                    />
+                  <div className="relative w-full h-24 rounded-lg overflow-hidden bg-gradient-to-br from-[#0B4FD8]/10 to-[#1E293B] mb-3 border border-[#334155] flex items-center justify-center">
+                    <LayoutTemplate className="w-10 h-10 text-[#0B4FD8]/30" />
                   </div>
                   <h3 className="font-semibold text-sm text-white mb-0.5">Landing Page Default</h3>
                   <p className="text-xs text-[#64748B] mb-2">/landing</p>
@@ -564,16 +556,27 @@ export default function LandingPagesPage() {
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
-                          {!page.is_active && (
+                          {page.is_active ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeactivate(page.id);
+                              }}
+                              className="px-2 py-1 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+                              title="Deactivate"
+                            >
+                              Desactivar
+                            </button>
+                          ) : (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleActivate(page.id);
                               }}
-                              className="p-1 rounded hover:bg-[#334155] text-[#64748B] hover:text-yellow-400 transition-colors"
+                              className="px-2 py-1 rounded text-[10px] font-medium bg-[#0B4FD8]/20 text-[#0B4FD8] hover:bg-[#0B4FD8]/30 transition-colors"
                               title="Activate"
                             >
-                              <Star className="w-3.5 h-3.5" />
+                              Activar
                             </button>
                           )}
                           <button
@@ -833,6 +836,45 @@ export default function LandingPagesPage() {
                     />
                   </div>
 
+                  {/* Active Toggle */}
+                  {selectedPage && (
+                    <div className="flex items-center justify-between py-2 px-3 bg-[#0F172A] rounded-lg border border-[#334155]">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-white">Landing page principal</span>
+                        <span className="text-xs text-[#64748B]">
+                          {selectedPage.is_active ? "Activa — se muestra en /landing" : "Inactiva"}
+                        </span>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!selectedPage) return;
+                          try {
+                            if (selectedPage.is_active) {
+                              await landingPagesApi.update(selectedPage.id, { is_active: false });
+                            } else {
+                              await landingPagesApi.activate(selectedPage.id);
+                            }
+                            const res = await landingPagesApi.get(selectedPage.id);
+                            setSelectedPage(res.data);
+                            await loadPages();
+                            await loadCompare();
+                          } catch (e: any) {
+                            setError(e.response?.data?.detail || "Failed to toggle active state");
+                          }
+                        }}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          selectedPage.is_active ? "bg-[#0B4FD8]" : "bg-[#334155]"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            selectedPage.is_active ? "translate-x-6" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  )}
+
                   {/* Preview */}
                   {formHtml && (
                     <div>
@@ -858,16 +900,22 @@ export default function LandingPagesPage() {
                         </div>
                       </div>
                       <div
-                        className={`border border-[#334155] rounded-lg overflow-hidden bg-white ${
+                        className={`border border-[#334155] rounded-lg ${
                           previewMode === "mobile" ? "max-w-[375px] mx-auto" : "w-full"
                         }`}
-                        style={{ height: "500px" }}
+                        style={{
+                          height: "500px",
+                          overflow: "auto",
+                          backgroundImage: "radial-gradient(circle, #334155 1px, transparent 1px)",
+                          backgroundSize: "20px 20px",
+                        }}
                       >
                         <iframe
                           srcDoc={formHtml}
                           className="w-full h-full"
                           sandbox="allow-scripts"
                           title="Preview"
+                          style={{ background: "transparent" }}
                         />
                       </div>
                     </div>

@@ -18,6 +18,7 @@ import {
   Settings,
   FileText,
   Mic,
+  Clapperboard,
   ArrowRight,
   Loader2,
 } from "lucide-react";
@@ -35,6 +36,7 @@ const MODULES = [
   { href: "/deals", label: "Deals", subtitle: "Oportunidades", icon: Briefcase, color: "text-gold bg-gold/10 border-gold/20" },
   { href: "/proposals", label: "Propuestas", subtitle: "AI proposals", icon: FileText, color: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20" },
   { href: "/voice-agent", label: "Voice", subtitle: "VAPI calls", icon: Mic, color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },
+  { href: "/content-studio", label: "Content", subtitle: "Videos & redes", icon: Clapperboard, color: "text-pink-400 bg-pink-500/10 border-pink-500/20" },
   { href: "/inbox", label: "Inbox", subtitle: "Replies de leads", icon: Inbox, color: "text-rose bg-rose/10 border-rose/20", badgeKey: "unread" as const },
   { href: "/sequences", label: "Secuencias", subtitle: "Automatización", icon: ListOrdered, color: "text-purple-400 bg-purple-500/10 border-purple-500/20" },
   { href: "/campaigns", label: "Campañas", subtitle: "Email outreach", icon: Mail, color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },

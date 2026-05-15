@@ -22,6 +22,7 @@ import {
   Mic,
   Layers,
   LayoutTemplate,
+  Clapperboard,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -40,6 +41,7 @@ const PRIMARY_LINKS = [
 const MORE_LINKS = [
   { href: "/proposals", icon: FileText, label: "Propuestas" },
   { href: "/voice-agent", icon: Mic, label: "Voice Agent" },
+  { href: "/content-studio", icon: Clapperboard, label: "Content Studio" },
   { href: "/sequences", icon: ListOrdered, label: "Secuencias" },
   { href: "/campaigns", icon: Mail, label: "Campañas" },
   { href: "/calendar", icon: Calendar, label: "Calendar" },
