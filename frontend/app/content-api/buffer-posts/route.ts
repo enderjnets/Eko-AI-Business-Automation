@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-
-const BUFFER_API_URL = "https://api.buffer.com";
-const BUFFER_API_KEY = "au7VyBXcqYkOpftcaLuE7awhoSHBoXEAM-WPJWh06Fv";
+import { bufferGraphQL, getOrganizationId } from "@/lib/buffer-api";
 
 export async function GET() {
   try {
+    const orgId = await getOrganizationId();
+
     // 1. Get channels
     const channelsQuery = `
       query {
@@ -21,11 +21,11 @@ export async function GET() {
       }
     `;
 
-    const channelsRes = await fetch(BUFFER_API_URL, {
+    const channelsRes = await fetch("https://api.buffer.com", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${BUFFER_API_KEY}`,
+        Authorization: `Bearer au7VyBXcqYkOpftcaLuE7awhoSHBoXEAM-WPJWh06Fv`,
       },
       body: JSON.stringify({ query: channelsQuery }),
     });
@@ -54,26 +54,39 @@ export async function GET() {
     // 2. Get actual posts with status
     const postsQuery = `
       query {
-        posts(filter: { channelIds: [${activeChannelIds
-          .map((id: string) => `"${id}"`)
-          .join(", ")}], status: [scheduled, sent, sending, error] }) {
-          posts {
-            id
-            text
-            status
-            dueAt
-            sentAt
-            channelId
+        posts(
+          input: {
+            organizationId: "${orgId}"
+            filter: {
+              channelIds: [${activeChannelIds
+                .map((id: string) => `"${id}"`)
+                .join(", ")}]
+              status: [scheduled, sent, sending, error]
+            }
+          }
+          first: 200
+        ) {
+          edges {
+            node {
+              id
+              text
+              status
+              dueAt
+              sentAt
+              channelId
+              channelService
+              channel { name }
+            }
           }
         }
       }
     `;
 
-    const postsRes = await fetch(BUFFER_API_URL, {
+    const postsRes = await fetch("https://api.buffer.com", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${BUFFER_API_KEY}`,
+        Authorization: `Bearer au7VyBXcqYkOpftcaLuE7awhoSHBoXEAM-WPJWh06Fv`,
       },
       body: JSON.stringify({ query: postsQuery }),
     });
@@ -86,7 +99,7 @@ export async function GET() {
       );
     }
 
-    const posts = postsData.data?.posts?.posts || [];
+    const posts = postsData.data?.posts?.edges?.map((e: any) => e.node) || [];
 
     return NextResponse.json({ channels, posts });
   } catch (err: any) {

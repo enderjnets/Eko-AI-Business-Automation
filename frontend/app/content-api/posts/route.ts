@@ -24,13 +24,15 @@ export async function GET(request: NextRequest) {
 
     const query = `
       query {
-        posts(input: {
-          organizationId: "${orgId}"
-          filter: { status: ${statusArray}${channelFilter} }
-          sort: [{ field: createdAt, direction: desc }]
+        posts(
+          input: {
+            organizationId: "${orgId}"
+            filter: { status: ${statusArray}${channelFilter} }
+            sort: [{ field: createdAt, direction: desc }]
+          }
           first: ${first}
           ${after ? `after: "${after}"` : ""}
-        }) {
+        ) {
           edges {
             node {
               id
