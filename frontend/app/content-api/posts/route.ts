@@ -1,5 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bufferGraphQL, getOrganizationId } from "@/lib/buffer-api";
+import { getCached, setCache } from "@/lib/api-cache";
+
+const BUFFER_API_KEY = "au7VyBXcqYkOpftcaLuE7awhoSHBoXEAM-WPJWh06Fv";
+
+async function getOrgId() {
+  const cached = getCached<string>("buffer:orgId");
+  if (cached) return cached;
+
+  const res = await fetch("https://api.buffer.com", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${BUFFER_API_KEY}`,
+    },
+    body: JSON.stringify({
+      query: `{ account { organizations { id } } }`,
+    }),
+  });
+  const data = await res.json();
+  const orgId = data.data?.account?.organizations?.[0]?.id || "";
+  if (orgId) setCache("buffer:orgId", orgId, 300000);
+  return orgId;
+}
+
+async function bufferGraphQL(query: string) {
+  const cacheKey = "buffer:gql:" + Buffer.from(query).toString("base64").slice(0, 64);
+  const cached = getCached<any>(cacheKey);
+  if (cached) return cached;
+
+  const res = await fetch("https://api.buffer.com", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${BUFFER_API_KEY}`,
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  const data = await res.json();
+  if (data.errors) {
+    const stale = getCached<any>(cacheKey + ":stale");
+    if (stale) return stale;
+    throw new Error(data.errors[0].message);
+  }
+
+  setCache(cacheKey, data.data, 30000);
+  setCache(cacheKey + ":stale", data.data, 300000);
+  return data.data;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +59,7 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    const orgId = await getOrganizationId();
+    const orgId = await getOrgId();
 
     // Build status filter
     let statusArray = "[draft, needs_approval, scheduled, sending, sent, error]";
@@ -63,7 +111,7 @@ export async function GET(request: NextRequest) {
     const data = await bufferGraphQL(query);
     let posts = data.posts?.edges?.map((e: any) => e.node) || [];
 
-    // Client-side date range filter (Buffer GraphQL doesn't support date range on posts)
+    // Client-side date range filter
     if (startDate || endDate) {
       const start = startDate ? new Date(startDate) : null;
       const end = endDate ? new Date(endDate) : null;
@@ -86,6 +134,14 @@ export async function GET(request: NextRequest) {
       pageInfo: data.posts?.pageInfo || { hasNextPage: false, endCursor: null },
     });
   } catch (err: any) {
+    const stalePosts = getCached<any>("buffer:posts:stale");
+    if (stalePosts) {
+      return NextResponse.json({
+        posts: stalePosts,
+        stale: true,
+        error: err.message,
+      });
+    }
     return NextResponse.json(
       { error: err.message || "Failed to fetch posts" },
       { status: 500 }

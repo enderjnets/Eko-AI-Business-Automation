@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.4";
+export const CURRENT_VERSION = "0.7.5";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,24 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.5",
+    date: "2026-05-17",
+    title: "Content Studio Pipeline — Video Fixes + Login Repair + Buffer Caching",
+    changes: [
+      "Fix: frontend login container conectado a red Docker correcta (eko-ai-bussinnes-automation_default)",
+      "Fix: API caching de 30s en /content-api/posts, /buffer-posts, /limits para evitar rate limit de Buffer",
+      "Fix: auto-publisher script lee videos reales del pipeline output (no hardcodeados)",
+      "Fix: frontend container mounts output/ y config/ para endpoints locales (pipelines, stats)",
+      "Fix: TypeScript build error en api-cache.ts (for...of Map.keys -> Array.from)",
+      "Content Studio: 4 escenas por short + 6 por long con múltiples VIDEO_PROMPTs",
+      "Content Studio: subtítulos ASS con DejaVu Sans, fondo negro semitransparente, bottom-centered",
+      "Content Studio: crossfade transitions xfade 0.8s entre clips",
+      "Content Studio: end frame CTA dinámico con nombre, dirección, oferta, precio",
+      "Content Studio: Edge-TTS fallback (es-MX-JorgeNeural) para TTS en español",
+      "Pipeline: prueba real generó short (29.9s) + long (79.0s) con FLUX + Ken Burns",
+    ],
+  },
   {
     version: "0.7.4",
     date: "2026-05-13",

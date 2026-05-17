@@ -1,10 +1,37 @@
 import { NextResponse } from "next/server";
-import { bufferGraphQL, getOrganizationId } from "@/lib/buffer-api";
+import { getCached, setCache } from "@/lib/api-cache";
+
+const BUFFER_API_KEY = "au7VyBXcqYkOpftcaLuE7awhoSHBoXEAM-WPJWh06Fv";
+
+async function bufferGraphQL(query: string) {
+  const cacheKey = "buffer:gql:" + Buffer.from(query).toString("base64").slice(0, 64);
+  const cached = getCached<any>(cacheKey);
+  if (cached) return cached;
+
+  const res = await fetch("https://api.buffer.com", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${BUFFER_API_KEY}`,
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  const data = await res.json();
+  if (data.errors) {
+    // Check if cached stale data exists (graceful degradation)
+    const stale = getCached<any>(cacheKey + ":stale");
+    if (stale) return stale;
+    throw new Error(data.errors[0].message);
+  }
+
+  setCache(cacheKey, data.data, 30000);
+  setCache(cacheKey + ":stale", data.data, 300000); // 5 min stale
+  return data.data;
+}
 
 export async function GET() {
   try {
-    const orgId = await getOrganizationId();
-
     // 1. Get channels
     const channelsQuery = `
       query {
@@ -21,25 +48,9 @@ export async function GET() {
       }
     `;
 
-    const channelsRes = await fetch("https://api.buffer.com", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer au7VyBXcqYkOpftcaLuE7awhoSHBoXEAM-WPJWh06Fv`,
-      },
-      body: JSON.stringify({ query: channelsQuery }),
-    });
-
-    const channelsData = await channelsRes.json();
-    if (channelsData.errors) {
-      return NextResponse.json(
-        { error: channelsData.errors[0].message },
-        { status: 502 }
-      );
-    }
-
+    const channelsData = await bufferGraphQL(channelsQuery);
     const channels =
-      channelsData.data?.account?.organizations?.flatMap(
+      channelsData?.account?.organizations?.flatMap(
         (org: any) => org.channels || []
       ) || [];
 
@@ -56,7 +67,6 @@ export async function GET() {
       query {
         posts(
           input: {
-            organizationId: "${orgId}"
             filter: {
               channelIds: [${activeChannelIds
                 .map((id: string) => `"${id}"`)
@@ -82,27 +92,22 @@ export async function GET() {
       }
     `;
 
-    const postsRes = await fetch("https://api.buffer.com", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer au7VyBXcqYkOpftcaLuE7awhoSHBoXEAM-WPJWh06Fv`,
-      },
-      body: JSON.stringify({ query: postsQuery }),
-    });
-
-    const postsData = await postsRes.json();
-    if (postsData.errors) {
-      return NextResponse.json(
-        { error: postsData.errors[0].message },
-        { status: 502 }
-      );
-    }
-
-    const posts = postsData.data?.posts?.edges?.map((e: any) => e.node) || [];
+    const postsData = await bufferGraphQL(postsQuery);
+    const posts = postsData?.posts?.edges?.map((e: any) => e.node) || [];
 
     return NextResponse.json({ channels, posts });
   } catch (err: any) {
+    // Return stale cached data if available during rate limit
+    const stalePosts = getCached<any>("buffer:posts:stale");
+    const staleChannels = getCached<any>("buffer:channels:stale");
+    if (stalePosts || staleChannels) {
+      return NextResponse.json({
+        channels: staleChannels || [],
+        posts: stalePosts || [],
+        stale: true,
+        error: err.message,
+      });
+    }
     return NextResponse.json(
       { error: err.message || "Buffer request failed" },
       { status: 500 }

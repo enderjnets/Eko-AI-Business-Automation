@@ -1,3 +1,29 @@
+
+
+## [0.7.5] — 2026-05-17
+
+### Content Studio Pipeline — Video Fixes + Login Repair + Buffer Caching
+
+#### Pipeline / Content Studio
+- **Multi-scene scripts**: `content_creator.py` now generates 4 VIDEO_PROMPTs for shorts and 6 for longs (was 1 and 3)
+- **ASS Subtitles**: Replaced SRT with ASS format — DejaVu Sans 28px, bottom-centered, black semi-transparent background box
+- **Crossfade Transitions**: Added `crossfade_clips()` using ffmpeg `xfade` filter with 0.8s fade between clips. Fallback to concat demuxer if xfade fails
+- **End Frame CTA**: Added `create_end_frame()` using ffmpeg `drawtext` with business name, address, special offer, and price. Duration dynamically calculated to fill remaining audio time
+- **Edge-TTS Fallback**: Added `edge-tts>=6.1.0` to requirements.txt. ElevenLabs returns 401, MiniMax TTS returns no audio — Edge-TTS (`es-MX-JorgeNeural`) successfully generates Spanish audio
+- **Test Production**: Produced and uploaded short (29.9s, 8.0MB) and long (79.0s, 22.2MB) videos with FLUX + Ken Burns
+
+#### Frontend Fixes
+- **Login Repair**: Frontend container moved from default `bridge` network to `eko-ai-bussinnes-automation_default` Docker network so it can resolve `eko-backend`
+- **Buffer API Caching**: Added 30-second in-memory cache to `/content-api/posts`, `/content-api/buffer-posts`, `/content-api/limits` routes to avoid Buffer rate limiting
+- **Container Mounts**: Added `output/` and `config/` volume mounts to frontend container for local API endpoints (`/pipelines`, `/stats`)
+- **TypeScript Fix**: Fixed `for...of` iteration over `Map.keys()` by using `Array.from()` in `api-cache.ts`
+
+#### Auto-publisher
+- **Dynamic Video Discovery**: Auto-publisher script now reads actual pipeline JSON outputs instead of hardcoded video URLs
+- Detects connected Buffer channels automatically
+- Publishes to correct platforms based on video tags
+
+---
 # Changelog
 
 ## [0.6.1] — 2026-04-29
