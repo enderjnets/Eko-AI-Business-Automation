@@ -184,9 +184,7 @@ export default function PostsList() {
                   {!post.dueAt && !post.sentAt && <span>Creado: {new Date(post.createdAt).toLocaleDateString("es-CO")}</span>}
                 </div>
 
-                {post.error?.message && (
-                  <div className="text-[10px] text-red-400 mb-2 line-clamp-2">{post.error.message}</div>
-                )}
+
 
                 <div className="flex items-center gap-1">
                   <button

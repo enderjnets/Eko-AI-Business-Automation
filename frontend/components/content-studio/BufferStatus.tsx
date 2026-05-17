@@ -280,11 +280,7 @@ export default function BufferStatus() {
                               )}
                             </div>
                             <p className="text-sm line-clamp-2">{post.text}</p>
-                            {post.error?.message && (
-                              <p className="text-[10px] text-red-400/80 mt-1 line-clamp-2">
-                                {post.error.message}
-                              </p>
-                            )}
+
                           </div>
                         </div>
                       );
