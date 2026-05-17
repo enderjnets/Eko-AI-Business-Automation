@@ -28,6 +28,7 @@ import {
   ImageOff,
   Trash2,
   Play,
+  Film,
 } from "lucide-react";
 import VideoModal from "./VideoModal";
 
@@ -47,9 +48,15 @@ interface Post {
 }
 
 const SERVICE_COLORS: Record<string, string> = {
-  tiktok: "bg-white",
-  instagram: "bg-pink-400",
-  facebook: "bg-blue-400",
+  tiktok: "border-l-white",
+  instagram: "border-l-pink-400",
+  facebook: "border-l-blue-400",
+};
+
+const SERVICE_BG: Record<string, string> = {
+  tiktok: "bg-white/10",
+  instagram: "bg-pink-400/10",
+  facebook: "bg-blue-400/10",
 };
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
@@ -141,7 +148,7 @@ export default function PostCalendar() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <CalendarDays className="w-5 h-5 text-pink-400" />
-          <h3 className="text-sm font-medium text-gray-400">
+          <h3 className="text-sm font-medium text-gray-400 capitalize">
             {format(currentMonth, "MMMM yyyy", { locale: es })}
           </h3>
         </div>
@@ -198,9 +205,6 @@ export default function PostCalendar() {
             {days.map((day) => {
               const dateStr = format(day, "yyyy-MM-dd");
               const dayPosts = postsByDay.get(dateStr) || [];
-              const services = Array.from(
-                new Set(dayPosts.map((p) => p.channelService))
-              );
               const isCurrentMonth = isSameMonth(day, currentMonth);
               const isTodayDate = isToday(day);
               const isSelected = selectedDay && isSameDay(day, selectedDay);
@@ -208,16 +212,15 @@ export default function PostCalendar() {
               return (
                 <button
                   key={dateStr}
-                  onClick={() =>
-                    setSelectedDay(isSelected ? null : day)
-                  }
-                  className={`relative aspect-square rounded-lg border p-1.5 text-left transition-all ${
+                  onClick={() => setSelectedDay(isSelected ? null : day)}
+                  className={`relative rounded-lg border p-1.5 text-left transition-all overflow-hidden ${
                     isCurrentMonth
                       ? "bg-white/[0.02] border-white/5 hover:bg-white/[0.05]"
                       : "bg-transparent border-transparent opacity-30"
                   } ${isTodayDate ? "ring-1 ring-pink-400/50" : ""} ${
                     isSelected ? "bg-white/[0.06] border-pink-400/30" : ""
                   }`}
+                  style={{ minHeight: "80px" }}
                 >
                   <span
                     className={`text-xs font-medium ${
@@ -231,110 +234,139 @@ export default function PostCalendar() {
                     {format(day, "d")}
                   </span>
 
+                  {/* Mini post previews */}
                   {dayPosts.length > 0 && (
-                    <div className="absolute bottom-1.5 left-1.5 right-1.5 flex flex-wrap gap-1">
-                      {services.slice(0, 3).map((svc) => (
+                    <div className="mt-1 space-y-1">
+                      {dayPosts.slice(0, 2).map((post) => (
                         <div
-                          key={svc}
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            SERVICE_COLORS[svc] || "bg-gray-500"
+                          key={post.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (post.assets?.[0]?.source) {
+                              openVideoModal(post);
+                            }
+                          }}
+                          className={`flex items-center gap-1 rounded px-1 py-0.5 text-[9px] leading-tight truncate cursor-pointer hover:opacity-80 transition-opacity border-l-2 ${
+                            SERVICE_COLORS[post.channelService] || "border-l-gray-500"
+                          } ${
+                            post.status === "error"
+                              ? "bg-red-500/10 text-red-300"
+                              : SERVICE_BG[post.channelService] || "bg-white/5 text-gray-300"
                           }`}
-                        />
+                          title={post.text}
+                        >
+                          {post.assets?.[0]?.source ? (
+                            <Film className="w-2.5 h-2.5 flex-shrink-0 opacity-70" />
+                          ) : (
+                            <ImageOff className="w-2.5 h-2.5 flex-shrink-0 opacity-50" />
+                          )}
+                          <span className="truncate">{post.text.slice(0, 14)}</span>
+                        </div>
                       ))}
-                      {dayPosts.length > 3 && (
-                        <span className="text-[8px] text-gray-500 leading-none">
-                          +{dayPosts.length - 3}
-                        </span>
+                      {dayPosts.length > 2 && (
+                        <div className="text-[9px] text-gray-500 px-1">
+                          +{dayPosts.length - 2} más
+                        </div>
                       )}
-                    </div>
-                  )}
-
-                  {/* Tooltip-ish count on hover */}
-                  {dayPosts.length > 0 && (
-                    <div className="absolute top-1.5 right-1.5">
-                      <span className="text-[9px] text-gray-500">
-                        {dayPosts.length}
-                      </span>
                     </div>
                   )}
                 </button>
               );
             })}
           </div>
+        </>
+      )}
 
-          {/* Day detail drawer */}
-          {selectedDay && (
-            <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-medium">
-                  {format(selectedDay, "EEEE d 'de' MMMM", { locale: es })}
-                </h4>
+      {/* Day detail modal */}
+      {selectedDay && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedDay(null);
+          }}
+        >
+          <div className="w-full max-w-2xl mx-4 rounded-xl border border-white/10 bg-eko-graphite shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-white/5 bg-white/[0.02]">
+              <h4 className="text-sm font-medium capitalize">
+                {format(selectedDay, "EEEE d 'de' MMMM", { locale: es })}
+              </h4>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-500">
+                  {selectedDayPosts.length} publicación{selectedDayPosts.length !== 1 ? "es" : ""}
+                </span>
                 <button
                   onClick={() => setSelectedDay(null)}
-                  className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
+            </div>
 
+            {/* Modal body */}
+            <div className="p-4 overflow-y-auto space-y-4">
               {selectedDayPosts.length === 0 ? (
-                <p className="text-sm text-gray-500">Sin publicaciones este día.</p>
+                <p className="text-sm text-gray-500 text-center py-8">Sin publicaciones este día.</p>
               ) : (
-                <div className="space-y-3 max-h-80 overflow-y-auto">
-                  {selectedDayPosts.map((post) => {
-                    const thumbnail = post.assets?.[0]?.thumbnail;
-                    const proxyUrl = thumbnail ? `/content-api/proxy-image?url=${encodeURIComponent(thumbnail)}` : null;
-                    const isError = post.status === "error";
-                    const hasVideo = !!post.assets?.[0]?.source;
+                selectedDayPosts.map((post) => {
+                  const thumbnail = post.assets?.[0]?.thumbnail;
+                  const proxyUrl = thumbnail ? `/content-api/proxy-image?url=${encodeURIComponent(thumbnail)}` : null;
+                  const isError = post.status === "error";
+                  const hasVideo = !!post.assets?.[0]?.source;
 
-                    return (
-                      <div
-                        key={post.id}
-                        className={`flex gap-3 rounded-lg p-3 ${
-                          isError ? "bg-red-500/5 border border-red-500/10" : "bg-white/5"
-                        }`}
-                      >
-                        <CalendarThumbnail
-                          proxyUrl={proxyUrl}
-                          hasVideo={hasVideo}
-                          isExpired={isError}
-                          onClick={() => hasVideo && openVideoModal(post)}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] capitalize text-gray-400">
-                              {post.channelService}
+                  return (
+                    <div
+                      key={post.id}
+                      className={`rounded-xl border overflow-hidden ${
+                        isError ? "border-red-500/15 bg-red-500/[0.03]" : "border-white/5 bg-white/[0.02]"
+                      }`}
+                    >
+                      {/* Thumbnail */}
+                      <ModalThumbnail
+                        proxyUrl={proxyUrl}
+                        hasVideo={hasVideo}
+                        isExpired={isError}
+                        onClick={() => hasVideo && openVideoModal(post)}
+                      />
+
+                      <div className="p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[10px] capitalize text-gray-400">{post.channelService}</span>
+                          {STATUS_ICON[post.status] || <Clock className="w-3 h-3 text-gray-400" />}
+                          {isError && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">
+                              Error
                             </span>
-                            {STATUS_ICON[post.status] || (
-                              <Clock className="w-3 h-3 text-gray-400" />
-                            )}
-                            {isError && (
-                              <span className="text-[10px] text-red-400">Error</span>
-                            )}
-                          </div>
-                          <p className="text-sm line-clamp-2">{post.text}</p>
-                          {post.error?.message && (
-                            <p className="text-[10px] text-red-400/80 mt-1 line-clamp-2">
-                              {post.error.message}
-                            </p>
+                          )}
+                          {post.dueAt && post.status === "scheduled" && (
+                            <span className="text-[10px] text-gray-500">
+                              {new Date(post.dueAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
                           )}
                         </div>
-                        <button
-                          onClick={() => handleDelete(post.id)}
-                          className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors self-start"
-                          title="Borrar post"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+
+                        <p className="text-sm line-clamp-3">{post.text}</p>
+
+                        <div className="flex items-center justify-end mt-3">
+                          <button
+                            onClick={() => handleDelete(post.id)}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            title="Borrar post"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })
               )}
             </div>
-          )}
-        </>
+          </div>
+        </div>
       )}
+
       <VideoModal
         videoUrl={modalVideoUrl}
         proxyUrl={modalProxyUrl}
@@ -346,7 +378,7 @@ export default function PostCalendar() {
   );
 }
 
-function CalendarThumbnail({
+function ModalThumbnail({
   proxyUrl,
   hasVideo,
   isExpired,
@@ -370,9 +402,9 @@ function CalendarThumbnail({
 
   return (
     <div
-      className={`w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 relative ${
+      className={`aspect-video bg-black/30 relative overflow-hidden ${
         hasVideo && !showPlaceholder ? "cursor-pointer group" : ""
-      } ${showPlaceholder ? "bg-white/5" : ""}`}
+      }`}
       onClick={onClick}
       role={hasVideo ? "button" : undefined}
       tabIndex={hasVideo ? 0 : undefined}
@@ -382,20 +414,28 @@ function CalendarThumbnail({
         <img
           src={proxyUrl}
           alt=""
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover transition-transform duration-300 ${
+            hasVideo ? "group-hover:scale-105" : ""
+          }`}
           onLoad={handleLoad}
           onError={() => setImgValid(false)}
         />
       )}
+
       {hasVideo && !showPlaceholder && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Play className="w-5 h-5 text-white" fill="white" />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+            <Play className="w-5 h-5 text-white ml-0.5" fill="white" />
+          </div>
         </div>
       )}
+
       {showPlaceholder && (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-          <ImageOff className="w-5 h-5 text-gray-600" />
-          {isExpired && <span className="text-[8px] text-red-400/70">Expirado</span>}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+          <ImageOff className="w-8 h-8 text-gray-600" />
+          {isExpired && (
+            <span className="text-[10px] text-red-400/80 font-medium">Media expirado</span>
+          )}
         </div>
       )}
     </div>
