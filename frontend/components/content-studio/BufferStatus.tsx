@@ -16,7 +16,9 @@ import {
   ImageOff,
   Eye,
   EyeOff,
+  Play,
 } from "lucide-react";
+import VideoModal from "./VideoModal";
 
 interface Post {
   id: string;
@@ -70,6 +72,10 @@ export default function BufferStatus() {
   const [error, setError] = useState("");
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalVideoUrl, setModalVideoUrl] = useState("");
+  const [modalProxyUrl, setModalProxyUrl] = useState("");
+  const [modalTitle, setModalTitle] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -105,6 +111,15 @@ export default function BufferStatus() {
   };
 
   const totalErrors = posts.filter((p) => p.status === "error").length;
+
+  const openVideoModal = (post: Post) => {
+    const source = post.assets?.[0]?.source;
+    if (!source) return;
+    setModalVideoUrl(source);
+    setModalProxyUrl(`/content-api/proxy-video?url=${encodeURIComponent(source)}`);
+    setModalTitle(post.text.slice(0, 60) + (post.text.length > 60 ? "..." : ""));
+    setModalOpen(true);
+  };
 
   if (loading) {
     return (
@@ -232,6 +247,7 @@ export default function BufferStatus() {
                       const proxyUrl = thumbnail
                         ? `/content-api/proxy-image?url=${encodeURIComponent(thumbnail)}`
                         : null;
+                      const hasVideo = !!post.assets?.[0]?.source;
 
                       return (
                         <div
@@ -242,20 +258,12 @@ export default function BufferStatus() {
                               : "bg-white/5"
                           }`}
                         >
-                          {proxyUrl ? (
-                            <img
-                              src={proxyUrl}
-                              alt=""
-                              className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = "none";
-                              }}
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                              <ImageOff className="w-5 h-5 text-gray-600" />
-                            </div>
-                          )}
+                          <MonitorThumbnail
+                            proxyUrl={proxyUrl}
+                            hasVideo={hasVideo}
+                            isExpired={post.status === "error"}
+                            onClick={() => hasVideo && openVideoModal(post)}
+                          />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <StatusIcon className={`w-3 h-3 ${config.color}`} />
@@ -288,6 +296,69 @@ export default function BufferStatus() {
           );
         })}
       </div>
+      <VideoModal
+        videoUrl={modalVideoUrl}
+        proxyUrl={modalProxyUrl}
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={modalTitle}
+      />
+    </div>
+  );
+}
+
+function MonitorThumbnail({
+  proxyUrl,
+  hasVideo,
+  isExpired,
+  onClick,
+}: {
+  proxyUrl: string | null;
+  hasVideo: boolean;
+  isExpired: boolean;
+  onClick: () => void;
+}) {
+  const [imgValid, setImgValid] = useState(true);
+
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth < 2 && img.naturalHeight < 2) {
+      setImgValid(false);
+    }
+  };
+
+  const showPlaceholder = !proxyUrl || !imgValid;
+
+  return (
+    <div
+      className={`w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 relative ${
+        hasVideo && !showPlaceholder ? "cursor-pointer group" : ""
+      } ${showPlaceholder ? "bg-white/5" : ""}`}
+      onClick={onClick}
+      role={hasVideo ? "button" : undefined}
+      tabIndex={hasVideo ? 0 : undefined}
+      onKeyDown={hasVideo ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
+    >
+      {proxyUrl && imgValid && (
+        <img
+          src={proxyUrl}
+          alt=""
+          className="w-full h-full object-cover"
+          onLoad={handleLoad}
+          onError={() => setImgValid(false)}
+        />
+      )}
+      {hasVideo && !showPlaceholder && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Play className="w-4 h-4 text-white" fill="white" />
+        </div>
+      )}
+      {showPlaceholder && (
+        <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
+          <ImageOff className="w-4 h-4 text-gray-600" />
+          {isExpired && <span className="text-[7px] text-red-400/70">Expirado</span>}
+        </div>
+      )}
     </div>
   );
 }

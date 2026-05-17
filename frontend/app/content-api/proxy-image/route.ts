@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 const BUFFER_API_KEY = "au7VyBXcqYkOpftcaLuE7awhoSHBoXEAM-WPJWh06Fv";
 
+// 1x1 transparent PNG
+const TRANSPARENT_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
+  "base64"
+);
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const imageUrl = searchParams.get("url");
@@ -19,10 +25,14 @@ export async function GET(request: NextRequest) {
     });
 
     if (!res.ok) {
-      return NextResponse.json(
-        { error: `Failed to fetch image: ${res.status}` },
-        { status: res.status }
-      );
+      // Return transparent PNG so <img> onError fires cleanly
+      return new NextResponse(TRANSPARENT_PNG, {
+        status: 200,
+        headers: {
+          "Content-Type": "image/png",
+          "Cache-Control": "public, max-age=60",
+        },
+      });
     }
 
     const contentType = res.headers.get("content-type") || "image/jpeg";
@@ -35,9 +45,13 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || "Proxy failed" },
-      { status: 500 }
-    );
+    // Also return transparent PNG on network errors
+    return new NextResponse(TRANSPARENT_PNG, {
+      status: 200,
+      headers: {
+        "Content-Type": "image/png",
+        "Cache-Control": "public, max-age=60",
+      },
+    });
   }
 }

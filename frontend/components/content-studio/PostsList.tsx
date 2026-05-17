@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Trash2, ExternalLink, Pencil, RefreshCw, Send, Clock, AlertTriangle, CheckCircle, ImageOff } from "lucide-react";
+import { Loader2, Trash2, ExternalLink, Pencil, RefreshCw, Send, Clock, AlertTriangle, CheckCircle, ImageOff, Play } from "lucide-react";
+import VideoModal from "./VideoModal";
 
 interface Post {
   id: string;
@@ -32,6 +33,10 @@ export default function PostsList() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [error, setError] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalVideoUrl, setModalVideoUrl] = useState("");
+  const [modalProxyUrl, setModalProxyUrl] = useState("");
+  const [modalTitle, setModalTitle] = useState("");
 
   const loadPosts = async () => {
     setLoading(true);
@@ -84,6 +89,15 @@ export default function PostsList() {
 
   const statusConfig = (status: string) =>
     STATUS_CONFIG[status] || { label: status, color: "bg-gray-500/10 text-gray-400", icon: Clock };
+
+  const openVideoModal = (post: Post) => {
+    const source = post.assets?.[0]?.source;
+    if (!source) return;
+    setModalVideoUrl(source);
+    setModalProxyUrl(`/content-api/proxy-video?url=${encodeURIComponent(source)}`);
+    setModalTitle(post.text.slice(0, 60) + (post.text.length > 60 ? "..." : ""));
+    setModalOpen(true);
+  };
 
   return (
     <div className="space-y-4">
@@ -140,31 +154,18 @@ export default function PostsList() {
           const StatusIcon = status.icon;
           const thumbnail = post.assets?.[0]?.thumbnail;
           const proxyUrl = thumbnail ? `/content-api/proxy-image?url=${encodeURIComponent(thumbnail)}` : null;
+          const hasVideo = !!post.assets?.[0]?.source;
+          const isExpired = post.status === "error";
 
           return (
             <div key={post.id} className="rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden hover:border-white/10 transition-colors">
               {/* Thumbnail */}
-              <div className="aspect-video bg-black/30 relative">
-                {proxyUrl ? (
-                  <img
-                    src={proxyUrl}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = "none";
-                      const parent = target.parentElement;
-                      if (parent) {
-                        parent.innerHTML = `<div class="w-full h-full flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8 text-gray-600"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>`;
-                      }
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <ImageOff className="w-8 h-8 text-gray-600" />
-                  </div>
-                )}
-              </div>
+              <ThumbnailArea
+                proxyUrl={proxyUrl}
+                hasVideo={hasVideo}
+                isExpired={isExpired}
+                onClick={() => hasVideo && openVideoModal(post)}
+              />
 
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -219,6 +220,86 @@ export default function PostsList() {
           );
         })}
       </div>
+      <VideoModal
+        videoUrl={modalVideoUrl}
+        proxyUrl={modalProxyUrl}
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={modalTitle}
+      />
+    </div>
+  );
+}
+
+function ThumbnailArea({
+  proxyUrl,
+  hasVideo,
+  isExpired,
+  onClick,
+}: {
+  proxyUrl: string | null;
+  hasVideo: boolean;
+  isExpired: boolean;
+  onClick: () => void;
+}) {
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgValid, setImgValid] = useState(true);
+
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    setImgLoaded(true);
+    const img = e.currentTarget;
+    // Proxy returns 1x1 transparent PNG on failure
+    if (img.naturalWidth < 2 && img.naturalHeight < 2) {
+      setImgValid(false);
+    }
+  };
+
+  const showPlaceholder = !proxyUrl || !imgValid;
+  const showExpiredOverlay = showPlaceholder && isExpired;
+
+  return (
+    <div
+      className={`aspect-video bg-black/30 relative overflow-hidden group ${
+        hasVideo ? "cursor-pointer" : ""
+      }`}
+      onClick={onClick}
+      role={hasVideo ? "button" : undefined}
+      tabIndex={hasVideo ? 0 : undefined}
+      onKeyDown={hasVideo ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
+    >
+      {proxyUrl && imgValid && (
+        <img
+          src={proxyUrl}
+          alt=""
+          className={`w-full h-full object-cover transition-transform duration-300 ${
+            hasVideo ? "group-hover:scale-105" : ""
+          }`}
+          onLoad={handleLoad}
+          onError={() => {
+            setImgLoaded(true);
+            setImgValid(false);
+          }}
+        />
+      )}
+
+      {/* Play overlay on hover */}
+      {hasVideo && imgValid && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+            <Play className="w-5 h-5 text-white ml-0.5" fill="white" />
+          </div>
+        </div>
+      )}
+
+      {/* Placeholder */}
+      {showPlaceholder && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+          <ImageOff className="w-8 h-8 text-gray-600" />
+          {showExpiredOverlay && (
+            <span className="text-[10px] text-red-400/80 font-medium">Media expirado</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
