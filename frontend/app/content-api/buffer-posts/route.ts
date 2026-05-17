@@ -64,7 +64,7 @@ export async function GET() {
               status: [scheduled, sent, sending, error]
             }
           }
-          first: 200
+          first: 100
         ) {
           edges {
             node {

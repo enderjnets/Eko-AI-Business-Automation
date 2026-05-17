@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const statusFilter = searchParams.get("status") || "all";
     const channelId = searchParams.get("channelId");
-    const first = parseInt(searchParams.get("limit") || "200", 10);
+    const first = parseInt(searchParams.get("limit") || "100", 10);
     const after = searchParams.get("cursor") || null;
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");

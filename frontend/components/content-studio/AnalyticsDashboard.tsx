@@ -88,7 +88,7 @@ export default function AnalyticsDashboard() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      fetch("/content-api/posts?limit=200").then((r) => r.json()),
+      fetch("/content-api/posts?limit=100").then((r) => r.json()),
       fetch("/content-api/limits").then((r) => r.json()),
       fetch("/content-api/stats").then((r) => r.json()),
     ])

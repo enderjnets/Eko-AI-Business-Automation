@@ -75,7 +75,7 @@ export default function PostCalendar() {
     const start = format(subMonths(monthStart, 1), "yyyy-MM-dd");
     const end = format(addMonths(monthEnd, 1), "yyyy-MM-dd");
 
-    fetch(`/content-api/posts?limit=200&startDate=${start}&endDate=${end}`)
+    fetch(`/content-api/posts?limit=100&startDate=${start}&endDate=${end}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.error) throw new Error(data.error);
