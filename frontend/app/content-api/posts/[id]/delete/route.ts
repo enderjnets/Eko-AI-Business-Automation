@@ -9,12 +9,7 @@ export async function POST(
     const query = `
       mutation {
         deletePost(input: { id: "${params.id}" }) {
-          ... on DeletePostPayload {
-            success
-          }
-          ... on MutationError {
-            message
-          }
+          __typename
         }
       }
     `;
