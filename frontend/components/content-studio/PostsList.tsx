@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Trash2, ExternalLink, Pencil, RefreshCw, Send, Clock, AlertTriangle, CheckCircle } from "lucide-react";
+import { Loader2, Trash2, ExternalLink, Pencil, RefreshCw, Send, Clock, AlertTriangle, CheckCircle, ImageOff } from "lucide-react";
 
 interface Post {
   id: string;
@@ -54,7 +54,7 @@ export default function PostsList() {
   }, [filter]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Seguro que quieres borrar este post?")) return;
+    if (!confirm("¿Seguro que quieres borrar este post?")) return;
     try {
       const res = await fetch(`/content-api/posts/${id}/delete`, { method: "POST" });
       const data = await res.json();
@@ -138,19 +138,33 @@ export default function PostsList() {
         {posts.map((post) => {
           const status = statusConfig(post.status);
           const StatusIcon = status.icon;
-          const thumbnail = post.assets?.[0]?.thumbnail || post.assets?.[0]?.source;
+          const thumbnail = post.assets?.[0]?.thumbnail;
+          const proxyUrl = thumbnail ? `/content-api/proxy-image?url=${encodeURIComponent(thumbnail)}` : null;
 
           return (
             <div key={post.id} className="rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden hover:border-white/10 transition-colors">
-              {thumbnail ? (
-                <div className="aspect-video bg-black/30 relative">
-                  <img src={thumbnail} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                </div>
-              ) : (
-                <div className="aspect-video bg-white/5 flex items-center justify-center">
-                  <span className="text-xs text-gray-600">Sin preview</span>
-                </div>
-              )}
+              {/* Thumbnail */}
+              <div className="aspect-video bg-black/30 relative">
+                {proxyUrl ? (
+                  <img
+                    src={proxyUrl}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = "none";
+                      const parent = target.parentElement;
+                      if (parent) {
+                        parent.innerHTML = `<div class="w-full h-full flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8 text-gray-600"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>`;
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ImageOff className="w-8 h-8 text-gray-600" />
+                  </div>
+                )}
+              </div>
 
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">

@@ -25,6 +25,8 @@ import {
   Send,
   AlertTriangle,
   Pencil,
+  ImageOff,
+  Trash2,
 } from "lucide-react";
 
 interface Post {
@@ -105,6 +107,18 @@ export default function PostCalendar() {
     : [];
 
   const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Seguro que quieres borrar este post?")) return;
+    try {
+      const res = await fetch(`/content-api/posts/${id}/delete`, { method: "POST" });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setPosts((prev) => prev.filter((p) => p.id !== id));
+    } catch (e: any) {
+      alert("Error borrando: " + e.message);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -253,28 +267,29 @@ export default function PostCalendar() {
               ) : (
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                   {selectedDayPosts.map((post) => {
-                    const thumbnail =
-                      post.assets?.[0]?.thumbnail || post.assets?.[0]?.source;
+                    const thumbnail = post.assets?.[0]?.thumbnail;
+                    const proxyUrl = thumbnail ? `/content-api/proxy-image?url=${encodeURIComponent(thumbnail)}` : null;
+                    const isError = post.status === "error";
+
                     return (
                       <div
                         key={post.id}
-                        className="flex gap-3 rounded-lg bg-white/5 p-3"
+                        className={`flex gap-3 rounded-lg p-3 ${
+                          isError ? "bg-red-500/5 border border-red-500/10" : "bg-white/5"
+                        }`}
                       >
-                        {thumbnail ? (
+                        {proxyUrl ? (
                           <img
-                            src={thumbnail}
+                            src={proxyUrl}
                             alt=""
                             className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).style.display =
-                                "none";
+                              (e.target as HTMLImageElement).style.display = "none";
                             }}
                           />
                         ) : (
                           <div className="w-16 h-16 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                            <span className="text-[10px] text-gray-600">
-                              Sin preview
-                            </span>
+                            <ImageOff className="w-5 h-5 text-gray-600" />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
@@ -285,14 +300,24 @@ export default function PostCalendar() {
                             {STATUS_ICON[post.status] || (
                               <Clock className="w-3 h-3 text-gray-400" />
                             )}
+                            {isError && (
+                              <span className="text-[10px] text-red-400">Error</span>
+                            )}
                           </div>
                           <p className="text-sm line-clamp-2">{post.text}</p>
                           {post.error?.message && (
-                            <p className="text-[10px] text-red-400 mt-1">
+                            <p className="text-[10px] text-red-400/80 mt-1 line-clamp-2">
                               {post.error.message}
                             </p>
                           )}
                         </div>
+                        <button
+                          onClick={() => handleDelete(post.id)}
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors self-start"
+                          title="Borrar post"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     );
                   })}
