@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { bufferGraphQL } from "@/lib/buffer-api";
+import { NextResponse } from next/server;
+import { bufferGraphQL } from @/lib/buffer-api;
 
 export async function POST(
   _request: Request,
@@ -8,13 +8,8 @@ export async function POST(
   try {
     const query = `
       mutation {
-        deletePost(input: { id: "${params.id}" }) {
-          ... on DeletePostPayload {
-            success
-          }
-          ... on MutationError {
-            message
-          }
+        deletePost(input: { id: ${params.id} }) {
+          __typename
         }
       }
     `;
@@ -23,7 +18,7 @@ export async function POST(
     return NextResponse.json({ result: data.deletePost });
   } catch (err: any) {
     return NextResponse.json(
-      { error: err.message || "Failed to delete post" },
+      { error: err.message || Failed to delete post },
       { status: 500 }
     );
   }
