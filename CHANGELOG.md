@@ -1,5 +1,60 @@
 
 
+## [0.7.17] — 2026-05-19
+
+### Dashboard — módulos reordenables + agregar/quitar (estilo macOS Tahoe)
+
+El usuario pidió: drag-and-drop para reordenar los 12 módulos (Leads, Pipeline, Deals, Propuestas, Voice, Content, Inbox, Secuencias, Campañas, Calendar, Analytics, Config) + funcionalidad de quitar/agregar a preferencia + efecto jiggle tipo widget de macOS Tahoe en modo edit.
+
+#### Cambios
+
+##### 1. Nuevo componente `frontend/components/ModulesGrid.tsx`
+
+Encapsula toda la lógica de:
+- **Drag-and-drop** con `@dnd-kit/core` + `@dnd-kit/sortable` (ya instalados en package.json)
+- **Modo edit** (toggle Editar/Done en el header) — solo en este modo se puede arrastrar/eliminar
+- **Eliminar módulo**: botón ✕ rojo en la esquina superior izquierda de cada card en modo edit
+- **Agregar módulo**: tile "+" dashed al final del grid (visible solo si hay módulos ocultos) abre un picker en panel inferior con los módulos disponibles
+- **Reset**: restaura orden + módulos originales
+- **Esc**: sale de modo edit
+
+##### 2. Animación jiggle en `frontend/app/globals.css`
+
+Dos keyframes alternados (`jiggle-a` y `jiggle-b`) con rotación leve (-0.9deg / +0.7deg) y micro-translateY. Aplicados a cards pares/impares con `nth-child` para que el shuffle se vea orgánico (no robótico). Pausa automática durante el drag activo vía atributo `data-dnd-dragging="true"`.
+
+```css
+@keyframes jiggle-a {
+  0%, 100% { transform: rotate(-0.9deg) translateY(0); }
+  50%      { transform: rotate(0.9deg) translateY(-1px); }
+}
+@keyframes jiggle-b {
+  0%, 100% { transform: rotate(0.7deg) translateY(0); }
+  50%      { transform: rotate(-0.7deg) translateY(-1px); }
+}
+.jiggle > *:nth-child(odd) { animation: jiggle-a 0.32s ease-in-out infinite; }
+.jiggle > *:nth-child(even) { animation: jiggle-b 0.36s ease-in-out infinite; }
+```
+
+##### 3. Persistencia en localStorage
+
+- `eko_dashboard_modules_order_v1`: array de hrefs en el orden elegido por el usuario
+- `eko_dashboard_modules_hidden_v1`: array de hrefs ocultos
+- Hidratación SSR-safe (en `useEffect`, no en initial state) para evitar mismatch React/server.
+- Si en una versión futura agregamos un nuevo módulo a `MODULES` que el usuario nunca vio, se agrega automáticamente al final del orden guardado.
+
+##### 4. Modo normal (sin edit) preserva el comportamiento anterior
+
+Cuando edit mode está off: cada card sigue siendo un `<Link>` que navega normal a su ruta. El hover state, badge de unread y arrow icon funcionan igual. **Ningún regression para el flujo de usuario normal**.
+
+##### 5. Refactor de `frontend/components/Dashboard.tsx`
+
+- Tipo `ModuleDef` exportado por `ModulesGrid` y usado como tipo de la const `MODULES`
+- El bloque inline de 40 líneas que renderizaba los módulos fue reemplazado por `<ModulesGrid modules={MODULES} unreadCount={unreadCount} />`
+- Imports limpiados (eliminados `Link` y `ArrowRight` que ya no se usan en Dashboard)
+- La línea de "Forecast: $X" del header se mantuvo arriba (ahora flota a la derecha sin el título "Módulos" — el título lo pinta ahora el componente, junto al botón Editar)
+
+---
+
 ## [0.7.16] — 2026-05-19
 
 ### Dashboard — cards de "Leads Recientes" clickeables completas

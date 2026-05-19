@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.16";
+export const CURRENT_VERSION = "0.7.17";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,19 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.17",
+    date: "2026-05-19",
+    title: "Dashboard — módulos reordenables + agregar/quitar (estilo macOS Tahoe)",
+    changes: [
+      "Nuevo componente ModulesGrid: drag-and-drop con @dnd-kit/sortable para reordenar los módulos del dashboard",
+      "Botón 'Editar' arriba a la derecha entra en modo edit: las cards comienzan a hacer wiggle (jiggle) tipo widget de macOS Tahoe — keyframes alternados (-0.9deg / +0.7deg) en cards pares/impares",
+      "En modo edit: click ✕ en la esquina superior izquierda quita el módulo · tile '+' al final del grid abre picker con módulos disponibles para re-agregar",
+      "Persistencia en localStorage (eko_dashboard_modules_order_v1 y eko_dashboard_modules_hidden_v1) — el orden y los módulos visibles se mantienen por dispositivo/navegador",
+      "Esc o botón 'Done' salen del modo edit · botón 'Reset' restaura orden y módulos originales · nuevos módulos del producto se agregan automáticamente al final si no estaban en la config guardada",
+      "Modo normal (fuera de edit): comportamiento idéntico al anterior — cada card es Link que navega a su ruta",
+    ],
+  },
   {
     version: "0.7.16",
     date: "2026-05-19",

@@ -46,3 +46,30 @@ body {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
+
+/* macOS Tahoe-style widget jiggle for edit mode.
+   Two slightly different keyframes per card index keep the
+   shuffle organic — alternating cards rotate in opposite phase. */
+@keyframes jiggle-a {
+  0%, 100% { transform: rotate(-0.9deg) translateY(0); }
+  50%      { transform: rotate(0.9deg) translateY(-1px); }
+}
+@keyframes jiggle-b {
+  0%, 100% { transform: rotate(0.7deg) translateY(0); }
+  50%      { transform: rotate(-0.7deg) translateY(-1px); }
+}
+
+.jiggle > *:nth-child(odd) {
+  animation: jiggle-a 0.32s ease-in-out infinite;
+  transform-origin: center center;
+}
+.jiggle > *:nth-child(even) {
+  animation: jiggle-b 0.36s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+/* While actively being dragged, the dnd-kit transform takes over
+   and the jiggle is paused to keep drag motion clean. */
+.jiggle > *[data-dnd-dragging="true"] {
+  animation: none !important;
+}
