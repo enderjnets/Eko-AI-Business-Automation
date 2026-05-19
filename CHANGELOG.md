@@ -1,5 +1,32 @@
 
 
+## [0.7.11] — 2026-05-19
+
+### Landing Pages — Active card preview thumbnail rediseñado
+
+El card "LANDING PAGE EN USO" (sidebar de `/landing-pages`) tenía un preview del iframe con tres problemas visuales:
+
+1. **Recuadro blanco** alrededor del iframe (`bg-white` contra el card azul-oscuro)
+2. **Demasiado pequeño** — `h-24` (96px) fijo, no se distinguía qué landing estaba activa
+3. **No bien centrado** — `transform: scale(0.15)` aplicado a iframe 800×600 renderizaba 120×90 px en una esquina, dejando el resto del container vacío
+
+#### Fix
+
+Nuevo subcomponente `<ActivePreview slug={...} />` en `frontend/app/landing-pages/page.tsx`:
+
+- **Scale dinámico** vía `ResizeObserver`: `scale = containerWidth / 1280` → el iframe siempre llena el 100% del ancho del card
+- **Aspect-ratio 16:10** en el container (en vez de altura fija) → preview ~175px alto en sidebar normal, proporcional al viewport laptop
+- **`bg-[#0F172A]`** en vez de `bg-white` → match perfecto con el tema dark del card
+- **`pointer-events-none`** en iframe → clicks pasan a través del preview (los botones View/Edit/Deactivate de abajo no se interfieren)
+- **`loading="lazy"`** → no fetchea el iframe si el card está fuera de viewport (mejor perf)
+
+#### Resultado
+
+- El preview ahora ocupa todo el ancho del card sin frames blancos
+- Se distinguen hero, form de captura, y benefits a primera vista
+- Responsive: el preview se reescala suavemente al redimensionar la ventana
+
+
 ## [0.7.10] — 2026-05-18
 
 ### Landing Pages — Feature mentions en TODAS las secciones

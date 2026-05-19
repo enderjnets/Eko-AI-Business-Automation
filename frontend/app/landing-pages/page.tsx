@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   LayoutTemplate,
   Plus,
@@ -101,6 +101,48 @@ const PROMPT_TEMPLATES = [
     text: "Crea una landing page para un spa que resalte masajes, tratamientos faciales, y gift cards. Ton relajante y lujoso.",
   },
 ];
+
+// Active landing page thumbnail — scales the iframe to fill the card width
+// at a fixed 16:10 aspect ratio. Recomputes scale via ResizeObserver so the
+// preview always fills the available space without leaving a white frame.
+function ActivePreview({ slug }: { slug: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.25);
+  const VW = 1280;
+  const VH = 800;
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setScale(el.clientWidth / VW);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="relative w-full rounded-lg overflow-hidden bg-[#0F172A] mb-3 border border-[#334155]"
+      style={{ aspectRatio: `${VW} / ${VH}` }}
+    >
+      <iframe
+        src={`/api/v1/landing-pages/public/${slug}`}
+        className="absolute top-0 left-0 border-0 pointer-events-none"
+        style={{
+          width: `${VW}px`,
+          height: `${VH}px`,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+        }}
+        sandbox="allow-scripts"
+        title="Active preview"
+        loading="lazy"
+      />
+    </div>
+  );
+}
 
 export default function LandingPagesPage() {
   const [pages, setPages] = useState<LandingPage[]>([]);
@@ -366,21 +408,8 @@ export default function LandingPagesPage() {
                   </span>
                 </div>
                 <div className="p-4">
-                  {/* Thumbnail */}
-                  <div className="relative w-full h-24 rounded-lg overflow-hidden bg-white mb-3 border border-[#334155]">
-                    <iframe
-                      src={`/api/v1/landing-pages/public/${activePage.slug}`}
-                      className="absolute top-0 left-0 border-0"
-                      style={{
-                        width: "800px",
-                        height: "600px",
-                        transform: "scale(0.15)",
-                        transformOrigin: "top left",
-                      }}
-                      sandbox="allow-scripts"
-                      title="Active preview"
-                    />
-                  </div>
+                  {/* Thumbnail — dynamic scale fills card width, dark bg */}
+                  <ActivePreview slug={activePage.slug} />
                   <h3 className="font-semibold text-sm text-white mb-0.5">{activePage.name}</h3>
                   <p className="text-xs text-[#64748B] mb-2">/{activePage.slug}</p>
                   <div className="flex items-center gap-3 text-xs text-[#94A3B8] mb-3">

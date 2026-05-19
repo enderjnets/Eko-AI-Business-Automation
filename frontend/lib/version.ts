@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.10";
+export const CURRENT_VERSION = "0.7.11";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,19 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.11",
+    date: "2026-05-19",
+    title: "Landing Pages — Active card preview thumbnail rediseñado",
+    changes: [
+      "Fix: preview del card 'LANDING PAGE EN USO' tenía recuadro blanco visible (bg-white) y iframe scale fijo 0.15 que no rellenaba el container",
+      "Nuevo componente <ActivePreview/> con scale dinámico vía ResizeObserver — el iframe llena 100% del ancho del card en cualquier viewport",
+      "Aspect ratio 16:10 (en vez de h-24 = 96px fijo) — preview ahora ~175px alto en sidebar normal, se distinguen hero, form y benefits",
+      "Background match con tema dark (#0F172A) — sin más rectángulo blanco contra el card azul-oscuro",
+      "pointer-events-none en iframe para que clicks pasen al card (botones View/Edit/Deactivate intactos)",
+      "loading=lazy en iframe para evitar fetch si el card está fuera de viewport",
+    ],
+  },
   {
     version: "0.7.10",
     date: "2026-05-18",
