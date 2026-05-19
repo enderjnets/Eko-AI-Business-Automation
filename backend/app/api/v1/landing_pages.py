@@ -78,6 +78,26 @@ async def _track_visit(
 # so FastAPI's order-sensitive routing doesn't shadow them).
 # ─────────────────────────────────────────────────────────────────────────────
 
+@router.get("/templates")
+async def list_lp_templates():
+    """Return all available landing page templates (metadata only, no HTML)."""
+    from app.services.landing_page_template import list_templates
+    return {"templates": list_templates()}
+
+
+@router.get("/template-preview/{template_id}", response_class=HTMLResponse)
+async def preview_lp_template(template_id: str):
+    """Render a template with default sample copy for the selector UI preview.
+
+    Public endpoint — no auth, no DB write. Uses LP_ID=0 so the tracking
+    pixel does NOT record any visits (safe to embed in iframes anywhere).
+    """
+    from app.services.landing_page_template import TEMPLATES, render_template_preview
+    if template_id not in TEMPLATES:
+        raise HTTPException(status_code=404, detail=f"Template '{template_id}' not found")
+    return HTMLResponse(content=render_template_preview(template_id))
+
+
 @router.get("/track")
 async def track_visit(
     request: Request,
@@ -381,6 +401,8 @@ async def create_landing_page(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail=f"Slug '{data.slug}' already exists")
 
+    # Store template_id in generation_metadata (jsonb column — no DB migration)
+    gen_meta = {"template_id": data.template_id or "eko-classic"}
     lp = LandingPage(
         workspace_id=workspace_id,
         name=data.name,
@@ -393,6 +415,7 @@ async def create_landing_page(
         is_random_pool=data.is_random_pool,
         ai_model=data.ai_model,
         ai_provider=data.ai_provider,
+        generation_metadata=gen_meta,
         created_by=current_user.email,
     )
     db.add(lp)
@@ -528,6 +551,12 @@ async def generate_landing_page(
         pass
     cal_com_link = f"https://cal.com/{cal_username}/{cal_event}"
 
+    # Resolve template_id: explicit request → existing generation_metadata → default
+    existing_template = None
+    if isinstance(lp.generation_metadata, dict):
+        existing_template = lp.generation_metadata.get("template_id")
+    template_id = data.template_id or existing_template or "eko-classic"
+
     generator = LandingPageGenerator()
 
     try:
@@ -537,6 +566,7 @@ async def generate_landing_page(
             provider=data.provider or lp.ai_provider,
             model=data.model or lp.ai_model,
             cal_com_link=cal_com_link,
+            template_id=template_id,
         )
     except Exception as e:
         logger.error(f"Generation failed for landing page {landing_page_id}: {e}")

@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.12";
+export const CURRENT_VERSION = "0.7.13";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,23 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.13",
+    date: "2026-05-19",
+    title: "Landing Pages — 10 templates con selector visual en Create modal",
+    changes: [
+      "Refactor backend: registry de templates en landing_page_template.py — 10 diseños distintos comparten el mismo placeholder schema (56 keys) para que una sola generación AI sirva en cualquier template",
+      "10 templates inspirados en sitios icónicos: Eko Classic, Apple Minimal, Stripe Gradient, Linear Dark, Airbnb Warm, Notion Clean, Tesla Bold, Best Buy Retail, Spotify Vibe, HubSpot Sales",
+      "Cada template usa colores + tipografía + layout fieles al original (SF Pro Apple, Inter Linear, Circular Spotify, Lyon Notion, Gotham Tesla, etc.)",
+      "Nuevo endpoint GET /api/v1/landing-pages/templates — lista metadata de los 10 templates (sin HTML)",
+      "Nuevo endpoint GET /api/v1/landing-pages/template-preview/{id} — renderiza un template con copy default (para iframe thumbnails en el selector)",
+      "Schema LandingPageCreate y LandingPageGenerateRequest aceptan template_id opcional",
+      "template_id se guarda en generation_metadata (jsonb existente, sin migración de DB)",
+      "Frontend Create modal: nuevo grid de 10 cards con iframe-thumbnail (scale 0.15) — el usuario ve preview real de cada template antes de elegir",
+      "AI Prompt sigue funcionando encima del template elegido — adjusta copy + content al niche",
+      "End-to-end verificado: create LP con template=stripe-gradient → AI generation 51s → form submit → lead created (id 614)",
+    ],
+  },
   {
     version: "0.7.12",
     date: "2026-05-19",

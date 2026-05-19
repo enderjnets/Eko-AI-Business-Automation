@@ -26,6 +26,7 @@ class LandingPageGenerator:
         provider: Optional[str] = None,
         model: Optional[str] = None,
         cal_com_link: Optional[str] = None,
+        template_id: Optional[str] = None,
     ) -> dict:
         """Generate a landing page from a user prompt.
 
@@ -43,15 +44,16 @@ class LandingPageGenerator:
         # Parse JSON
         copy = self._parse_json(raw_response)
 
-        # Render template
+        # Render template (uses template_id, falls back to default if None/unknown)
         year = datetime.now().year
-        html = render_template(copy, landing_page_id, year)
+        html = render_template(copy, landing_page_id, year, template_id=template_id)
 
         metadata = {
             "raw_tokens_estimate": len(raw_response) // 4,
             "copy_keys": list(copy.keys()),
             "has_form": "<form" in html.lower(),
             "has_tracking_pixel": "landing-pages/track" in html,
+            "template_id": template_id or "eko-classic",
         }
 
         return {

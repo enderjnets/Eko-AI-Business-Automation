@@ -1,5 +1,60 @@
 
 
+## [0.7.13] — 2026-05-19
+
+### Landing Pages — 10 templates con selector visual en Create modal
+
+Antes había un único template HTML hardcoded (`_LANDING_PAGE_TEMPLATE`). Las 4 chips "PROMPT_TEMPLATES" del modal eran sólo presets del prompt de texto — todos los LPs lucían visualmente idénticos. El usuario pidió "al menos 10 templates distintos con estilos tipo Apple, Best Buy, etc., con previsualización y selector visual."
+
+#### Backend (`landing_page_template.py` refactor de 586 → 1552 líneas)
+
+- **Template registry pattern** — `TEMPLATES: dict` con metadata (name, tagline, vibe, best_for, accent, html) por template
+- **10 templates implementados** con HTML+CSS distintivo por diseño:
+  1. **Eko Classic** — Dark blue/cyan gradient (current default)
+  2. **Apple Minimal** — White, SF Pro huge typography, ultra-minimal premium
+  3. **Stripe Gradient** — Gradient mesh hero (purple→cyan→orange), Inter font
+  4. **Linear Dark** — Pure black + grid pattern, neon purple `#5e6ad2`, geometric
+  5. **Airbnb Warm** — Coral red `#FF5A5F` CTA, rounded pill shapes, hospitality
+  6. **Notion Clean** — Off-white bg, Lyon serif, soft blocks, editorial feel
+  7. **Tesla Bold** — Full-bleed dark hero, Gotham condensed uppercase
+  8. **Best Buy Retail** — Blue `#0046BE` + yellow `#FFE000`, deal cards w/ strike-through pricing
+  9. **Spotify Vibe** — Pitch black + green `#1DB954`, Circular font, music-energy
+  10. **HubSpot Sales** — Orange `#FF7A59` CTA, B2B SaaS conversion-optimized
+- **Shared placeholder schema** — todos los templates usan los mismos 56 placeholders (`{{HERO_TITLE}}`, `{{BENEFIT_1_TITLE}}`, etc.) — una sola generación AI sirve en cualquier template
+- **Shared form-submit JS + tracking pixel** — extraídos a `_FORM_SUBMIT_JS` y `_TRACKING_PIXEL`, inyectados via `__FORM_SUBMIT_JS__` y `__TRACKING_PIXEL__` placeholders
+- **Helpers**: `list_templates()`, `render_template(copy, lp_id, year, template_id)`, `render_template_preview(template_id)`
+
+#### Backend endpoints + schemas
+
+- `GET /api/v1/landing-pages/templates` — lista metadata de los 10 templates (sin HTML), para el selector
+- `GET /api/v1/landing-pages/template-preview/{id}` — renderiza un template con copy default (LP_ID=0 para no tracker fake visits) — usado como source del iframe-thumbnail en el selector
+- `LandingPageCreate` schema: `template_id: Optional[str] = "eko-classic"`
+- `LandingPageUpdate` schema: `template_id: Optional[str] = None`
+- `LandingPageGenerateRequest` schema: `template_id: Optional[str] = None`
+- Nuevo `LandingPageTemplateMeta` schema (id, name, tagline, vibe, best_for, accent)
+- `template_id` se persiste en `generation_metadata` (jsonb existente — **sin migración de DB**)
+- `generate_landing_page` resuelve template_id: explicit → existing metadata → default
+
+#### Frontend (Create Landing Page modal)
+
+- Nuevo grid 4-cols de cards de templates en el modal, cada card con:
+  - Iframe-thumbnail real del template (scale 0.15, aspect 16:10)
+  - Punto de color con el accent del template
+  - Nombre + "best for" textual
+  - Border azul + checkmark cuando está seleccionado
+- State: `formTemplateId` (default `eko-classic`), cargado desde `/content-api/lp-templates` al montar
+- Proxy route: `frontend/app/content-api/lp-templates/route.ts` → backend `/templates`
+- `handleSave` y `handleGenerate` envían `template_id` al backend
+
+#### Verificación end-to-end
+
+- `POST /landing-pages template=stripe-gradient` → LP id=13, generation_metadata.template_id=`stripe-gradient` persistido
+- `POST /generate provider=kimi` → 51s, 56 keys completas, HTML 14.9KB con CSS Stripe (`--accent:#635bff`, gradient mesh)
+- Render del LP público: H1 = "Your Billing Funnel Never Sleeps With Eko AI", footer = "Your Entire Customer Journey, Automated" (no anxiety messaging)
+- Form submit → lead 614 created
+- 4 templates verificados con grep contra HTML rendered: cada uno con su signature CSS (SF Pro para Apple, Inter para Linear, Circular para Spotify, Lyon para Notion)
+
+
 ## [0.7.12] — 2026-05-19
 
 ### Landing Pages — Active preview: línea blanca del scrollbar eliminada

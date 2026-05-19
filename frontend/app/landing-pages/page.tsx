@@ -167,6 +167,18 @@ export default function LandingPagesPage() {
   const [formSlug, setFormSlug] = useState("");
   const [formPrompt, setFormPrompt] = useState("");
   const [formHtml, setFormHtml] = useState("");
+  const [formTemplateId, setFormTemplateId] = useState<string>("eko-classic");
+
+  // Available templates (loaded once on mount)
+  const [templates, setTemplates] = useState<
+    { id: string; name: string; tagline: string; vibe: string; best_for: string; accent: string }[]
+  >([]);
+  useEffect(() => {
+    fetch("/content-api/lp-templates")
+      .then((r) => r.json())
+      .then((d) => setTemplates(d.templates || []))
+      .catch(() => {});
+  }, []);
 
   const loadPages = useCallback(async () => {
     setLoading(true);
@@ -236,7 +248,8 @@ export default function LandingPagesPage() {
           prompt: formPrompt,
           html_content: formHtml || "<html><body><h1>New Landing Page</h1></body></html>",
           is_active: activate,
-        });
+          template_id: formTemplateId,
+        } as any);
         if (activate && res.data.id) {
           await landingPagesApi.activate(res.data.id);
         }
@@ -266,7 +279,8 @@ export default function LandingPagesPage() {
           prompt: formPrompt,
           html_content: formHtml || "<html><body><h1>New Landing Page</h1></body></html>",
           is_active: false,
-        });
+          template_id: formTemplateId,
+        } as any);
         targetId = res.data.id;
         setSelectedPage(res.data);
         setIsCreating(false);
@@ -286,7 +300,7 @@ export default function LandingPagesPage() {
 
     setIsGenerating(true);
     try {
-      await landingPagesApi.generate(targetId, { prompt: formPrompt });
+      await landingPagesApi.generate(targetId, { prompt: formPrompt, template_id: formTemplateId } as any);
       const res = await landingPagesApi.get(targetId);
       setSelectedPage(res.data);
       setFormHtml(res.data.html_content);
@@ -778,10 +792,79 @@ export default function LandingPagesPage() {
                     </div>
                   </div>
 
+                  {/* Template selector — grid of 10 design templates */}
+                  {isCreating && templates.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-medium text-[#64748B] mb-2">
+                        Choose a template ({templates.length} designs)
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                        {templates.map((t) => {
+                          const isSelected = formTemplateId === t.id;
+                          return (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => setFormTemplateId(t.id)}
+                              className={`relative text-left p-0 rounded-lg overflow-hidden border-2 transition-all ${
+                                isSelected
+                                  ? "border-[#0B4FD8] shadow-lg shadow-[#0B4FD8]/30"
+                                  : "border-[#334155] hover:border-[#475569]"
+                              }`}
+                              style={{ background: "#0F172A" }}
+                              title={`${t.name} — ${t.tagline}\nBest for: ${t.best_for}`}
+                            >
+                              {/* Thumbnail iframe — preview of the template with sample copy */}
+                              <div
+                                className="relative w-full overflow-hidden"
+                                style={{ aspectRatio: "16 / 10", background: t.accent + "10" }}
+                              >
+                                <iframe
+                                  src={`/api/v1/landing-pages/template-preview/${t.id}`}
+                                  className="absolute top-0 left-0 border-0 pointer-events-none"
+                                  style={{
+                                    width: "1304px",
+                                    height: "800px",
+                                    transform: "scale(0.15)",
+                                    transformOrigin: "top left",
+                                    colorScheme: "dark",
+                                  }}
+                                  sandbox="allow-scripts"
+                                  title={`${t.name} preview`}
+                                  loading="lazy"
+                                />
+                                {isSelected && (
+                                  <div className="absolute top-1.5 right-1.5 bg-[#0B4FD8] text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-md">
+                                    ✓
+                                  </div>
+                                )}
+                              </div>
+                              {/* Name + accent bar */}
+                              <div className="px-2 py-1.5 border-t border-[#334155]">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className="block w-2 h-2 rounded-full flex-shrink-0"
+                                    style={{ background: t.accent }}
+                                  />
+                                  <span className="text-[11px] font-semibold text-white truncate">
+                                    {t.name}
+                                  </span>
+                                </div>
+                                <span className="block text-[10px] text-[#64748B] truncate mt-0.5">
+                                  {t.best_for}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Prompt */}
                   <div>
                     <label className="block text-xs font-medium text-[#64748B] mb-1">
-                      AI Prompt
+                      AI Prompt {isCreating && <span className="text-[#64748B]">(adjust copy & content on top of the chosen template)</span>}
                     </label>
                     <textarea
                       value={formPrompt}

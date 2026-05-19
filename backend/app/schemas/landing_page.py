@@ -25,6 +25,7 @@ class LandingPageBase(BaseModel):
     is_random_pool: bool = True
     ai_model: str = "kimi-k2.5"
     ai_provider: str = "kimi"
+    template_id: Optional[str] = "eko-classic"
 
 
 class LandingPageCreate(LandingPageBase):
@@ -42,6 +43,7 @@ class LandingPageUpdate(BaseModel):
     is_random_pool: Optional[bool] = None
     ai_model: Optional[str] = None
     ai_provider: Optional[str] = None
+    template_id: Optional[str] = None
 
 
 class LandingPageResponse(LandingPageBase):
@@ -64,6 +66,17 @@ class LandingPageGenerateRequest(BaseModel):
     prompt: Optional[str] = None
     model: Optional[str] = None
     provider: Optional[str] = None
+    template_id: Optional[str] = None
+
+
+class LandingPageTemplateMeta(BaseModel):
+    """Template metadata for the selector UI (no HTML body)."""
+    id: str
+    name: str
+    tagline: str
+    vibe: str
+    best_for: str
+    accent: str
 
 
 class LandingPagePreviewRequest(BaseModel):
