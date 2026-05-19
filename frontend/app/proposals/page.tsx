@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/contexts/I18nProvider";
 import { proposalsApi, dealsApi } from "@/lib/api";
 import {
   FileText,
@@ -40,17 +41,18 @@ interface Proposal {
   } | null;
 }
 
-const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  draft: { label: "Borrador", color: "bg-gray-100 text-gray-700", icon: FileText },
-  sent: { label: "Enviada", color: "bg-blue-100 text-blue-700", icon: Send },
-  accepted: { label: "Aceptada", color: "bg-green-100 text-green-700", icon: CheckCircle },
-  rejected: { label: "Rechazada", color: "bg-red-100 text-red-700", icon: XCircle },
-  expired: { label: "Expirada", color: "bg-amber-100 text-amber-700", icon: Clock },
+const statusConfig: Record<string, { labelKey: string; color: string; icon: any }> = {
+  draft: { labelKey: "proposals.status.draft", color: "bg-gray-100 text-gray-700", icon: FileText },
+  sent: { labelKey: "proposals.status.sent", color: "bg-blue-100 text-blue-700", icon: Send },
+  accepted: { labelKey: "proposals.status.accepted", color: "bg-green-100 text-green-700", icon: CheckCircle },
+  rejected: { labelKey: "proposals.status.rejected", color: "bg-red-100 text-red-700", icon: XCircle },
+  expired: { labelKey: "proposals.status.expired", color: "bg-amber-100 text-amber-700", icon: Clock },
 };
 
 export default function ProposalsPage() {
   const router = useRouter();
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const { t } = useT();
   const [deals, setDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -74,7 +76,7 @@ export default function ProposalsPage() {
       const res = await proposalsApi.list({ limit: 100 });
       setProposals(res.data.items || []);
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Error cargando propuestas");
+      setError(e.response?.data?.detail || t("proposals.error.load"));
     } finally {
       setLoading(false);
     }
@@ -99,7 +101,7 @@ export default function ProposalsPage() {
       setCreateData({ deal_id: "", title: "" });
       loadProposals();
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Error creando propuesta");
+      setError(e.response?.data?.detail || t("proposals.error.create"));
     } finally {
       setCreating(false);
     }
@@ -111,7 +113,7 @@ export default function ProposalsPage() {
       await proposalsApi.generate(proposalId);
       loadProposals();
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Error generando propuesta");
+      setError(e.response?.data?.detail || t("proposals.error.generate"));
     } finally {
       setGeneratingId(null);
     }
@@ -123,20 +125,20 @@ export default function ProposalsPage() {
       await proposalsApi.send(proposalId);
       loadProposals();
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Error enviando propuesta");
+      setError(e.response?.data?.detail || t("proposals.error.send"));
     } finally {
       setSendingId(null);
     }
   }
 
   async function handleDelete(proposalId: number) {
-    if (!confirm("¿Eliminar esta propuesta?")) return;
+    if (!confirm(t("proposals.confirm.delete"))) return;
     setDeletingId(proposalId);
     try {
       await proposalsApi.delete(proposalId);
       loadProposals();
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Error eliminando propuesta");
+      setError(e.response?.data?.detail || t("proposals.error.delete"));
     } finally {
       setDeletingId(null);
     }
@@ -147,7 +149,7 @@ export default function ProposalsPage() {
       await proposalsApi.duplicate(proposalId);
       loadProposals();
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Error duplicando propuesta");
+      setError(e.response?.data?.detail || t("proposals.error.duplicate"));
     }
   }
 
@@ -173,9 +175,9 @@ export default function ProposalsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Propuestas</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t("proposals.title")}</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Gestiona y envía propuestas personalizadas con IA
+              {t("proposals.subtitle")}
             </p>
           </div>
           <button
@@ -183,17 +185,17 @@ export default function ProposalsPage() {
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Nueva Propuesta
+            {t("proposals.new")}
           </button>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {[
-            { label: "Total", value: stats.total, color: "bg-gray-100" },
-            { label: "Borradores", value: stats.draft, color: "bg-amber-50" },
-            { label: "Enviadas", value: stats.sent, color: "bg-blue-50" },
-            { label: "Aceptadas", value: stats.accepted, color: "bg-green-50" },
+            { label: t("proposals.stats.total"), value: stats.total, color: "bg-gray-100" },
+            { label: t("proposals.stats.drafts"), value: stats.draft, color: "bg-amber-50" },
+            { label: t("proposals.stats.sent"), value: stats.sent, color: "bg-blue-50" },
+            { label: t("proposals.stats.accepted"), value: stats.accepted, color: "bg-green-50" },
           ].map((s) => (
             <div key={s.label} className={`${s.color} rounded-xl p-4`}>
               <p className="text-2xl font-bold text-gray-900">{s.value}</p>
@@ -208,7 +210,7 @@ export default function ProposalsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Buscar propuestas..."
+              placeholder={t("proposals.search_placeholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -219,12 +221,12 @@ export default function ProposalsPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">Todos los estados</option>
-            <option value="draft">Borrador</option>
-            <option value="sent">Enviada</option>
-            <option value="accepted">Aceptada</option>
-            <option value="rejected">Rechazada</option>
-            <option value="expired">Expirada</option>
+            <option value="">{t("proposals.filter.all_status")}</option>
+            <option value="draft">{t("proposals.status.draft")}</option>
+            <option value="sent">{t("proposals.status.sent")}</option>
+            <option value="accepted">{t("proposals.status.accepted")}</option>
+            <option value="rejected">{t("proposals.status.rejected")}</option>
+            <option value="expired">{t("proposals.status.expired")}</option>
           </select>
         </div>
 
@@ -244,12 +246,12 @@ export default function ProposalsPage() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
             <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No hay propuestas</p>
+            <p className="text-gray-500">{t("proposals.empty")}</p>
             <button
               onClick={() => setShowCreateModal(true)}
               className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
-              Crear la primera propuesta
+              {t("proposals.empty_cta")}
             </button>
           </div>
         ) : (
@@ -269,12 +271,12 @@ export default function ProposalsPage() {
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}
                         >
                           <Icon className="w-3 h-3" />
-                          {cfg.label}
+                          {t(cfg.labelKey as any)}
                         </span>
                         {proposal.views_count ? (
                           <span className="text-xs text-gray-500 flex items-center gap-1">
                             <Eye className="w-3 h-3" />
-                            {proposal.views_count} vistas
+                            {proposal.views_count} {t("proposals.views")}
                           </span>
                         ) : null}
                       </div>
@@ -282,13 +284,13 @@ export default function ProposalsPage() {
                         {proposal.title}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {proposal.deal?.name || "Sin deal asociado"} ·{" "}
+                        {proposal.deal?.name || t("proposals.no_deal")} ·{" "}
                         {proposal.deal?.value
                           ? `$${proposal.deal.value.toLocaleString()}`
                           : ""}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        Creada{" "}
+                        {t("proposals.created")}{" "}
                         {new Date(proposal.created_at).toLocaleDateString("es-MX")}
                       </p>
                     </div>
@@ -299,7 +301,7 @@ export default function ProposalsPage() {
                           <button
                             onClick={() => handleGenerate(proposal.id)}
                             disabled={generatingId === proposal.id}
-                            title="Generar con IA"
+                            title={t("proposals.action.generate")}
                             className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                           >
                             {generatingId === proposal.id ? (
@@ -311,7 +313,7 @@ export default function ProposalsPage() {
                           <button
                             onClick={() => handleSend(proposal.id)}
                             disabled={sendingId === proposal.id}
-                            title="Enviar"
+                            title={t("proposals.action.send")}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           >
                             {sendingId === proposal.id ? (
@@ -327,7 +329,7 @@ export default function ProposalsPage() {
                           href={`/proposals/public/${proposal.share_token}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          title="Ver pública"
+                          title={t("proposals.action.view_public")}
                           className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                         >
                           <ExternalLink className="w-4 h-4" />
@@ -335,7 +337,7 @@ export default function ProposalsPage() {
                       )}
                       <button
                         onClick={() => handleDuplicate(proposal.id)}
-                        title="Duplicar"
+                        title={t("proposals.action.duplicate")}
                         className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         <Copy className="w-4 h-4" />
@@ -344,7 +346,7 @@ export default function ProposalsPage() {
                         onClick={() =>
                           router.push(`/proposals/${proposal.id}`)
                         }
-                        title="Editar"
+                        title={t("common.edit")}
                         className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         <ChevronRight className="w-4 h-4" />
@@ -352,7 +354,7 @@ export default function ProposalsPage() {
                       <button
                         onClick={() => handleDelete(proposal.id)}
                         disabled={deletingId === proposal.id}
-                        title="Eliminar"
+                        title={t("common.delete")}
                         className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         {deletingId === proposal.id ? (
@@ -375,12 +377,12 @@ export default function ProposalsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
             <h2 className="text-lg font-bold text-gray-900 mb-4">
-              Nueva Propuesta
+              {t("proposals.new")}
             </h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Deal
+                  {t("proposals.field.deal")}
                 </label>
                 <select
                   value={createData.deal_id}
@@ -389,7 +391,7 @@ export default function ProposalsPage() {
                   }
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Selecciona un deal</option>
+                  <option value="">{t("proposals.field.deal_placeholder")}</option>
                   {deals.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name} (${d.value?.toLocaleString() || 0})
@@ -399,7 +401,7 @@ export default function ProposalsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Título
+                  {t("proposals.field.title")}
                 </label>
                 <input
                   type="text"
@@ -407,7 +409,7 @@ export default function ProposalsPage() {
                   onChange={(e) =>
                     setCreateData({ ...createData, title: e.target.value })
                   }
-                  placeholder="Ej: Propuesta de Rediseño Web"
+                  placeholder={t("proposals.field.title_placeholder")}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -417,7 +419,7 @@ export default function ProposalsPage() {
                 onClick={() => setShowCreateModal(false)}
                 className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50"
               >
-                Cancelar
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleCreate}
@@ -427,7 +429,7 @@ export default function ProposalsPage() {
                 {creating ? (
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                 ) : (
-                  "Crear"
+                  t("proposals.create")
                 )}
               </button>
             </div>

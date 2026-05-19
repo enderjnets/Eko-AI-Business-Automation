@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/contexts/I18nProvider";
 import Navbar from "@/components/Navbar";
 import PipelineHistory from "@/components/content-studio/PipelineHistory";
 import BufferStatus from "@/components/content-studio/BufferStatus";
@@ -19,17 +20,18 @@ import {
   Video,
 } from "lucide-react";
 
-const TABS = [
-  { id: "control", label: "Control", icon: Play },
-  { id: "videos", label: "Videos", icon: Video },
-  { id: "posts", label: "Publicaciones", icon: FileText },
-  { id: "calendar", label: "Calendario", icon: Calendar },
-  { id: "analytics", label: "Analytics", icon: BarChart3 },
-  { id: "monitor", label: "Monitoreo", icon: Activity },
-];
-
 export default function ContentStudioPage() {
   const [activeTab, setActiveTab] = useState("posts");
+  const { t } = useT();
+
+  const TABS = [
+    { id: "control", label: t("content.tab.control"), icon: Play },
+    { id: "videos", label: t("content.tab.videos"), icon: Video },
+    { id: "posts", label: t("content.tab.posts"), icon: FileText },
+    { id: "calendar", label: t("content.tab.calendar"), icon: Calendar },
+    { id: "analytics", label: t("content.tab.analytics"), icon: BarChart3 },
+    { id: "monitor", label: t("content.tab.monitor"), icon: Activity },
+  ];
 
   return (
     <div className="min-h-screen bg-eko-graphite">
@@ -43,12 +45,11 @@ export default function ContentStudioPage() {
               <Clapperboard className="w-5 h-5" />
             </div>
             <h1 className="text-2xl font-bold font-display">
-              Content Studio
+              {t("content.title")}
             </h1>
           </div>
           <p className="text-gray-400 text-sm">
-            Pipeline de producción de contenido para TikTok, Instagram y
-            Facebook
+            {t("content.subtitle")}
           </p>
         </div>
 
@@ -97,11 +98,12 @@ function VideosTab() {
 }
 
 function PostsTab() {
+  const { t } = useT();
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-400">Posts en Buffer</h3>
-        <span className="text-xs text-gray-500">Gestiona publicaciones en todas las plataformas</span>
+        <h3 className="text-sm font-medium text-gray-400">{t("content.posts.header")}</h3>
+        <span className="text-xs text-gray-500">{t("content.posts.subheader")}</span>
       </div>
       <PostsList />
     </div>
@@ -125,18 +127,19 @@ function AnalyticsTab() {
 }
 
 function MonitorTab() {
+  const { t } = useT();
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-sm font-medium text-gray-400 mb-3">
-          Estado de canales (Buffer)
+          {t("content.monitor.channels")}
         </h3>
         <BufferStatus />
       </div>
 
       <div>
         <h3 className="text-sm font-medium text-gray-400 mb-3">
-          Historial de pipelines
+          {t("content.monitor.history")}
         </h3>
         <PipelineHistory />
       </div>

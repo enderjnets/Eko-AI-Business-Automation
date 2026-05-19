@@ -30,6 +30,7 @@ import {
 import { landingPagesApi } from "@/lib/api";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import { useT } from "@/contexts/I18nProvider";
 
 interface LandingPage {
   id: number;
@@ -175,6 +176,7 @@ function ActivePreview({ slug }: { slug: string }) {
 
 export default function LandingPagesPage() {
   const [pages, setPages] = useState<LandingPage[]>([]);
+  const { t } = useT();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedPage, setSelectedPage] = useState<LandingPage | null>(null);
@@ -292,7 +294,7 @@ export default function LandingPagesPage() {
     // If creating, save draft first
     if (!targetId) {
       if (!formName.trim() || !formSlug.trim()) {
-        setError("Name and slug are required before generating with AI");
+        setError(t("landing.error.name_slug_required"));
         return;
       }
       try {
@@ -317,7 +319,7 @@ export default function LandingPagesPage() {
     }
 
     if (!targetId) {
-      setError("Failed to get landing page ID");
+      setError(t("landing.error.no_id"));
       return;
     }
 
@@ -334,14 +336,14 @@ export default function LandingPagesPage() {
       const status = e.response?.status;
       const detail = e.response?.data?.detail;
       const message = detail || e.message || "Unknown error";
-      setError(`Generation failed${status ? ` (${status})` : ""}: ${message}`);
+      setError(`${t("landing.error.generation_failed")}${status ? ` (${status})` : ""}: ${message}`);
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this landing page?")) return;
+    if (!confirm(t("landing.confirm.delete"))) return;
     try {
       await landingPagesApi.delete(id);
       await loadPages();
@@ -409,10 +411,10 @@ export default function LandingPagesPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
               <LayoutTemplate className="w-8 h-8 text-[#0B4FD8]" />
-              Landing Pages
+              {t("landing.title")}
             </h1>
             <p className="text-[#64748B] mt-1">
-              Create, manage, and A/B test your landing pages with AI.
+              {t("landing.subtitle")}
             </p>
           </div>
           <button
@@ -420,7 +422,7 @@ export default function LandingPagesPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B4FD8] text-white font-medium hover:bg-[#0A3FB8] transition-colors"
           >
             <Plus className="w-4 h-4" />
-            New Landing Page
+            {t("landing.new_button")}
           </button>
         </div>
 
@@ -443,11 +445,11 @@ export default function LandingPagesPage() {
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                     </span>
                     <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
-                      Landing Page en Uso
+                      {t("landing.active.in_use")}
                     </span>
                   </div>
                   <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-400 font-medium">
-                    Activa
+                    {t("landing.active.badge")}
                   </span>
                 </div>
                 <div className="p-4">
@@ -458,7 +460,7 @@ export default function LandingPagesPage() {
                   <div className="flex items-center gap-3 text-xs text-[#94A3B8] mb-3">
                     <span className="flex items-center gap-1">
                       <TrendingUp className="w-3 h-3" />
-                      {activePage.analytics?.total_visits || 0} visits
+                      {activePage.analytics?.total_visits || 0} {t("landing.metric.visits")}
                     </span>
                     <span className="flex items-center gap-1">
                       <Zap className="w-3 h-3" />
@@ -468,7 +470,7 @@ export default function LandingPagesPage() {
                             Math.max(activePage.analytics?.unique_visits || 1, 1)) *
                           100
                         ).toFixed(1)}
-                      % conv
+                      % {t("landing.metric.conv")}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -479,21 +481,21 @@ export default function LandingPagesPage() {
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0B4FD8]/20 text-[#0B4FD8] text-xs font-medium hover:bg-[#0B4FD8]/30 transition-colors"
                     >
                       <ExternalLink className="w-3 h-3" />
-                      View
+                      {t("landing.action.view")}
                     </a>
                     <button
                       onClick={() => handleEdit(activePage)}
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#334155] text-white text-xs font-medium hover:bg-[#475569] transition-colors"
                     >
                       <Layers className="w-3 h-3" />
-                      Edit
+                      {t("common.edit")}
                     </button>
                     <button
                       onClick={() => handleDeactivate(activePage.id)}
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#334155] text-[#94A3B8] text-xs font-medium hover:bg-[#475569] hover:text-white transition-colors"
                     >
                       <Star className="w-3 h-3" />
-                      Deactivate
+                      {t("landing.action.deactivate")}
                     </button>
                   </div>
                 </div>
@@ -507,11 +509,11 @@ export default function LandingPagesPage() {
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#0B4FD8]"></span>
                     </span>
                     <span className="text-xs font-semibold text-[#0B4FD8] uppercase tracking-wider">
-                      Landing Page en Uso
+                      {t("landing.active.in_use")}
                     </span>
                   </div>
                   <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#0B4FD8]/20 text-[#0B4FD8] font-medium">
-                    Sistema
+                    {t("landing.active.system")}
                   </span>
                 </div>
                 <div className="p-4">
@@ -519,10 +521,10 @@ export default function LandingPagesPage() {
                   <div className="relative w-full h-24 rounded-lg overflow-hidden bg-gradient-to-br from-[#0B4FD8]/10 to-[#1E293B] mb-3 border border-[#334155] flex items-center justify-center">
                     <LayoutTemplate className="w-10 h-10 text-[#0B4FD8]/30" />
                   </div>
-                  <h3 className="font-semibold text-sm text-white mb-0.5">Landing Page Default</h3>
+                  <h3 className="font-semibold text-sm text-white mb-0.5">{t("landing.default.title")}</h3>
                   <p className="text-xs text-[#64748B] mb-2">/landing</p>
                   <p className="text-xs text-[#64748B] mb-3">
-                    Esta es tu landing page por defecto. Crea una nueva para personalizarla con IA.
+                    {t("landing.default.description")}
                   </p>
                   <div className="flex items-center gap-2">
                     <a
@@ -532,14 +534,14 @@ export default function LandingPagesPage() {
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0B4FD8]/20 text-[#0B4FD8] text-xs font-medium hover:bg-[#0B4FD8]/30 transition-colors"
                     >
                       <ExternalLink className="w-3 h-3" />
-                      View
+                      {t("landing.action.view")}
                     </a>
                     <button
                       onClick={handleCreate}
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0B4FD8] text-white text-xs font-medium hover:bg-[#0A3FB8] transition-colors"
                     >
                       <Plus className="w-3 h-3" />
-                      Create Custom
+                      {t("landing.action.create_custom")}
                     </button>
                   </div>
                 </div>
@@ -557,7 +559,7 @@ export default function LandingPagesPage() {
                 }`}
               >
                 <LayoutTemplate className="w-3.5 h-3.5" />
-                Pages ({pages.length})
+                {t("landing.tab.pages")} ({pages.length})
               </button>
               <button
                 onClick={() => setLeftTab("compare")}
@@ -568,7 +570,7 @@ export default function LandingPagesPage() {
                 }`}
               >
                 <BarChart3 className="w-3.5 h-3.5" />
-                Compare
+                {t("landing.tab.compare")}
               </button>
             </div>
 
@@ -576,18 +578,18 @@ export default function LandingPagesPage() {
               <div className="bg-[#1E293B] rounded-xl border border-[#334155] overflow-hidden">
                 <div className="px-4 py-3 border-b border-[#334155] flex items-center justify-between">
                   <span className="text-sm font-medium text-[#94A3B8]">
-                    {pages.length} page{pages.length !== 1 ? "s" : ""}
+                    {pages.length} {pages.length !== 1 ? t("landing.list.pages_plural") : t("landing.list.pages_singular")}
                   </span>
                 </div>
                 <div className="divide-y divide-[#334155]">
                   {loading ? (
                     <div className="p-8 text-center text-[#64748B]">
                       <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                      Loading...
+                      {t("common.loading")}
                     </div>
                   ) : pages.length === 0 ? (
                     <div className="p-8 text-center text-[#64748B]">
-                      No landing pages yet. Create your first one!
+                      {t("landing.list.empty")}
                     </div>
                   ) : (
                     pages.map((page) => (
@@ -603,19 +605,19 @@ export default function LandingPagesPage() {
                           <div className="flex items-center gap-1">
                             {page.is_active && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#0B4FD8]/20 text-[#0B4FD8] font-medium">
-                                Active
+                                {t("landing.badge.active")}
                               </span>
                             )}
                             {page.is_random_pool && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-400 font-medium">
-                                Pool
+                                {t("landing.badge.pool")}
                               </span>
                             )}
                           </div>
                         </div>
                         <div className="flex items-center justify-between text-xs text-[#64748B]">
                           <span>/{page.slug}</span>
-                          <span>{page.analytics?.total_visits || 0} visits</span>
+                          <span>{page.analytics?.total_visits || 0} {t("landing.metric.visits")}</span>
                         </div>
                         <div className="flex items-center gap-1 mt-2">
                           <button
@@ -624,7 +626,7 @@ export default function LandingPagesPage() {
                               window.open(`/api/v1/landing-pages/public/${page.slug}`, "_blank");
                             }}
                             className="p-1 rounded hover:bg-[#334155] text-[#64748B] hover:text-white transition-colors"
-                            title="Preview"
+                            title={t("landing.action.preview")}
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
@@ -635,9 +637,9 @@ export default function LandingPagesPage() {
                                 handleDeactivate(page.id);
                               }}
                               className="px-2 py-1 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
-                              title="Deactivate"
+                              title={t("landing.action.deactivate")}
                             >
-                              Desactivar
+                              {t("landing.action.deactivate")}
                             </button>
                           ) : (
                             <button
@@ -646,9 +648,9 @@ export default function LandingPagesPage() {
                                 handleActivate(page.id);
                               }}
                               className="px-2 py-1 rounded text-[10px] font-medium bg-[#0B4FD8]/20 text-[#0B4FD8] hover:bg-[#0B4FD8]/30 transition-colors"
-                              title="Activate"
+                              title={t("landing.action.activate")}
                             >
-                              Activar
+                              {t("landing.action.activate")}
                             </button>
                           )}
                           <button
@@ -657,7 +659,7 @@ export default function LandingPagesPage() {
                               handleClone(page.id);
                             }}
                             className="p-1 rounded hover:bg-[#334155] text-[#64748B] hover:text-white transition-colors"
-                            title="Clone"
+                            title={t("landing.action.clone")}
                           >
                             <Copy className="w-3.5 h-3.5" />
                           </button>
@@ -665,7 +667,7 @@ export default function LandingPagesPage() {
                             href={`/landing-pages/${page.id}/analytics`}
                             onClick={(e) => e.stopPropagation()}
                             className="p-1 rounded hover:bg-[#334155] text-[#64748B] hover:text-white transition-colors"
-                            title="Analytics"
+                            title={t("landing.action.analytics")}
                           >
                             <BarChart3 className="w-3.5 h-3.5" />
                           </Link>
@@ -675,7 +677,7 @@ export default function LandingPagesPage() {
                               handleDelete(page.id);
                             }}
                             className="p-1 rounded hover:bg-[#334155] text-[#64748B] hover:text-red-400 transition-colors"
-                            title="Delete"
+                            title={t("common.delete")}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -688,17 +690,17 @@ export default function LandingPagesPage() {
             ) : (
               <div className="bg-[#1E293B] rounded-xl border border-[#334155] overflow-hidden">
                 <div className="px-4 py-3 border-b border-[#334155]">
-                  <span className="text-sm font-medium text-[#94A3B8]">A/B Comparison</span>
+                  <span className="text-sm font-medium text-[#94A3B8]">{t("landing.compare.title")}</span>
                 </div>
                 <div className="p-4">
                   {loadingCompare ? (
                     <div className="text-center text-[#64748B]">
                       <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
-                      Loading...
+                      {t("common.loading")}
                     </div>
                   ) : compareData.length === 0 ? (
                     <p className="text-sm text-[#64748B] text-center">
-                      No data to compare yet.
+                      {t("landing.compare.empty")}
                     </p>
                   ) : (
                     <div className="space-y-3">
@@ -726,25 +728,25 @@ export default function LandingPagesPage() {
                             </div>
                             {item.is_active && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-400 font-medium">
-                                Active
+                                {t("landing.badge.active")}
                               </span>
                             )}
                           </div>
                           <div className="grid grid-cols-3 gap-2 text-xs">
                             <div>
-                              <span className="text-[#64748B] block">Visits</span>
+                              <span className="text-[#64748B] block">{t("landing.compare.visits")}</span>
                               <span className="text-white font-medium">
                                 {item.analytics?.total_visits?.toLocaleString?.() || 0}
                               </span>
                             </div>
                             <div>
-                              <span className="text-[#64748B] block">Forms</span>
+                              <span className="text-[#64748B] block">{t("landing.compare.forms")}</span>
                               <span className="text-white font-medium">
                                 {item.analytics?.form_fills || 0}
                               </span>
                             </div>
                             <div>
-                              <span className="text-[#64748B] block">Conv.</span>
+                              <span className="text-[#64748B] block">{t("landing.compare.conv")}</span>
                               <span
                                 className={`font-medium ${
                                   (item.analytics?.conversion_rate || 0) > 5
@@ -772,7 +774,7 @@ export default function LandingPagesPage() {
                 {/* Editor header */}
                 <div className="px-4 py-3 border-b border-[#334155] flex items-center justify-between">
                   <span className="font-medium text-sm">
-                    {isCreating ? "Create Landing Page" : `Edit: ${selectedPage?.name}`}
+                    {isCreating ? t("landing.editor.create_title") : `${t("landing.editor.edit_prefix")}: ${selectedPage?.name}`}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
@@ -791,7 +793,7 @@ export default function LandingPagesPage() {
                   {/* Name & Slug */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-[#64748B] mb-1">Name</label>
+                      <label className="block text-xs font-medium text-[#64748B] mb-1">{t("landing.field.name")}</label>
                       <input
                         type="text"
                         value={formName}
@@ -800,17 +802,17 @@ export default function LandingPagesPage() {
                           if (isCreating) setFormSlug(autoSlug(e.target.value));
                         }}
                         className="w-full bg-[#0F172A] border border-[#334155] rounded-lg px-3 py-2 text-sm text-white placeholder-[#64748B] focus:outline-none focus:border-[#0B4FD8]"
-                        placeholder="My Landing Page"
+                        placeholder={t("landing.field.name_placeholder")}
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-[#64748B] mb-1">Slug</label>
+                      <label className="block text-xs font-medium text-[#64748B] mb-1">{t("landing.field.slug")}</label>
                       <input
                         type="text"
                         value={formSlug}
                         onChange={(e) => setFormSlug(e.target.value)}
                         className="w-full bg-[#0F172A] border border-[#334155] rounded-lg px-3 py-2 text-sm text-white placeholder-[#64748B] focus:outline-none focus:border-[#0B4FD8]"
-                        placeholder="my-landing-page"
+                        placeholder={t("landing.field.slug_placeholder")}
                       />
                     </div>
                   </div>
@@ -819,31 +821,31 @@ export default function LandingPagesPage() {
                   {isCreating && templates.length > 0 && (
                     <div>
                       <label className="block text-xs font-medium text-[#64748B] mb-2">
-                        Choose a template ({templates.length} designs)
+                        {t("landing.template.choose")} ({templates.length} {t("landing.template.designs")})
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
-                        {templates.map((t) => {
-                          const isSelected = formTemplateId === t.id;
+                        {templates.map((tpl) => {
+                          const isSelected = formTemplateId === tpl.id;
                           return (
                             <button
-                              key={t.id}
+                              key={tpl.id}
                               type="button"
-                              onClick={() => setFormTemplateId(t.id)}
+                              onClick={() => setFormTemplateId(tpl.id)}
                               className={`relative text-left p-0 rounded-lg overflow-hidden border-2 transition-all ${
                                 isSelected
                                   ? "border-[#0B4FD8] shadow-lg shadow-[#0B4FD8]/30"
                                   : "border-[#334155] hover:border-[#475569]"
                               }`}
                               style={{ background: "#0F172A" }}
-                              title={`${t.name} — ${t.tagline}\nBest for: ${t.best_for}`}
+                              title={`${tpl.name} — ${tpl.tagline}\nBest for: ${tpl.best_for}`}
                             >
                               {/* Thumbnail iframe — preview of the template with sample copy */}
                               <div
                                 className="relative w-full overflow-hidden"
-                                style={{ aspectRatio: "16 / 10", background: t.accent + "10" }}
+                                style={{ aspectRatio: "16 / 10", background: tpl.accent + "10" }}
                               >
                                 <iframe
-                                  src={`/api/v1/landing-pages/template-preview/${t.id}`}
+                                  src={`/api/v1/landing-pages/template-preview/${tpl.id}`}
                                   className="absolute top-0 left-0 border-0 pointer-events-none"
                                   style={{
                                     width: "1304px",
@@ -853,7 +855,7 @@ export default function LandingPagesPage() {
                                     colorScheme: "dark",
                                   }}
                                   sandbox="allow-scripts"
-                                  title={`${t.name} preview`}
+                                  title={`${tpl.name} preview`}
                                   loading="lazy"
                                 />
                                 {isSelected && (
@@ -867,14 +869,14 @@ export default function LandingPagesPage() {
                                 <div className="flex items-center gap-1.5">
                                   <span
                                     className="block w-2 h-2 rounded-full flex-shrink-0"
-                                    style={{ background: t.accent }}
+                                    style={{ background: tpl.accent }}
                                   />
                                   <span className="text-[11px] font-semibold text-white truncate">
-                                    {t.name}
+                                    {tpl.name}
                                   </span>
                                 </div>
                                 <span className="block text-[10px] text-[#64748B] truncate mt-0.5">
-                                  {t.best_for}
+                                  {tpl.best_for}
                                 </span>
                               </div>
                             </button>
@@ -887,25 +889,25 @@ export default function LandingPagesPage() {
                   {/* Prompt */}
                   <div>
                     <label className="block text-xs font-medium text-[#64748B] mb-1">
-                      AI Prompt {isCreating && <span className="text-[#64748B]">(adjust copy & content on top of the chosen template)</span>}
+                      {t("landing.field.ai_prompt")} {isCreating && <span className="text-[#64748B]">{t("landing.field.ai_prompt_hint")}</span>}
                     </label>
                     <textarea
                       value={formPrompt}
                       onChange={(e) => setFormPrompt(e.target.value)}
                       rows={3}
                       className="w-full bg-[#0F172A] border border-[#334155] rounded-lg px-3 py-2 text-sm text-white placeholder-[#64748B] focus:outline-none focus:border-[#0B4FD8] resize-none"
-                      placeholder="Describe your landing page: target audience, tone, key benefits, CTA..."
+                      placeholder={t("landing.field.ai_prompt_placeholder")}
                     />
                     {/* Template chips */}
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {PROMPT_TEMPLATES.map((t) => (
+                      {PROMPT_TEMPLATES.map((tmpl) => (
                         <button
-                          key={t.id}
-                          onClick={() => setFormPrompt(t.text)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${t.color}`}
+                          key={tmpl.id}
+                          onClick={() => setFormPrompt(tmpl.text)}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tmpl.color}`}
                         >
-                          <t.icon className="w-3.5 h-3.5" />
-                          {t.label}
+                          <tmpl.icon className="w-3.5 h-3.5" />
+                          {tmpl.label}
                         </button>
                       ))}
                     </div>
@@ -918,14 +920,14 @@ export default function LandingPagesPage() {
                       onClick={handleGenerate}
                       disabled={isGenerating || !formPrompt.trim()}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-[#0B4FD8] to-[#22D3EE] text-white text-sm font-semibold hover:from-[#0A3FB8] hover:to-[#1CB8D0] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#0B4FD8]/20"
-                      title={!formPrompt.trim() ? "Add a prompt first" : ""}
+                      title={!formPrompt.trim() ? t("landing.action.add_prompt_first") : ""}
                     >
                       {isGenerating ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Wand2 className="w-4 h-4" />
                       )}
-                      {isGenerating ? "Generating..." : "Generate with AI"}
+                      {isGenerating ? t("landing.action.generating") : t("landing.action.generate_ai")}
                     </button>
 
                     <div className="w-px h-6 bg-[#334155] mx-1" />
@@ -933,20 +935,20 @@ export default function LandingPagesPage() {
                     <button
                       onClick={() => handleSave(false)}
                       disabled={!formName.trim() || !formSlug.trim()}
-                      title={!formName.trim() || !formSlug.trim() ? "Name and slug are required" : ""}
+                      title={!formName.trim() || !formSlug.trim() ? t("landing.action.name_slug_required_tooltip") : ""}
                       className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#334155] text-white text-sm font-medium hover:bg-[#475569] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Save className="w-3.5 h-3.5" />
-                      Save Draft
+                      {t("landing.action.save_draft")}
                     </button>
                     <button
                       onClick={() => handleSave(true)}
                       disabled={!formName.trim() || !formSlug.trim()}
-                      title={!formName.trim() || !formSlug.trim() ? "Name and slug are required" : ""}
+                      title={!formName.trim() || !formSlug.trim() ? t("landing.action.name_slug_required_tooltip") : ""}
                       className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0B4FD8] text-white text-sm font-medium hover:bg-[#0A3FB8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Star className="w-3.5 h-3.5" />
-                      Save & Activate
+                      {t("landing.action.save_activate")}
                     </button>
                     <button
                       onClick={() => {
@@ -965,13 +967,13 @@ export default function LandingPagesPage() {
                       className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#334155] text-white text-sm font-medium hover:bg-[#475569] transition-colors"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
-                      Reset
+                      {t("common.reset")}
                     </button>
                   </div>
 
                   {/* HTML Editor */}
                   <div>
-                    <label className="block text-xs font-medium text-[#64748B] mb-1">HTML</label>
+                    <label className="block text-xs font-medium text-[#64748B] mb-1">{t("landing.field.html")}</label>
                     <textarea
                       value={formHtml}
                       onChange={(e) => setFormHtml(e.target.value)}
@@ -985,9 +987,9 @@ export default function LandingPagesPage() {
                   {selectedPage && (
                     <div className="flex items-center justify-between py-2 px-3 bg-[#0F172A] rounded-lg border border-[#334155]">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-white">Landing page principal</span>
+                        <span className="text-sm font-medium text-white">{t("landing.toggle.main_label")}</span>
                         <span className="text-xs text-[#64748B]">
-                          {selectedPage.is_active ? "Activa — se muestra en /landing" : "Inactiva"}
+                          {selectedPage.is_active ? t("landing.toggle.active_hint") : t("landing.toggle.inactive_hint")}
                         </span>
                       </div>
                       <button
@@ -1024,7 +1026,7 @@ export default function LandingPagesPage() {
                   {formHtml && (
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-medium text-[#64748B]">Preview</label>
+                        <label className="text-xs font-medium text-[#64748B]">{t("landing.preview.label")}</label>
                         <div className="flex items-center gap-1 bg-[#0F172A] rounded-lg p-0.5">
                           <button
                             onClick={() => setPreviewMode("desktop")}
@@ -1070,16 +1072,16 @@ export default function LandingPagesPage() {
             ) : (
               <div className="bg-[#1E293B] rounded-xl border border-[#334155] p-12 text-center">
                 <LayoutTemplate className="w-12 h-12 text-[#64748B] mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-white mb-2">Select or create a landing page</h3>
+                <h3 className="text-lg font-medium text-white mb-2">{t("landing.empty.title")}</h3>
                 <p className="text-[#64748B] mb-4">
-                  Choose a landing page from the list to edit, or create a new one.
+                  {t("landing.empty.description")}
                 </p>
                 <button
                   onClick={handleCreate}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B4FD8] text-white font-medium hover:bg-[#0A3FB8] transition-colors"
                 >
                   <Plus className="w-4 h-4" />
-                  Create New
+                  {t("landing.action.create_new")}
                 </button>
               </div>
             )}

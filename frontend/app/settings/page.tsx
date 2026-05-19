@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Navbar from "@/components/Navbar";
+import { useT } from "@/contexts/I18nProvider";
 import {
   Settings,
   Shield,
@@ -23,33 +24,10 @@ interface SettingItem {
   description?: string;
 }
 
-const API_KEY_FIELDS = [
-  { key: "OPENAI_API_KEY", label: "OpenAI API Key", placeholder: "sk-..." },
-  { key: "RESEND_API_KEY", label: "Resend API Key", placeholder: "re_..." },
-  { key: "OUTSCRAPER_API_KEY", label: "Outscraper API Key", placeholder: "..." },
-  { key: "APIFY_API_KEY", label: "Apify API Key", placeholder: "..." },
-  { key: "MINIMAX_API_KEY", label: "MiniMax API Key", placeholder: "..." },
-  { key: "KIMI_API_KEY", label: "Kimi API Key", placeholder: "..." },
-  { key: "RETELL_API_KEY", label: "Retell API Key", placeholder: "..." },
-  { key: "VAPI_API_KEY", label: "Vapi API Key", placeholder: "..." },
-  { key: "CAL_COM_API_KEY", label: "Cal.com API Key", placeholder: "..." },
-];
-
-const COMPLIANCE_FIELDS = [
-  { key: "DNC_VALIDATE_BEFORE_CONTACT", label: "Validar DNC antes de cada contacto" },
-  { key: "AI_DISCLOSURE_IN_EMAILS", label: "Incluir divulgación de IA en emails" },
-  { key: "UNSUBSCRIBE_FOOTER_REQUIRED", label: "Footer unsubscribe obligatorio" },
-];
-
-const NOTIFICATION_FIELDS = [
-  { key: "ALERT_ON_LEAD_REPLY", label: "Alerta cuando un lead responde" },
-  { key: "DAILY_PERFORMANCE_REPORT", label: "Reporte diario de rendimiento" },
-  { key: "ALERT_CHURN_RISK", label: "Alerta de leads en riesgo de churn" },
-];
-
 export default function SettingsPage() {
   const { user } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
+  const { t } = useT();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changing, setChanging] = useState(false);
@@ -59,6 +37,30 @@ export default function SettingsPage() {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [savingKeys, setSavingKeys] = useState<Record<string, boolean>>({});
   const [saveMsgs, setSaveMsgs] = useState<Record<string, string>>({});
+
+  const API_KEY_FIELDS = [
+    { key: "OPENAI_API_KEY", label: "OpenAI API Key", placeholder: "sk-..." },
+    { key: "RESEND_API_KEY", label: "Resend API Key", placeholder: "re_..." },
+    { key: "OUTSCRAPER_API_KEY", label: "Outscraper API Key", placeholder: "..." },
+    { key: "APIFY_API_KEY", label: "Apify API Key", placeholder: "..." },
+    { key: "MINIMAX_API_KEY", label: "MiniMax API Key", placeholder: "..." },
+    { key: "KIMI_API_KEY", label: "Kimi API Key", placeholder: "..." },
+    { key: "RETELL_API_KEY", label: "Retell API Key", placeholder: "..." },
+    { key: "VAPI_API_KEY", label: "Vapi API Key", placeholder: "..." },
+    { key: "CAL_COM_API_KEY", label: "Cal.com API Key", placeholder: "..." },
+  ];
+
+  const COMPLIANCE_FIELDS = [
+    { key: "DNC_VALIDATE_BEFORE_CONTACT", label: t("settings.compliance.dnc") },
+    { key: "AI_DISCLOSURE_IN_EMAILS", label: t("settings.compliance.ai_disclosure") },
+    { key: "UNSUBSCRIBE_FOOTER_REQUIRED", label: t("settings.compliance.unsubscribe_footer") },
+  ];
+
+  const NOTIFICATION_FIELDS = [
+    { key: "ALERT_ON_LEAD_REPLY", label: t("settings.notif.lead_reply") },
+    { key: "DAILY_PERFORMANCE_REPORT", label: t("settings.notif.daily_report") },
+    { key: "ALERT_CHURN_RISK", label: t("settings.notif.churn_risk") },
+  ];
 
   const loadSettings = useCallback(async () => {
     try {
@@ -83,22 +85,22 @@ export default function SettingsPage() {
     e.preventDefault();
     setPasswordMsg("");
     if (newPassword !== confirmPassword) {
-      setPasswordMsg("Las contraseñas no coinciden");
+      setPasswordMsg(t("settings.password.mismatch"));
       return;
     }
     if (newPassword.length < 6) {
-      setPasswordMsg("Mínimo 6 caracteres");
+      setPasswordMsg(t("settings.password.too_short"));
       return;
     }
     setChanging(true);
     try {
       await authApi.updateMe({ password: newPassword });
-      setPasswordMsg("Contraseña actualizada");
+      setPasswordMsg(t("settings.password.updated"));
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: any) {
-      setPasswordMsg(err.response?.data?.detail || "Error actualizando contraseña");
+      setPasswordMsg(err.response?.data?.detail || t("settings.password.error"));
     } finally {
       setChanging(false);
     }
@@ -110,7 +112,7 @@ export default function SettingsPage() {
     try {
       await settingsApi.update(key, { value, category });
       setSettings((prev) => ({ ...prev, [key]: value }));
-      setSaveMsgs((prev) => ({ ...prev, [key]: "Guardado" }));
+      setSaveMsgs((prev) => ({ ...prev, [key]: t("settings.saved") }));
       setTimeout(() => setSaveMsgs((prev) => ({ ...prev, [key]: "" })), 2000);
     } catch (err: any) {
       if (err.response?.status === 404) {
@@ -118,13 +120,13 @@ export default function SettingsPage() {
         try {
           await settingsApi.create({ key, value, category });
           setSettings((prev) => ({ ...prev, [key]: value }));
-          setSaveMsgs((prev) => ({ ...prev, [key]: "Guardado" }));
+          setSaveMsgs((prev) => ({ ...prev, [key]: t("settings.saved") }));
           setTimeout(() => setSaveMsgs((prev) => ({ ...prev, [key]: "" })), 2000);
         } catch (createErr: any) {
-          setSaveMsgs((prev) => ({ ...prev, [key]: createErr.response?.data?.detail || "Error" }));
+          setSaveMsgs((prev) => ({ ...prev, [key]: createErr.response?.data?.detail || t("settings.error") }));
         }
       } else {
-        setSaveMsgs((prev) => ({ ...prev, [key]: err.response?.data?.detail || "Error" }));
+        setSaveMsgs((prev) => ({ ...prev, [key]: err.response?.data?.detail || t("settings.error") }));
       }
     } finally {
       setSavingKeys((prev) => ({ ...prev, [key]: false }));
@@ -144,13 +146,15 @@ export default function SettingsPage() {
     updateSetting(key, newValue, category);
   };
 
+  const savedLabel = t("settings.saved");
+
   return (
     <div className="min-h-screen bg-eko-graphite">
       <Navbar />
       <main className="pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold font-display">Configuración</h1>
-          <p className="text-gray-400 text-sm">Administra tu sistema de automatización</p>
+          <h1 className="text-2xl font-bold font-display">{t("settings.title")}</h1>
+          <p className="text-gray-400 text-sm">{t("settings.subtitle")}</p>
         </div>
 
         <div className="space-y-6">
@@ -161,13 +165,13 @@ export default function SettingsPage() {
                 <UserCircle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-medium">Perfil</h3>
+                <h3 className="font-medium">{t("settings.profile.title")}</h3>
                 <p className="text-sm text-gray-500">{user?.email} — {user?.role}</p>
               </div>
             </div>
             <form onSubmit={handleChangePassword} className="space-y-3">
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Nueva contraseña</label>
+                <label className="block text-sm text-gray-400 mb-1">{t("settings.profile.new_password")}</label>
                 <input
                   type="password"
                   value={newPassword}
@@ -177,7 +181,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Confirmar contraseña</label>
+                <label className="block text-sm text-gray-400 mb-1">{t("settings.profile.confirm_password")}</label>
                 <input
                   type="password"
                   value={confirmPassword}
@@ -187,7 +191,7 @@ export default function SettingsPage() {
                 />
               </div>
               {passwordMsg && (
-                <p className={`text-xs ${passwordMsg.includes("actualizada") ? "text-eko-green" : "text-red-400"}`}>
+                <p className={`text-xs ${passwordMsg === t("settings.password.updated") ? "text-eko-green" : "text-red-400"}`}>
                   {passwordMsg}
                 </p>
               )}
@@ -196,7 +200,7 @@ export default function SettingsPage() {
                 disabled={changing}
                 className="rounded-lg bg-eko-blue px-4 py-2 text-sm font-medium hover:bg-eko-blue-dark disabled:opacity-50 transition-colors"
               >
-                {changing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Cambiar contraseña"}
+                {changing ? <Loader2 className="w-4 h-4 animate-spin" /> : t("settings.profile.change_password")}
               </button>
             </form>
           </div>
@@ -208,8 +212,8 @@ export default function SettingsPage() {
                 <Key className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-medium">API Keys</h3>
-                <p className="text-sm text-gray-500">Configura tus claves de servicios externos</p>
+                <h3 className="font-medium">{t("settings.api_keys.title")}</h3>
+                <p className="text-sm text-gray-500">{t("settings.api_keys.subtitle")}</p>
               </div>
             </div>
             {loadingSettings ? (
@@ -223,8 +227,8 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between mb-1">
                       <label className="block text-sm text-gray-400">{field.label}</label>
                       {saveMsgs[field.key] && (
-                        <span className={`text-xs flex items-center gap-1 ${saveMsgs[field.key] === "Guardado" ? "text-eko-green" : "text-red-400"}`}>
-                          {saveMsgs[field.key] === "Guardado" ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                        <span className={`text-xs flex items-center gap-1 ${saveMsgs[field.key] === savedLabel ? "text-eko-green" : "text-red-400"}`}>
+                          {saveMsgs[field.key] === savedLabel ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
                           {saveMsgs[field.key]}
                         </span>
                       )}
@@ -255,8 +259,8 @@ export default function SettingsPage() {
                 <Shield className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-medium">Cumplimiento</h3>
-                <p className="text-sm text-gray-500">Configuraciones de TCPA, CAN-SPAM, CPA</p>
+                <h3 className="font-medium">{t("settings.compliance.title")}</h3>
+                <p className="text-sm text-gray-500">{t("settings.compliance.subtitle")}</p>
               </div>
             </div>
             <div className="space-y-3">
@@ -281,8 +285,8 @@ export default function SettingsPage() {
                 <Bell className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-medium">Notificaciones</h3>
-                <p className="text-sm text-gray-500">Alertas y reportes automáticos</p>
+                <h3 className="font-medium">{t("settings.notifications.title")}</h3>
+                <p className="text-sm text-gray-500">{t("settings.notifications.subtitle")}</p>
               </div>
             </div>
             <div className="space-y-3">

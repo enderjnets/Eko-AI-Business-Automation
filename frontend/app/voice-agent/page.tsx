@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/contexts/I18nProvider";
 import { voiceAgentApi, leadsApi } from "@/lib/api";
 import {
   Phone,
@@ -38,19 +39,20 @@ interface VoiceCall {
   created_at: string;
 }
 
-const resultConfig: Record<string, { label: string; color: string; icon: any }> = {
-  SCHEDULED: { label: "Programada", color: "text-amber-400", icon: Clock },
-  INITIATED: { label: "Iniciada", color: "text-blue-400", icon: PhoneCall },
-  COMPLETED: { label: "Completada", color: "text-green-400", icon: CheckCircle },
-  VOICEMAIL: { label: "Buzón de voz", color: "text-purple-400", icon: Voicemail },
-  NO_ANSWER: { label: "Sin respuesta", color: "text-gray-400", icon: XCircle },
-  BUSY: { label: "Ocupado", color: "text-orange-400", icon: Phone },
-  FAILED: { label: "Fallida", color: "text-red-400", icon: AlertCircle },
+const resultConfig: Record<string, { labelKey: string; color: string; icon: any }> = {
+  SCHEDULED: { labelKey: "voice.result.scheduled", color: "text-amber-400", icon: Clock },
+  INITIATED: { labelKey: "voice.result.initiated", color: "text-blue-400", icon: PhoneCall },
+  COMPLETED: { labelKey: "voice.result.completed", color: "text-green-400", icon: CheckCircle },
+  VOICEMAIL: { labelKey: "voice.result.voicemail", color: "text-purple-400", icon: Voicemail },
+  NO_ANSWER: { labelKey: "voice.result.no_answer", color: "text-gray-400", icon: XCircle },
+  BUSY: { labelKey: "voice.result.busy", color: "text-orange-400", icon: Phone },
+  FAILED: { labelKey: "voice.result.failed", color: "text-red-400", icon: AlertCircle },
 };
 
 export default function VoiceAgentPage() {
   const router = useRouter();
   const [calls, setCalls] = useState<VoiceCall[]>([]);
+  const { t } = useT();
   const [loading, setLoading] = useState(true);
   const [configLoading, setConfigLoading] = useState(true);
   const [config, setConfig] = useState({ configured: false });
@@ -75,7 +77,7 @@ export default function VoiceAgentPage() {
       const res = await voiceAgentApi.listCalls({ limit: 100 });
       setCalls(res.data.items || []);
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Error cargando llamadas");
+      setError(e.response?.data?.detail || t("voice.error.load"));
     } finally {
       setLoading(false);
     }
@@ -112,7 +114,7 @@ export default function VoiceAgentPage() {
       setCallInstructions("");
       loadCalls();
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Error iniciando llamada");
+      setError(e.response?.data?.detail || t("voice.error.start"));
     } finally {
       setStartingCall(false);
     }
@@ -149,16 +151,16 @@ export default function VoiceAgentPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Voice Agent</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t("voice.title")}</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Llamadas automatizadas con IA via VAPI
+              {t("voice.subtitle")}
             </p>
           </div>
           <div className="flex items-center gap-3">
             {!configLoading && !config.configured && (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-sm">
                 <AlertCircle className="w-4 h-4" />
-                VAPI API Key no configurada
+                {t("voice.warn.no_api_key")}
               </div>
             )}
             <button
@@ -166,7 +168,7 @@ export default function VoiceAgentPage() {
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <PhoneCall className="w-4 h-4" />
-              Nueva Llamada
+              {t("voice.new_call")}
             </button>
           </div>
         </div>
@@ -174,11 +176,11 @@ export default function VoiceAgentPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
           {[
-            { label: "Total", value: stats.total, color: "bg-gray-100" },
-            { label: "Completadas", value: stats.completed, color: "bg-green-50" },
-            { label: "Buzón", value: stats.voicemail, color: "bg-purple-50" },
-            { label: "Sin respuesta", value: stats.no_answer, color: "bg-gray-50" },
-            { label: "Alto interés", value: stats.high_interest, color: "bg-blue-50" },
+            { label: t("voice.stats.total"), value: stats.total, color: "bg-gray-100" },
+            { label: t("voice.stats.completed"), value: stats.completed, color: "bg-green-50" },
+            { label: t("voice.stats.voicemail"), value: stats.voicemail, color: "bg-purple-50" },
+            { label: t("voice.stats.no_answer"), value: stats.no_answer, color: "bg-gray-50" },
+            { label: t("voice.stats.high_interest"), value: stats.high_interest, color: "bg-blue-50" },
           ].map((s) => (
             <div key={s.label} className={`${s.color} rounded-xl p-4`}>
               <p className="text-2xl font-bold text-gray-900">{s.value}</p>
@@ -194,13 +196,13 @@ export default function VoiceAgentPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">Todos los resultados</option>
-            <option value="COMPLETED">Completadas</option>
-            <option value="VOICEMAIL">Buzón de voz</option>
-            <option value="NO_ANSWER">Sin respuesta</option>
-            <option value="BUSY">Ocupado</option>
-            <option value="FAILED">Fallidas</option>
-            <option value="SCHEDULED">Programadas</option>
+            <option value="">{t("voice.filter.all_results")}</option>
+            <option value="COMPLETED">{t("voice.result.completed")}</option>
+            <option value="VOICEMAIL">{t("voice.result.voicemail")}</option>
+            <option value="NO_ANSWER">{t("voice.result.no_answer")}</option>
+            <option value="BUSY">{t("voice.result.busy")}</option>
+            <option value="FAILED">{t("voice.result.failed")}</option>
+            <option value="SCHEDULED">{t("voice.result.scheduled")}</option>
           </select>
         </div>
 
@@ -220,12 +222,12 @@ export default function VoiceAgentPage() {
         ) : filteredCalls.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
             <Phone className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No hay llamadas registradas</p>
+            <p className="text-gray-500">{t("voice.empty")}</p>
             <button
               onClick={() => setShowCallModal(true)}
               className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
-              Iniciar la primera llamada
+              {t("voice.empty_cta")}
             </button>
           </div>
         ) : (
@@ -243,7 +245,7 @@ export default function VoiceAgentPage() {
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}>
                           <Icon className="w-3 h-3" />
-                          {cfg.label}
+                          {t(cfg.labelKey as any)}
                         </span>
                         {call.interest_level && (
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -253,15 +255,15 @@ export default function VoiceAgentPage() {
                               ? "bg-amber-100 text-amber-700"
                               : "bg-gray-100 text-gray-600"
                           }`}>
-                            Interés: {call.interest_level}
+                            {t("voice.interest")}: {call.interest_level}
                           </span>
                         )}
                       </div>
                       <h3 className="font-semibold text-gray-900">
-                        {call.lead_name || "Lead desconocido"}
+                        {call.lead_name || t("voice.unknown_lead")}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {call.lead_phone || "Sin teléfono"}
+                        {call.lead_phone || t("voice.no_phone")}
                         {call.call_duration_seconds ? ` · ${formatDuration(call.call_duration_seconds)}` : ""}
                       </p>
                       {call.notes && (
@@ -276,7 +278,7 @@ export default function VoiceAgentPage() {
                     <div className="flex items-center gap-1 ml-4">
                       <button
                         onClick={() => router.push(`/leads/${call.lead_id}`)}
-                        title="Ver lead"
+                        title={t("voice.action.view_lead")}
                         className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         <ChevronRight className="w-4 h-4" />
@@ -295,19 +297,19 @@ export default function VoiceAgentPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-lg">
             <h2 className="text-lg font-bold text-gray-900 mb-4">
-              Nueva Llamada con AI
+              {t("voice.modal.title")}
             </h2>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Buscar Lead
+                  {t("voice.modal.search_lead")}
                 </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Nombre o teléfono..."
+                    placeholder={t("voice.modal.search_placeholder")}
                     value={searchLead}
                     onChange={(e) => setSearchLead(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -317,7 +319,7 @@ export default function VoiceAgentPage() {
 
               <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
                 {filteredLeads.length === 0 ? (
-                  <p className="p-3 text-sm text-gray-500 text-center">No se encontraron leads</p>
+                  <p className="p-3 text-sm text-gray-500 text-center">{t("voice.modal.no_leads")}</p>
                 ) : (
                   filteredLeads.map((lead) => (
                     <button
@@ -330,7 +332,7 @@ export default function VoiceAgentPage() {
                       }`}
                     >
                       <div className="font-medium">{lead.business_name}</div>
-                      <div className="text-xs text-gray-500">{lead.phone || "Sin teléfono"} · {lead.city || ""}</div>
+                      <div className="text-xs text-gray-500">{lead.phone || t("voice.no_phone")} · {lead.city || ""}</div>
                     </button>
                   ))
                 )}
@@ -338,12 +340,12 @@ export default function VoiceAgentPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Instrucciones personalizadas (opcional)
+                  {t("voice.modal.instructions")}
                 </label>
                 <textarea
                   value={callInstructions}
                   onChange={(e) => setCallInstructions(e.target.value)}
-                  placeholder="Ej: Menciona que tenemos una promoción especial este mes..."
+                  placeholder={t("voice.modal.instructions_placeholder")}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                 />
@@ -355,7 +357,7 @@ export default function VoiceAgentPage() {
                 onClick={() => setShowCallModal(false)}
                 className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50"
               >
-                Cancelar
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleStartCall}
@@ -367,7 +369,7 @@ export default function VoiceAgentPage() {
                 ) : (
                   <PhoneCall className="w-4 h-4" />
                 )}
-                {startingCall ? "Iniciando..." : "Llamar"}
+                {startingCall ? t("voice.modal.starting") : t("voice.modal.call")}
               </button>
             </div>
           </div>

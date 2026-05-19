@@ -24,6 +24,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { leadsApi, phoneCallsApi, crmApi } from "@/lib/api";
 import { geocodeAddress } from "@/lib/geocoding";
+import { useT } from "@/contexts/I18nProvider";
 
 interface PipelineStep {
   id: string;
@@ -92,6 +93,7 @@ function haversineKm(lat1: number, lng1: number, lat2?: number, lng2?: number): 
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const { t } = useT();
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -361,7 +363,7 @@ export default function LeadsPage() {
     } catch (err: any) {
       if (err.name === "CanceledError" || err.name === "AbortError") return;
       console.error(err);
-      setError(err.response?.data?.detail || "Error cargando leads");
+      setError(err.response?.data?.detail || t("leads.error.load"));
     } finally {
       if (!controller.signal.aborted) {
         setLoading(false);
@@ -386,7 +388,7 @@ export default function LeadsPage() {
       loadLeads();
     } catch (err: any) {
       console.error(err);
-      setEnrichError(err.response?.data?.detail || "Error enriqueciendo lead");
+      setEnrichError(err.response?.data?.detail || t("leads.error.enrich"));
       setTimeout(() => setEnrichError(null), 5000);
     } finally {
       setEnrichingId(null);
@@ -407,7 +409,7 @@ export default function LeadsPage() {
       setPage(1);
       loadLeads();
     } else {
-      alert("No se pudo geocodificar la dirección. Intenta con un formato más específico.");
+      alert(t("leads.hq.geocode_failed"));
     }
   };
 
@@ -437,13 +439,13 @@ export default function LeadsPage() {
     try {
       const res = await leadsApi.bulkContact(ids, "initial_outreach");
       const data = res.data;
-      setBulkContactResult(`Enviados: ${data.sent} / Fallidos: ${data.failed}`);
+      setBulkContactResult(`${t("leads.bulk.sent")}: ${data.sent} / ${t("leads.bulk.failed")}: ${data.failed}`);
       setSelectedLeads(new Set());
       loadLeads();
       setTimeout(() => setBulkContactResult(null), 5000);
     } catch (err: any) {
       console.error(err);
-      setBulkContactResult(err.response?.data?.detail || "Error enviando emails");
+      setBulkContactResult(err.response?.data?.detail || t("leads.error.send_email"));
       setTimeout(() => setBulkContactResult(null), 5000);
     } finally {
       setBulkContacting(false);
@@ -469,7 +471,7 @@ export default function LeadsPage() {
       loadLeads();
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.detail || "Error eliminando leads");
+      alert(err.response?.data?.detail || t("leads.error.delete"));
     } finally {
       setDeleteConfirm(null);
     }
@@ -494,7 +496,7 @@ export default function LeadsPage() {
       loadLeads();
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.detail || "Error guardando llamada");
+      alert(err.response?.data?.detail || t("leads.error.save_call"));
     } finally {
       setCallLogging(false);
     }
@@ -504,7 +506,7 @@ export default function LeadsPage() {
   const handleCreateLead = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLead.business_name.trim()) {
-      setCreateError("El nombre del negocio es obligatorio");
+      setCreateError(t("leads.create.error.name_required"));
       return;
     }
     setCreateLoading(true);
@@ -514,11 +516,11 @@ export default function LeadsPage() {
     // Open pipeline modal immediately for ALL leads
     setShowPipelineModal(true);
     setPipelineSteps([
-      { id: "preview", title: "Verificando datos web", description: "Comparando con información del sitio...", status: "active" },
-      { id: "created", title: "Lead creado", description: "Guardado en la base de datos", status: "pending" },
-      { id: "web", title: "Extrayendo web", description: "Analizando página web...", status: "pending" },
-      { id: "enrich", title: "Enriqueciendo con AI", description: "Calculando scores y servicios...", status: "pending" },
-      { id: "email", title: "Enviando email", description: "Primer contacto de outreach...", status: "pending" },
+      { id: "preview", title: t("leads.pipeline.step.preview.title"), description: t("leads.pipeline.step.preview.desc"), status: "active" },
+      { id: "created", title: t("leads.pipeline.step.created.title"), description: t("leads.pipeline.step.created.desc"), status: "pending" },
+      { id: "web", title: t("leads.pipeline.step.web.title"), description: t("leads.pipeline.step.web.desc"), status: "pending" },
+      { id: "enrich", title: t("leads.pipeline.step.enrich.title"), description: t("leads.pipeline.step.enrich.desc"), status: "pending" },
+      { id: "email", title: t("leads.pipeline.step.email.title"), description: t("leads.pipeline.step.email.desc"), status: "pending" },
     ]);
 
     // Skip preview if no website provided
@@ -563,7 +565,7 @@ export default function LeadsPage() {
       await doCreateLead(newLead);
     } catch (err: any) {
       console.error(err);
-      setCreateError(err.response?.data?.detail || "Error verificando datos web");
+      setCreateError(err.response?.data?.detail || t("leads.error.preview"));
       setPipelinePhase("idle");
       setShowPipelineModal(false);
     } finally {
@@ -612,7 +614,7 @@ export default function LeadsPage() {
       return res.data;
     } catch (err: any) {
       console.error(err);
-      setCreateError(err.response?.data?.detail || "Error creando lead");
+      setCreateError(err.response?.data?.detail || t("leads.error.create"));
       return null;
     } finally {
       setCreateLoading(false);
@@ -622,34 +624,34 @@ export default function LeadsPage() {
   const getStepStatusFromLeadStatus = (status: string, currentPhase?: string): PipelineStep[] => {
     if (currentPhase === "preview" || currentPhase === "discrepancy" || currentPhase === "creating") {
       return [
-        { id: "preview", title: "Verificando datos web", description: "Comparando con información del sitio...", status: currentPhase === "preview" ? "active" : "completed" },
-        { id: "created", title: "Lead creado", description: "Guardado en la base de datos", status: currentPhase === "creating" ? "active" : "pending" },
-        { id: "web", title: "Extrayendo web", description: "Analizando página web...", status: "pending" },
-        { id: "enrich", title: "Enriqueciendo con AI", description: "Calculando scores y servicios...", status: "pending" },
-        { id: "email", title: "Enviando email", description: "Primer contacto de outreach...", status: "pending" },
+        { id: "preview", title: t("leads.pipeline.step.preview.title"), description: t("leads.pipeline.step.preview.desc"), status: currentPhase === "preview" ? "active" : "completed" },
+        { id: "created", title: t("leads.pipeline.step.created.title"), description: t("leads.pipeline.step.created.desc"), status: currentPhase === "creating" ? "active" : "pending" },
+        { id: "web", title: t("leads.pipeline.step.web.title"), description: t("leads.pipeline.step.web.desc"), status: "pending" },
+        { id: "enrich", title: t("leads.pipeline.step.enrich.title"), description: t("leads.pipeline.step.enrich.desc"), status: "pending" },
+        { id: "email", title: t("leads.pipeline.step.email.title"), description: t("leads.pipeline.step.email.desc"), status: "pending" },
       ];
     }
     const steps: PipelineStep[] = [
-      { id: "preview", title: "Verificando datos web", description: "Datos verificados ✓", status: "completed" },
-      { id: "created", title: "Lead creado", description: "Guardado en la base de datos", status: "completed" },
-      { id: "web", title: "Extrayendo web", description: "Analizando página web...", status: "pending" },
-      { id: "enrich", title: "Enriqueciendo con AI", description: "Calculando scores y servicios...", status: "pending" },
-      { id: "email", title: "Enviando email", description: "Primer contacto de outreach...", status: "pending" },
+      { id: "preview", title: t("leads.pipeline.step.preview.title"), description: t("leads.pipeline.step.preview.done"), status: "completed" },
+      { id: "created", title: t("leads.pipeline.step.created.title"), description: t("leads.pipeline.step.created.desc"), status: "completed" },
+      { id: "web", title: t("leads.pipeline.step.web.title"), description: t("leads.pipeline.step.web.desc"), status: "pending" },
+      { id: "enrich", title: t("leads.pipeline.step.enrich.title"), description: t("leads.pipeline.step.enrich.desc"), status: "pending" },
+      { id: "email", title: t("leads.pipeline.step.email.title"), description: t("leads.pipeline.step.email.desc"), status: "pending" },
     ];
     const s = status.toLowerCase();
     if (["contacted", "engaged", "meeting_booked", "proposal_sent", "negotiating", "closed_won", "closed_lost"].includes(s)) {
       steps[1].status = "completed";
       steps[2].status = "completed";
       steps[3].status = "completed";
-      steps[3].description = "Email enviado ✓";
+      steps[3].description = t("leads.pipeline.step.email.done");
     } else if (["enriched", "scored"].includes(s)) {
       steps[1].status = "completed";
       steps[2].status = "completed";
       steps[3].status = "active";
       if (s === "scored") {
-        steps[2].description = "Scores calculados ✓";
+        steps[2].description = t("leads.pipeline.step.web.scored");
       } else {
-        steps[2].description = "Datos enriquecidos ✓";
+        steps[2].description = t("leads.pipeline.step.web.enriched");
       }
     } else if (s === "discovered") {
       steps[1].status = "active";
@@ -696,7 +698,7 @@ export default function LeadsPage() {
           clearInterval(interval);
           pipelineIntervalRef.current = null;
           setPipelineSteps((prev) =>
-            prev.map((s) => (s.status === "active" ? { ...s, description: "Error de conexión", status: "pending" } : s))
+            prev.map((s) => (s.status === "active" ? { ...s, description: t("leads.pipeline.error.connection"), status: "pending" } : s))
           );
         }
       }
@@ -708,7 +710,7 @@ export default function LeadsPage() {
         clearInterval(pipelineIntervalRef.current);
         pipelineIntervalRef.current = null;
         setPipelineSteps((prev) =>
-          prev.map((s) => (s.status === "active" ? { ...s, description: "Proceso tardando más de lo esperado", status: "pending" } : s))
+          prev.map((s) => (s.status === "active" ? { ...s, description: t("leads.pipeline.error.slow"), status: "pending" } : s))
         );
       }
     }, 240000);
@@ -740,9 +742,9 @@ export default function LeadsPage() {
   };
 
   const sortLabel: Record<SortMode, string> = {
-    score: "Mejor Score",
-    distance: "Más Cercanos",
-    score_distance: "Score + Cercanía",
+    score: t("leads.sort.score"),
+    distance: t("leads.sort.distance"),
+    score_distance: t("leads.sort.score_distance"),
   };
 
   return (
@@ -753,7 +755,7 @@ export default function LeadsPage() {
           <div className="rounded-lg bg-eko-green/90 backdrop-blur border border-eko-green/50 px-4 py-3 shadow-lg">
             <p className="text-sm font-medium text-white flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
-              Nuevos leads enriquecidos con AI
+              {t("leads.toast.enriched")}
             </p>
           </div>
         </div>
@@ -768,8 +770,8 @@ export default function LeadsPage() {
       <main className="pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
           <div>
-            <h1 className="text-2xl font-bold font-display">Leads</h1>
-            <p className="text-gray-400 text-sm">Gestiona y enriquece tus prospectos</p>
+            <h1 className="text-2xl font-bold font-display">{t("leads.list.title")}</h1>
+            <p className="text-gray-400 text-sm">{t("leads.list.subtitle")}</p>
           </div>
 
           <div className="flex items-center gap-2 text-sm">
@@ -780,7 +782,7 @@ export default function LeadsPage() {
                   type="text"
                   value={hqInput}
                   onChange={(e) => setHqInput(e.target.value)}
-                  placeholder="Dirección HQ..."
+                  placeholder={t("leads.hq.placeholder")}
                   className="w-64 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm focus:border-eko-blue focus:outline-none"
                   onKeyDown={(e) => e.key === "Enter" && handleSaveHq()}
                 />
@@ -789,7 +791,7 @@ export default function LeadsPage() {
                   disabled={geocoding}
                   className="rounded-lg bg-eko-blue px-3 py-1.5 text-xs font-medium hover:bg-eko-blue-dark disabled:opacity-50"
                 >
-                  {geocoding ? <Loader2 className="w-3 h-3 animate-spin" /> : "Guardar"}
+                  {geocoding ? <Loader2 className="w-3 h-3 animate-spin" /> : t("common.save")}
                 </button>
                 <button
                   onClick={() => { setEditingHq(false); setHqInput(hqAddress); }}
@@ -802,7 +804,7 @@ export default function LeadsPage() {
               <button
                 onClick={() => setEditingHq(true)}
                 className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors"
-                title="Cambiar dirección de referencia"
+                title={t("leads.hq.change_title")}
               >
                 <span className="truncate max-w-[240px]">{hqAddress}</span>
                 <ChevronDown className="w-3 h-3" />
@@ -813,7 +815,7 @@ export default function LeadsPage() {
               className="flex items-center gap-1.5 rounded-lg bg-eko-blue px-3 py-1.5 text-xs font-medium text-white hover:bg-eko-blue-dark transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              Agregar Lead
+              {t("leads.action.add")}
             </button>
           </div>
         </div>
@@ -831,7 +833,7 @@ export default function LeadsPage() {
               value={search}
               onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true); }}
               onFocus={() => search.trim() && suggestions.length > 0 && setShowSuggestions(true)}
-              placeholder={semanticMode ? "Búsqueda semántica (ej: restaurantes con malas reseñas)..." : "Buscar por nombre, ciudad, dirección..."}
+              placeholder={semanticMode ? t("leads.search.semantic_placeholder") : t("leads.search.placeholder")}
               className={`w-full rounded-lg border bg-white/5 pl-10 pr-4 py-2.5 text-sm focus:outline-none relative z-0 ${
                 semanticMode ? "border-eko-green/50 focus:border-eko-green focus:ring-1 focus:ring-eko-green" : "border-white/10 focus:border-eko-blue"
               }`}
@@ -871,10 +873,10 @@ export default function LeadsPage() {
                 ? "bg-eko-green/20 text-eko-green border border-eko-green/30"
                 : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10"
             }`}
-            title="Toggle semantic search"
+            title={t("leads.search.toggle_title")}
           >
             <Brain className="w-4 h-4" />
-            <span className="hidden sm:inline">{semanticMode ? "Semántica" : "Texto"}</span>
+            <span className="hidden sm:inline">{semanticMode ? t("leads.search.semantic") : t("leads.search.text")}</span>
           </button>
 
           <select
@@ -882,14 +884,14 @@ export default function LeadsPage() {
             onChange={(e) => { setStatus(e.target.value); setPage(1); }}
             className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm focus:border-eko-blue focus:outline-none"
           >
-            <option value="">Todos los estados</option>
-            <option value="discovered">Descubiertos</option>
-            <option value="enriched">Enriquecidos</option>
-            <option value="scored">Scoring</option>
-            <option value="contacted">Contactados</option>
-            <option value="engaged">Engaged</option>
-            <option value="closed_won">Ganados</option>
-            <option value="closed_lost">Perdidos</option>
+            <option value="">{t("leads.filter.all_statuses")}</option>
+            <option value="discovered">{t("leads.status.discovered")}</option>
+            <option value="enriched">{t("leads.status.enriched")}</option>
+            <option value="scored">{t("leads.status.scored")}</option>
+            <option value="contacted">{t("leads.status.contacted")}</option>
+            <option value="engaged">{t("leads.status.engaged")}</option>
+            <option value="closed_won">{t("leads.status.closed_won")}</option>
+            <option value="closed_lost">{t("leads.status.closed_lost")}</option>
           </select>
 
           <select
@@ -897,9 +899,9 @@ export default function LeadsPage() {
             onChange={(e) => { setSortBy(e.target.value as SortMode); setPage(1); }}
             className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm focus:border-eko-blue focus:outline-none"
           >
-            <option value="score_distance">Score + Cercanía</option>
-            <option value="score">Mejor Score</option>
-            <option value="distance">Más Cercanos</option>
+            <option value="score_distance">{t("leads.sort.score_distance")}</option>
+            <option value="score">{t("leads.sort.score")}</option>
+            <option value="distance">{t("leads.sort.distance")}</option>
           </select>
 
           <button
@@ -918,7 +920,7 @@ export default function LeadsPage() {
             className="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors"
           >
             <Filter className="w-3 h-3" />
-            {showAdvanced ? "Ocultar filtros avanzados" : "Filtros avanzados"}
+            {showAdvanced ? t("leads.filter.hide_advanced") : t("leads.filter.show_advanced")}
           </button>
         </div>
 
@@ -926,7 +928,7 @@ export default function LeadsPage() {
         {showAdvanced && (
           <div className="mb-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Score mínimo</label>
+              <label className="text-xs text-gray-500 mb-1 block">{t("leads.filter.min_score")}</label>
               <input
                 type="number"
                 min={0}
@@ -938,7 +940,7 @@ export default function LeadsPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Score máximo</label>
+              <label className="text-xs text-gray-500 mb-1 block">{t("leads.filter.max_score")}</label>
               <input
                 type="number"
                 min={0}
@@ -950,22 +952,22 @@ export default function LeadsPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Ciudad</label>
+              <label className="text-xs text-gray-500 mb-1 block">{t("leads.filter.city")}</label>
               <input
                 type="text"
                 value={filterCity}
                 onChange={(e) => { setFilterCity(e.target.value); setPage(1); }}
-                placeholder="Ej: Denver"
+                placeholder={t("leads.filter.city_placeholder")}
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Categoría</label>
+              <label className="text-xs text-gray-500 mb-1 block">{t("leads.filter.category")}</label>
               <input
                 type="text"
                 value={filterCategory}
                 onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
-                placeholder="Ej: Dental"
+                placeholder={t("leads.filter.category_placeholder")}
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
               />
             </div>
@@ -977,7 +979,7 @@ export default function LeadsPage() {
                   onChange={(e) => { setHasEmail(e.target.checked ? true : null); setPage(1); }}
                   className="rounded border-white/20 bg-white/5"
                 />
-                Tiene email
+                {t("leads.filter.has_email")}
               </label>
               <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
                 <input
@@ -986,7 +988,7 @@ export default function LeadsPage() {
                   onChange={(e) => { setHasPhone(e.target.checked ? true : null); setPage(1); }}
                   className="rounded border-white/20 bg-white/5"
                 />
-                Tiene teléfono
+                {t("leads.filter.has_phone")}
               </label>
               <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
                 <input
@@ -995,7 +997,7 @@ export default function LeadsPage() {
                   onChange={(e) => { setHasWebsite(e.target.checked ? true : null); setPage(1); }}
                   className="rounded border-white/20 bg-white/5"
                 />
-                Tiene web
+                {t("leads.filter.has_website")}
               </label>
               <button
                 type="button"
@@ -1011,7 +1013,7 @@ export default function LeadsPage() {
                 }}
                 className="text-xs text-gray-500 hover:text-white transition-colors ml-auto"
               >
-                Limpiar filtros
+                {t("leads.filter.clear")}
               </button>
             </div>
           </div>
@@ -1047,7 +1049,7 @@ export default function LeadsPage() {
                 ) : (
                   <Sparkles className="w-4 h-4" />
                 )}
-                Enriquecer Todos ({enrichmentStatus.discovered})
+                {t("leads.bulk.enrich_all")} ({enrichmentStatus.discovered})
               </button>
             )}
             {selectedLeads.size > 0 && (
@@ -1062,14 +1064,14 @@ export default function LeadsPage() {
                   ) : (
                     <Send className="w-4 h-4" />
                   )}
-                  Enviar email a {selectedLeads.size} seleccionados
+                  {t("leads.bulk.send_email_count").replace("{count}", String(selectedLeads.size))}
                 </button>
                 <button
                   onClick={handleBulkDelete}
                   className="flex items-center gap-2 rounded-lg bg-red-500/20 border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/30 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
-                  Eliminar {selectedLeads.size} seleccionados
+                  {t("leads.bulk.delete_count").replace("{count}", String(selectedLeads.size))}
                 </button>
               </>
             )}
@@ -1079,7 +1081,7 @@ export default function LeadsPage() {
           </div>
           {enrichmentStatus && (
             <div className="text-xs text-gray-500">
-              {enrichmentStatus.scored ?? 0} scored · {enrichmentStatus.enriched ?? 0} enriched · {enrichmentStatus.discovered ?? 0} to discover
+              {enrichmentStatus.scored ?? 0} {t("leads.enrich.scored")} · {enrichmentStatus.enriched ?? 0} {t("leads.enrich.enriched")} · {enrichmentStatus.discovered ?? 0} {t("leads.enrich.to_discover")}
             </div>
           )}
         </div>
@@ -1089,10 +1091,10 @@ export default function LeadsPage() {
           <div className="mb-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-xs text-gray-400">
-                <span className="text-eko-green font-medium">{(enrichmentStatus.scored ?? 0) + (enrichmentStatus.enriched ?? 0)}</span> processed &middot;{" "}
-                <span className="text-gray-500">{enrichmentStatus.discovered ?? 0}</span> pending
+                <span className="text-eko-green font-medium">{(enrichmentStatus.scored ?? 0) + (enrichmentStatus.enriched ?? 0)}</span> {t("leads.enrich.processed")} &middot;{" "}
+                <span className="text-gray-500">{enrichmentStatus.discovered ?? 0}</span> {t("leads.enrich.pending")}
                 {" "}·{" "}
-                <span className="text-gray-500">{enrichmentStatus.pipeline_total ?? enrichmentStatus.total}</span> pipeline
+                <span className="text-gray-500">{enrichmentStatus.pipeline_total ?? enrichmentStatus.total}</span> {t("leads.enrich.pipeline")}
               </div>
               <div className="text-xs text-eko-green font-medium">
                 {(() => {
@@ -1114,18 +1116,18 @@ export default function LeadsPage() {
               />
             </div>
             <div className="flex justify-between text-xs mt-1.5 text-gray-500">
-              <span>Enrichment progress</span>
-              <span>{enrichmentStatus.scored ?? 0} with score &middot; {enrichmentStatus.enriched ?? 0} enriched &middot; {enrichmentStatus.discovered ?? 0} to discover</span>
+              <span>{t("leads.enrich.progress_label")}</span>
+              <span>{enrichmentStatus.scored ?? 0} {t("leads.enrich.with_score")} &middot; {enrichmentStatus.enriched ?? 0} {t("leads.enrich.enriched")} &middot; {enrichmentStatus.discovered ?? 0} {t("leads.enrich.to_discover")}</span>
             </div>
           </div>
         )}
 
         {leads.length > 0 && (
           <div className="mt-3 text-xs text-gray-500 text-right">
-            Mostrando {leads.length} de {totalLeads} leads
+            {t("leads.list.showing").replace("{shown}", String(leads.length)).replace("{total}", String(totalLeads))}
             {hqCoords && sortBy !== "score" && (
               <span className="ml-2 text-eko-blue">
-                · Origen: {hqAddress}
+                · {t("leads.list.origin")}: {hqAddress}
               </span>
             )}
           </div>
@@ -1141,7 +1143,7 @@ export default function LeadsPage() {
           </div>
         ) : leads.length === 0 ? (
           <div className="text-center py-20 text-gray-500">
-            <p>No se encontraron leads.</p>
+            <p>{t("leads.list.empty")}</p>
           </div>
         ) : (
           <div className="rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden">
@@ -1156,13 +1158,13 @@ export default function LeadsPage() {
                       className="rounded border-white/20 bg-white/5"
                     />
                   </th>
-                  <th className="px-4 py-3">Negocio</th>
-                  <th className="px-4 py-3">Ubicación</th>
-                  <th className="px-4 py-3">Contacto</th>
-                  <th className="px-4 py-3">Score</th>
-                  {hqCoords && <th className="px-4 py-3">Distancia</th>}
-                  <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3">Acciones</th>
+                  <th className="px-4 py-3">{t("leads.table.business")}</th>
+                  <th className="px-4 py-3">{t("leads.table.location")}</th>
+                  <th className="px-4 py-3">{t("leads.table.contact")}</th>
+                  <th className="px-4 py-3">{t("leads.table.score")}</th>
+                  {hqCoords && <th className="px-4 py-3">{t("leads.table.distance")}</th>}
+                  <th className="px-4 py-3">{t("leads.table.status")}</th>
+                  <th className="px-4 py-3">{t("leads.table.actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -1209,12 +1211,12 @@ export default function LeadsPage() {
                           return safeUrl ? (
                             <a href={safeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-eko-blue hover:underline">
                               <Globe className="w-3 h-3" />
-                              Web
+                              {t("leads.table.web")}
                             </a>
                           ) : null;
                         })()}
                         {!lead.phone && !lead.email && !lead.website && (
-                          <span className="text-xs text-gray-600">Sin datos de contacto</span>
+                          <span className="text-xs text-gray-600">{t("leads.table.no_contact")}</span>
                         )}
                       </div>
                     </td>
@@ -1253,7 +1255,7 @@ export default function LeadsPage() {
                           className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors"
                         >
                           <Navigation className="w-3 h-3" />
-                          Ver detalle
+                          {t("leads.action.view_detail")}
                         </Link>
                         {lead.email && lead.status !== "discovered" && (
                           <button
@@ -1262,13 +1264,13 @@ export default function LeadsPage() {
                                 await crmApi.contact(lead.id, "initial_outreach");
                                 loadLeads();
                               } catch (err: any) {
-                                alert(err.response?.data?.detail || "Error enviando email");
+                                alert(err.response?.data?.detail || t("leads.error.send_email"));
                               }
                             }}
                             className="flex items-center gap-1 text-xs text-eko-blue hover:text-eko-blue-dark"
                           >
                             <Send className="w-3 h-3" />
-                            Enviar email
+                            {t("leads.action.send_email")}
                           </button>
                         )}
                         {(lead.status === "discovered" || lead.status === "enriched") && (
@@ -1282,7 +1284,7 @@ export default function LeadsPage() {
                             ) : (
                               <Sparkles className="w-3 h-3" />
                             )}
-                            {lead.status === "enriched" ? "Re-enriquecer" : "Enriquecer"}
+                            {lead.status === "enriched" ? t("leads.action.re_enrich") : t("leads.action.enrich")}
                           </button>
                         )}
                         {lead.phone && (
@@ -1291,7 +1293,7 @@ export default function LeadsPage() {
                             className="flex items-center gap-1 text-xs text-eko-green hover:text-eko-green-dark"
                           >
                             <Phone className="w-3 h-3" />
-                            Llamar
+                            {t("leads.action.call")}
                           </button>
                         )}
                         <button
@@ -1299,7 +1301,7 @@ export default function LeadsPage() {
                           className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300"
                         >
                           <Trash2 className="w-3 h-3" />
-                          Eliminar
+                          {t("common.delete")}
                         </button>
                       </div>
                     </td>
@@ -1314,7 +1316,7 @@ export default function LeadsPage() {
         {totalLeads > 0 && (
           <div className="flex items-center justify-between mt-4 px-2">
             <div className="text-xs text-gray-500">
-              Página {page} de {Math.ceil(totalLeads / 100)}
+              {t("leads.pagination.page_of").replace("{page}", String(page)).replace("{total}", String(Math.ceil(totalLeads / 100)))}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -1322,14 +1324,14 @@ export default function LeadsPage() {
                 disabled={page <= 1}
                 className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                ← Anterior
+                ← {t("leads.pagination.previous")}
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(Math.ceil(totalLeads / 100), p + 1))}
                 disabled={page >= Math.ceil(totalLeads / 100)}
                 className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                Siguiente →
+                {t("leads.pagination.next")} →
               </button>
             </div>
           </div>
@@ -1341,7 +1343,7 @@ export default function LeadsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-xl border border-white/10 bg-eko-graphite shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-              <h3 className="font-medium text-sm">¿Eliminar lead{deleteConfirm.ids.length > 1 ? "s" : ""}?</h3>
+              <h3 className="font-medium text-sm">{deleteConfirm.ids.length > 1 ? t("leads.delete.title_plural") : t("leads.delete.title_single")}</h3>
               <button
                 onClick={() => setDeleteConfirm(null)}
                 className="p-1 rounded-lg hover:bg-white/10 text-gray-400"
@@ -1352,23 +1354,23 @@ export default function LeadsPage() {
             <div className="px-5 py-4">
               <p className="text-sm text-gray-400">
                 {deleteConfirm.name
-                  ? `Se eliminará permanentemente: "${deleteConfirm.name}"`
-                  : `Se eliminarán permanentemente ${deleteConfirm.ids.length} leads seleccionados.`}
+                  ? t("leads.delete.confirm_named").replace("{name}", deleteConfirm.name)
+                  : t("leads.delete.confirm_count").replace("{count}", String(deleteConfirm.ids.length))}
               </p>
-              <p className="text-xs text-gray-500 mt-2">Esta acción no se puede deshacer.</p>
+              <p className="text-xs text-gray-500 mt-2">{t("leads.delete.warning")}</p>
             </div>
             <div className="flex items-center gap-2 px-5 py-4 border-t border-white/5">
               <button
                 onClick={() => setDeleteConfirm(null)}
                 className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-white/10 transition-colors"
               >
-                Cancelar
+                {t("common.cancel")}
               </button>
               <button
                 onClick={confirmDelete}
                 className="flex-1 rounded-lg bg-red-500/20 border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/30 transition-colors"
               >
-                Eliminar
+                {t("common.delete")}
               </button>
             </div>
           </div>
@@ -1380,7 +1382,7 @@ export default function LeadsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-xl border border-white/10 bg-eko-graphite shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-              <h3 className="font-medium text-sm">Registrar llamada — {callModalLead.business_name}</h3>
+              <h3 className="font-medium text-sm">{t("leads.call.title")} — {callModalLead.business_name}</h3>
               <button
                 onClick={() => setCallModalLead(null)}
                 className="p-1 rounded-lg hover:bg-white/10 text-gray-400"
@@ -1391,53 +1393,53 @@ export default function LeadsPage() {
 
             <div className="px-5 py-4 space-y-4">
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Resultado</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("leads.call.result")}</label>
                 <select
                   value={callResult}
                   onChange={(e) => setCallResult(e.target.value)}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                 >
-                  <option value="CONNECTED">Conectado</option>
-                  <option value="NO_ANSWER">No contestó</option>
-                  <option value="VOICEMAIL">Buzón de voz</option>
-                  <option value="WRONG_NUMBER">Número equivocado</option>
-                  <option value="BUSY">Ocupado</option>
+                  <option value="CONNECTED">{t("leads.call.result.connected")}</option>
+                  <option value="NO_ANSWER">{t("leads.call.result.no_answer")}</option>
+                  <option value="VOICEMAIL">{t("leads.call.result.voicemail")}</option>
+                  <option value="WRONG_NUMBER">{t("leads.call.result.wrong_number")}</option>
+                  <option value="BUSY">{t("leads.call.result.busy")}</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Nivel de interés</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("leads.call.interest")}</label>
                 <select
                   value={callInterest}
                   onChange={(e) => setCallInterest(e.target.value)}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                 >
-                  <option value="HIGH">Alto</option>
-                  <option value="MEDIUM">Medio</option>
-                  <option value="LOW">Bajo</option>
-                  <option value="NONE">Sin interés</option>
+                  <option value="HIGH">{t("leads.call.interest.high")}</option>
+                  <option value="MEDIUM">{t("leads.call.interest.medium")}</option>
+                  <option value="LOW">{t("leads.call.interest.low")}</option>
+                  <option value="NONE">{t("leads.call.interest.none")}</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Próximo paso</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("leads.call.next_step")}</label>
                 <select
                   value={callNextAction}
                   onChange={(e) => setCallNextAction(e.target.value)}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                 >
-                  <option value="CALL_AGAIN">Llamar de nuevo</option>
-                  <option value="EMAIL">Enviar email</option>
-                  <option value="CLOSE">Cerrar lead</option>
+                  <option value="CALL_AGAIN">{t("leads.call.next.call_again")}</option>
+                  <option value="EMAIL">{t("leads.call.next.email")}</option>
+                  <option value="CLOSE">{t("leads.call.next.close")}</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Notas</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("leads.call.notes")}</label>
                 <textarea
                   value={callNotes}
                   onChange={(e) => setCallNotes(e.target.value)}
-                  placeholder="Notas de la conversación..."
+                  placeholder={t("leads.call.notes_placeholder")}
                   rows={3}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none resize-none"
                 />
@@ -1449,7 +1451,7 @@ export default function LeadsPage() {
                   className="flex items-center justify-center gap-2 w-full rounded-lg bg-eko-green/20 border border-eko-green/30 py-2.5 text-sm font-medium text-eko-green hover:bg-eko-green/30 transition-colors"
                 >
                   <Phone className="w-4 h-4" />
-                  Llamar ahora — {callModalLead.phone}
+                  {t("leads.call.call_now")} — {callModalLead.phone}
                 </a>
               )}
             </div>
@@ -1460,13 +1462,13 @@ export default function LeadsPage() {
                 disabled={callLogging}
                 className="flex-1 rounded-lg bg-eko-blue py-2.5 text-sm font-medium hover:bg-eko-blue-dark disabled:opacity-50 transition-colors"
               >
-                {callLogging ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Guardar"}
+                {callLogging ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : t("common.save")}
               </button>
               <button
                 onClick={() => setCallModalLead(null)}
                 className="rounded-lg border border-white/10 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 transition-colors"
               >
-                Cancelar
+                {t("common.cancel")}
               </button>
             </div>
           </div>
@@ -1478,7 +1480,7 @@ export default function LeadsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-xl border border-white/10 bg-eko-graphite shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-              <h3 className="font-medium text-sm">Nuevo Lead</h3>
+              <h3 className="font-medium text-sm">{t("leads.create.title")}</h3>
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="p-1 rounded-lg hover:bg-white/10 text-gray-400"
@@ -1495,12 +1497,12 @@ export default function LeadsPage() {
               )}
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Nombre del negocio *</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("leads.create.business_name")}</label>
                 <input
                   type="text"
                   value={newLead.business_name}
                   onChange={(e) => setNewLead({ ...newLead, business_name: e.target.value })}
-                  placeholder="Ej: X3nails & Spa"
+                  placeholder={t("leads.create.business_name_placeholder")}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                   required
                 />
@@ -1508,89 +1510,89 @@ export default function LeadsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Email</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{t("leads.create.email")}</label>
                   <input
                     type="email"
                     value={newLead.email}
                     onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
-                    placeholder="contacto@ejemplo.com"
+                    placeholder={t("leads.create.email_placeholder")}
                     className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Teléfono</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{t("leads.create.phone")}</label>
                   <input
                     type="tel"
                     value={newLead.phone}
                     onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
-                    placeholder="(303) 555-0123"
+                    placeholder={t("leads.create.phone_placeholder")}
                     className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Website</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("leads.create.website")}</label>
                 <input
                   type="text"
                   value={newLead.website}
                   onChange={(e) => setNewLead({ ...newLead, website: e.target.value })}
-                  placeholder="https://ejemplo.com"
+                  placeholder={t("leads.create.website_placeholder")}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Dirección</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("leads.create.address")}</label>
                 <input
                   type="text"
                   value={newLead.address}
                   onChange={(e) => setNewLead({ ...newLead, address: e.target.value })}
-                  placeholder="123 Main St, Suite 100"
+                  placeholder={t("leads.create.address_placeholder")}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Ciudad</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{t("leads.create.city")}</label>
                   <input
                     type="text"
                     value={newLead.city}
                     onChange={(e) => setNewLead({ ...newLead, city: e.target.value })}
-                    placeholder="Denver"
+                    placeholder={t("leads.create.city_placeholder")}
                     className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Estado</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{t("leads.create.state")}</label>
                   <input
                     type="text"
                     value={newLead.state}
                     onChange={(e) => setNewLead({ ...newLead, state: e.target.value })}
-                    placeholder="CO"
+                    placeholder={t("leads.create.state_placeholder")}
                     className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Categoría</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("leads.create.category")}</label>
                 <input
                   type="text"
                   value={newLead.category}
                   onChange={(e) => setNewLead({ ...newLead, category: e.target.value })}
-                  placeholder="Ej: Nail Salon, Restaurant, Gym..."
+                  placeholder={t("leads.create.category_placeholder")}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Notas</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("leads.create.notes")}</label>
                 <textarea
                   value={newLead.notes}
                   onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
-                  placeholder="Notas adicionales sobre el lead..."
+                  placeholder={t("leads.create.notes_placeholder")}
                   rows={3}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none resize-none"
                 />
@@ -1601,14 +1603,14 @@ export default function LeadsPage() {
                   disabled={createLoading}
                   className="flex-1 rounded-lg bg-eko-blue py-2.5 text-sm font-medium hover:bg-eko-blue-dark disabled:opacity-50 transition-colors"
                 >
-                  {createLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Guardar Lead"}
+                  {createLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : t("leads.create.save")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
                   className="rounded-lg border border-white/10 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 transition-colors"
                 >
-                  Cancelar
+                  {t("common.cancel")}
                 </button>
               </div>
             </form>
@@ -1621,7 +1623,7 @@ export default function LeadsPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-xl border border-white/10 bg-eko-graphite shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-              <h3 className="font-medium text-sm">Revisar datos de la web</h3>
+              <h3 className="font-medium text-sm">{t("leads.discrepancy.title")}</h3>
               <button
                 onClick={() => setShowDiscrepancyModal(false)}
                 className="p-1 rounded-lg hover:bg-white/10 text-gray-400"
@@ -1632,9 +1634,9 @@ export default function LeadsPage() {
 
             <div className="px-5 py-4 space-y-4">
               <p className="text-xs text-gray-400">
-                Encontramos información diferente en{" "}
+                {t("leads.discrepancy.found_on")}{" "}
                 <span className="text-eko-blue">{newLead.website}</span>.
-                Selecciona qué datos quedarse:
+                {" "}{t("leads.discrepancy.choose")}
               </p>
 
               {previewData.discrepancies.map((d: any) => (
@@ -1660,9 +1662,9 @@ export default function LeadsPage() {
                         }`}
                       />
                       <span className="flex-1 text-left truncate">
-                        {d.manual_value || "(vacío)"}
+                        {d.manual_value || t("leads.discrepancy.empty")}
                       </span>
-                      <span className="text-[10px] text-gray-500 uppercase">manual</span>
+                      <span className="text-[10px] text-gray-500 uppercase">{t("leads.discrepancy.source.manual")}</span>
                     </button>
 
                     <button
@@ -1683,9 +1685,9 @@ export default function LeadsPage() {
                         }`}
                       />
                       <span className="flex-1 text-left truncate">
-                        {d.extracted_value || "(vacío)"}
+                        {d.extracted_value || t("leads.discrepancy.empty")}
                       </span>
-                      <span className="text-[10px] text-gray-500 uppercase">de la web</span>
+                      <span className="text-[10px] text-gray-500 uppercase">{t("leads.discrepancy.source.web")}</span>
                     </button>
                   </div>
                 </div>
@@ -1701,14 +1703,14 @@ export default function LeadsPage() {
                 {createLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                 ) : (
-                  "Confirmar y Guardar Lead"
+                  t("leads.discrepancy.confirm_save")
                 )}
               </button>
               <button
                 onClick={() => setShowDiscrepancyModal(false)}
                 className="rounded-lg border border-white/10 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 transition-colors"
               >
-                Volver
+                {t("leads.discrepancy.back")}
               </button>
             </div>
           </div>
@@ -1724,7 +1726,7 @@ export default function LeadsPage() {
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-eko-blue" />
-                  Procesando lead
+                  {t("leads.pipeline.processing")}
                 </h3>
                 <button
                   onClick={() => {
@@ -1740,7 +1742,7 @@ export default function LeadsPage() {
                 </button>
               </div>
               <p className="text-xs text-gray-400 mt-1 truncate">
-                {pipelineLead?.business_name || newLead.business_name || "Nuevo lead"}
+                {pipelineLead?.business_name || newLead.business_name || t("leads.pipeline.new_lead")}
               </p>
             </div>
 
@@ -1835,11 +1837,11 @@ export default function LeadsPage() {
                 </div>
                 <div className="flex justify-between mt-2">
                   <span className="text-[10px] text-gray-500 uppercase tracking-wider">
-                    {pipelineSteps.filter((s) => s.status === "completed").length} de {pipelineSteps.length} pasos
+                    {t("leads.pipeline.steps_progress").replace("{done}", String(pipelineSteps.filter((s) => s.status === "completed").length)).replace("{total}", String(pipelineSteps.length))}
                   </span>
                   {pipelineSteps.every((s) => s.status === "completed") && (
                     <span className="text-[10px] text-eko-green font-medium animate-pulse">
-                      ¡Listo! Cerrando...
+                      {t("leads.pipeline.done_closing")}
                     </span>
                   )}
                 </div>
@@ -1850,9 +1852,9 @@ export default function LeadsPage() {
             {pipelinePhase === "discrepancy" && pipelinePreviewData?.discrepancies && (
               <div className="px-6 py-4 border-t border-white/5 space-y-4">
                 <p className="text-xs text-gray-400">
-                  Encontramos información diferente en{" "}
+                  {t("leads.discrepancy.found_on")}{" "}
                   <span className="text-eko-blue">{newLead.website}</span>.
-                  Selecciona qué datos quedarse:
+                  {" "}{t("leads.discrepancy.choose")}
                 </p>
                 {pipelinePreviewData.discrepancies.map((d: any) => (
                   <div key={d.field} className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-2">
@@ -1869,8 +1871,8 @@ export default function LeadsPage() {
                         <div className={`w-3.5 h-3.5 rounded-full border ${
                           previewChoices[d.field] === "manual" ? "border-eko-blue bg-eko-blue" : "border-gray-500"
                         }`} />
-                        <span className="flex-1 text-left truncate">{d.manual_value || "(vacío)"}</span>
-                        <span className="text-[10px] text-gray-500 uppercase">manual</span>
+                        <span className="flex-1 text-left truncate">{d.manual_value || t("leads.discrepancy.empty")}</span>
+                        <span className="text-[10px] text-gray-500 uppercase">{t("leads.discrepancy.source.manual")}</span>
                       </button>
                       <button
                         onClick={() => setPreviewChoices((prev: any) => ({ ...prev, [d.field]: "extracted" }))}
@@ -1883,8 +1885,8 @@ export default function LeadsPage() {
                         <div className={`w-3.5 h-3.5 rounded-full border ${
                           previewChoices[d.field] === "extracted" ? "border-eko-blue bg-eko-blue" : "border-gray-500"
                         }`} />
-                        <span className="flex-1 text-left truncate">{d.extracted_value || "(vacío)"}</span>
-                        <span className="text-[10px] text-gray-500 uppercase">de la web</span>
+                        <span className="flex-1 text-left truncate">{d.extracted_value || t("leads.discrepancy.empty")}</span>
+                        <span className="text-[10px] text-gray-500 uppercase">{t("leads.discrepancy.source.web")}</span>
                       </button>
                     </div>
                   </div>
@@ -1894,7 +1896,7 @@ export default function LeadsPage() {
                   disabled={createLoading}
                   className="w-full rounded-lg bg-eko-blue py-2.5 text-sm font-medium hover:bg-eko-blue-dark disabled:opacity-50 transition-colors"
                 >
-                  {createLoading ? "Guardando..." : "Confirmar y continuar"}
+                  {createLoading ? t("leads.discrepancy.saving") : t("leads.discrepancy.confirm_continue")}
                 </button>
               </div>
             )}
@@ -1903,14 +1905,14 @@ export default function LeadsPage() {
             <div className="px-6 py-3 border-t border-white/5 bg-white/[0.02]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-gray-500 uppercase">Status</span>
+                  <span className="text-[10px] text-gray-500 uppercase">{t("leads.pipeline.footer.status")}</span>
                   <span className="text-xs text-gray-300 capitalize">
                     {pipelineLead ? pipelineLead.status.replace("_", " ") : pipelinePhase.replace("_", " ")}
                   </span>
                 </div>
                 {pipelineLead && pipelineLead.total_score > 0 && (
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-gray-500 uppercase">Score</span>
+                    <span className="text-[10px] text-gray-500 uppercase">{t("leads.pipeline.footer.score")}</span>
                     <span className={`text-xs font-semibold ${
                       pipelineLead.total_score >= 70 ? "text-eko-green" :
                       pipelineLead.total_score >= 50 ? "text-gold" :

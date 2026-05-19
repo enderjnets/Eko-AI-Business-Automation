@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import axios from "axios";
+import { useT } from "@/contexts/I18nProvider";
 import {
   Loader2,
   CreditCard,
@@ -49,28 +50,29 @@ interface BillingInfo {
   subscription: SubscriptionInfo | null;
 }
 
-const STATUS_STYLES: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  active: { icon: <CheckCircle className="w-4 h-4" />, color: "text-green-600 bg-green-50 border-green-200", label: "Activa" },
-  past_due: { icon: <AlertTriangle className="w-4 h-4" />, color: "text-yellow-600 bg-yellow-50 border-yellow-200", label: "Pago pendiente" },
-  canceled: { icon: <XCircle className="w-4 h-4" />, color: "text-red-600 bg-red-50 border-red-200", label: "Cancelada" },
-  canceling: { icon: <AlertTriangle className="w-4 h-4" />, color: "text-orange-600 bg-orange-50 border-orange-200", label: "Cancelación programada" },
-  inactive: { icon: <XCircle className="w-4 h-4" />, color: "text-gray-600 bg-gray-50 border-gray-200", label: "Inactiva" },
-};
-
 function BillingPageInner() {
   const searchParams = useSearchParams();
   const leadId = searchParams.get("lead_id");
   const [data, setData] = useState<BillingInfo | null>(null);
+  const { t } = useT();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [portalLoading, setPortalLoading] = useState(false);
+
+  const STATUS_STYLES: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
+    active: { icon: <CheckCircle className="w-4 h-4" />, color: "text-green-600 bg-green-50 border-green-200", label: t("billing.status.active") },
+    past_due: { icon: <AlertTriangle className="w-4 h-4" />, color: "text-yellow-600 bg-yellow-50 border-yellow-200", label: t("billing.status.past_due") },
+    canceled: { icon: <XCircle className="w-4 h-4" />, color: "text-red-600 bg-red-50 border-red-200", label: t("billing.status.canceled") },
+    canceling: { icon: <AlertTriangle className="w-4 h-4" />, color: "text-orange-600 bg-orange-50 border-orange-200", label: t("billing.status.canceling") },
+    inactive: { icon: <XCircle className="w-4 h-4" />, color: "text-gray-600 bg-gray-50 border-gray-200", label: t("billing.status.inactive") },
+  };
 
   useEffect(() => {
     if (leadId) {
       loadBilling();
     } else {
       setLoading(false);
-      setError("No se encontró información del cliente.");
+      setError(t("billing.error.no_customer"));
     }
   }, [leadId]);
 
@@ -81,7 +83,7 @@ function BillingPageInner() {
       );
       setData(res.data);
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Error cargando información de facturación.");
+      setError(e.response?.data?.detail || t("billing.error.load"));
     } finally {
       setLoading(false);
     }
@@ -102,7 +104,7 @@ function BillingPageInner() {
         window.location.href = res.data.portal_url;
       }
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Error abriendo el portal de cliente.");
+      setError(e.response?.data?.detail || t("billing.error.portal"));
     } finally {
       setPortalLoading(false);
     }
@@ -121,7 +123,7 @@ function BillingPageInner() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center max-w-md">
           <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Algo salió mal</h1>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">{t("billing.error.title")}</h1>
           <p className="text-gray-600">{error}</p>
         </div>
       </div>
@@ -153,10 +155,10 @@ function BillingPageInner() {
         <div className="max-w-3xl mx-auto px-4 py-6">
           <div className="flex items-center gap-2 mb-1">
             <CreditCard className="w-5 h-5 text-blue-600" />
-            <h1 className="text-xl font-bold text-gray-900">Facturación</h1>
+            <h1 className="text-xl font-bold text-gray-900">{t("billing.title")}</h1>
           </div>
           <p className="text-gray-500 text-sm">
-            {data.business_name || data.email || "Cliente"}
+            {data.business_name || data.email || t("billing.customer")}
           </p>
         </div>
       </div>
@@ -169,16 +171,16 @@ function BillingPageInner() {
             <span className="font-semibold">{statusStyle.label}</span>
           </div>
           <p className="text-sm opacity-90">
-            Plan: <strong>{planNames[data.plan || ""] || data.plan || "—"}</strong>
+            {t("billing.plan_label")}: <strong>{planNames[data.plan || ""] || data.plan || "—"}</strong>
           </p>
           {nextBillingDate && data.subscription_status === "active" && (
             <p className="text-sm opacity-90 mt-1">
-              Próximo cobro: <strong>{nextBillingDate}</strong>
+              {t("billing.next_charge")}: <strong>{nextBillingDate}</strong>
             </p>
           )}
           {data.subscription?.cancel_at_period_end && (
             <p className="text-sm opacity-90 mt-1">
-              Tu suscripción se cancelará el <strong>{nextBillingDate}</strong>
+              {t("billing.cancel_notice")} <strong>{nextBillingDate}</strong>
             </p>
           )}
         </div>
@@ -186,7 +188,7 @@ function BillingPageInner() {
         {/* Actions */}
         {data.stripe_customer_id && (
           <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 className="font-semibold text-gray-900 mb-3">Gestionar suscripción</h3>
+            <h3 className="font-semibold text-gray-900 mb-3">{t("billing.manage_sub")}</h3>
             <button
               onClick={openPortal}
               disabled={portalLoading}
@@ -197,11 +199,11 @@ function BillingPageInner() {
               ) : (
                 <ExternalLink className="w-4 h-4" />
               )}
-              Abrir portal de cliente Stripe
+              {t("billing.open_portal")}
               <ArrowRight className="w-4 h-4" />
             </button>
             <p className="text-xs text-gray-400 mt-2">
-              Desde el portal puedes actualizar tu método de pago, ver facturas y cancelar tu suscripción.
+              {t("billing.portal_hint")}
             </p>
           </div>
         )}
@@ -210,11 +212,11 @@ function BillingPageInner() {
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center gap-2 mb-4">
             <Receipt className="w-5 h-5 text-gray-600" />
-            <h3 className="font-semibold text-gray-900">Historial de pagos</h3>
+            <h3 className="font-semibold text-gray-900">{t("billing.history")}</h3>
           </div>
 
           {data.payments.length === 0 ? (
-            <p className="text-gray-500 text-sm">No hay pagos registrados.</p>
+            <p className="text-gray-500 text-sm">{t("billing.no_payments")}</p>
           ) : (
             <div className="space-y-3">
               {data.payments.map((p) => (
@@ -243,15 +245,15 @@ function BillingPageInner() {
                     <div>
                       <p className="text-sm font-medium text-gray-900">
                         {p.type === "setup"
-                          ? "Setup Fee"
+                          ? t("billing.type.setup")
                           : p.type === "subscription"
-                          ? "Suscripción mensual"
-                          : "Pago"}
+                          ? t("billing.type.subscription")
+                          : t("billing.type.payment")}
                       </p>
                       <p className="text-xs text-gray-500">
                         {p.paid_at
                           ? new Date(p.paid_at).toLocaleDateString("es-MX")
-                          : "Pendiente"}
+                          : t("billing.pending")}
                       </p>
                     </div>
                   </div>
@@ -270,7 +272,7 @@ function BillingPageInner() {
         {/* Security Footer */}
         <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
           <Shield className="w-3 h-3" />
-          <span>Pagos procesados de forma segura por Stripe</span>
+          <span>{t("billing.secure_footer")}</span>
         </div>
       </div>
     </div>

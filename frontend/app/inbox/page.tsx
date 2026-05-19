@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { emailsApi } from "@/lib/api";
+import { useT } from "@/contexts/I18nProvider";
 
 interface InboxItem {
   id: number;
@@ -75,6 +76,7 @@ interface ConversationItem {
 
 export default function InboxPage() {
   const [items, setItems] = useState<InboxItem[]>([]);
+  const { t } = useT();
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread" | "high_priority">("all");
   const [folder, setFolder] = useState<"inbox" | "sent" | "all" | "drafts">("inbox");
@@ -165,13 +167,13 @@ export default function InboxPage() {
   };
 
   const handleSimulateReply = async () => {
-    const leadId = prompt("Lead ID para simular reply:");
+    const leadId = prompt(t("inbox.simulate.lead_id_prompt"));
     if (!leadId) return;
-    const subject = prompt("Asunto del reply:", "Re: Propuesta de colaboración");
+    const subject = prompt(t("inbox.simulate.subject_prompt"), t("inbox.simulate.subject_default"));
     if (!subject) return;
     const body = prompt(
-      "Contenido del reply:",
-      "Me interesa saber más. ¿Podemos agendar una llamada esta semana?"
+      t("inbox.simulate.body_prompt"),
+      t("inbox.simulate.body_default")
     );
     if (!body) return;
 
@@ -181,7 +183,7 @@ export default function InboxPage() {
       loadInbox();
     } catch (err) {
       console.error(err);
-      alert("Error simulando reply");
+      alert(t("inbox.simulate.error"));
     } finally {
       setSimulating(false);
     }
@@ -223,7 +225,7 @@ export default function InboxPage() {
       setEditedSubject(reply?.subject || "");
       setEditedBody(reply?.body || "");
     } catch (err: any) {
-      setReplyError(err.response?.data?.detail || "Error generando respuesta");
+      setReplyError(err.response?.data?.detail || t("inbox.error.generate_reply"));
     } finally {
       setGeneratingReply(false);
     }
@@ -244,7 +246,7 @@ export default function InboxPage() {
       setAiReply(null);
       loadInbox();
     } catch (err: any) {
-      setReplyError(err.response?.data?.detail || "Error enviando respuesta");
+      setReplyError(err.response?.data?.detail || t("inbox.error.send_reply"));
     } finally {
       setSendingReply(false);
     }
@@ -267,7 +269,7 @@ export default function InboxPage() {
       setConversation(res.data?.items || []);
       loadInbox();
     } catch (err: any) {
-      setQuickReplyError(err.response?.data?.detail || "Error enviando respuesta");
+      setQuickReplyError(err.response?.data?.detail || t("inbox.error.send_reply"));
     } finally {
       setSendingQuickReply(false);
     }
@@ -289,7 +291,7 @@ export default function InboxPage() {
       setQuickReplyAttachments([]);
       loadInbox();
     } catch (err: any) {
-      setDraftError(err.response?.data?.detail || "Error guardando borrador");
+      setDraftError(err.response?.data?.detail || t("inbox.error.save_draft"));
     } finally {
       setSavingDraft(false);
     }
@@ -309,7 +311,7 @@ export default function InboxPage() {
       setShowForward(false);
       loadInbox();
     } catch (err: any) {
-      setForwardError(err.response?.data?.detail || "Error reenviando email");
+      setForwardError(err.response?.data?.detail || t("inbox.error.forward"));
     } finally {
       setSendingForward(false);
     }
@@ -339,12 +341,12 @@ export default function InboxPage() {
 
   const intentLabel = (i: string) => {
     const map: Record<string, string> = {
-      interested: "Interesado",
-      needs_info: "Necesita info",
-      not_interested: "No interesado",
-      out_of_office: "Fuera de oficina",
-      forwarded: "Reenviado",
-      unclear: "No claro",
+      interested: t("inbox.intent.interested"),
+      needs_info: t("inbox.intent.needs_info"),
+      not_interested: t("inbox.intent.not_interested"),
+      out_of_office: t("inbox.intent.out_of_office"),
+      forwarded: t("inbox.intent.forwarded"),
+      unclear: t("inbox.intent.unclear"),
     };
     return map[i] || i;
   };
@@ -369,7 +371,7 @@ export default function InboxPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("¿Eliminar este email permanentemente?")) return;
+    if (!confirm(t("inbox.confirm.delete_one"))) return;
     setDeletingIds((prev) => new Set(prev).add(id));
     try {
       await emailsApi.delete(id);
@@ -382,7 +384,7 @@ export default function InboxPage() {
       if (expandedId === id) setExpandedId(null);
     } catch (err) {
       console.error(err);
-      alert("Error eliminando email");
+      alert(t("inbox.error.delete"));
     } finally {
       setDeletingIds((prev) => {
         const next = new Set(prev);
@@ -394,7 +396,7 @@ export default function InboxPage() {
 
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
-    if (!confirm(`¿Eliminar ${selectedIds.size} email${selectedIds.size > 1 ? "s" : ""} permanentemente?`)) return;
+    if (!confirm(`${t("inbox.confirm.delete_many_prefix")} ${selectedIds.size} ${selectedIds.size > 1 ? t("inbox.confirm.delete_many_plural") : t("inbox.confirm.delete_many_singular")}`)) return;
     setBulkDeleting(true);
     try {
       await emailsApi.bulkDelete(Array.from(selectedIds));
@@ -403,7 +405,7 @@ export default function InboxPage() {
       setExpandedId(null);
     } catch (err) {
       console.error(err);
-      alert("Error eliminando emails");
+      alert(t("inbox.error.bulk_delete"));
     } finally {
       setBulkDeleting(false);
     }
@@ -421,12 +423,12 @@ export default function InboxPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold font-display">
-                {folder === "inbox" ? "Recibidos" : folder === "sent" ? "Enviados" : "Todos los emails"}
+                {folder === "inbox" ? t("inbox.header.inbox") : folder === "sent" ? t("inbox.header.sent") : t("inbox.header.all")}
               </h1>
               <p className="text-gray-400 text-sm">
                 {unreadCount > 0
-                  ? `${unreadCount} mensaje${unreadCount > 1 ? "s" : ""} sin leer`
-                  : "No hay mensajes nuevos"}
+                  ? `${unreadCount} ${unreadCount > 1 ? t("inbox.header.unread_plural") : t("inbox.header.unread_singular")}`
+                  : t("inbox.header.no_new")}
               </p>
             </div>
           </div>
@@ -436,7 +438,7 @@ export default function InboxPage() {
             className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 transition-colors disabled:opacity-50"
           >
             {simulating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            Simular reply
+            {t("inbox.action.simulate_reply")}
           </button>
         </div>
 
@@ -444,7 +446,7 @@ export default function InboxPage() {
         {selectedIds.size > 0 && (
           <div className="flex items-center justify-between mb-4 p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
             <span className="text-sm text-gray-300">
-              {selectedIds.size} seleccionado{selectedIds.size > 1 ? "s" : ""}
+              {selectedIds.size} {selectedIds.size > 1 ? t("inbox.bulk.selected_plural") : t("inbox.bulk.selected_singular")}
             </span>
             <button
               onClick={handleBulkDelete}
@@ -456,7 +458,7 @@ export default function InboxPage() {
               ) : (
                 <Trash2 className="w-4 h-4" />
               )}
-              Eliminar
+              {t("common.delete")}
             </button>
           </div>
         )}
@@ -473,7 +475,7 @@ export default function InboxPage() {
                   : "text-gray-400 hover:text-white"
               }`}
             >
-              {f === "inbox" ? "Recibidos" : f === "sent" ? "Enviados" : f === "drafts" ? "Borradores" : "Todos"}
+              {f === "inbox" ? t("inbox.folder.inbox") : f === "sent" ? t("inbox.folder.sent") : f === "drafts" ? t("inbox.folder.drafts") : t("inbox.folder.all")}
             </button>
           ))}
         </div>
@@ -490,7 +492,7 @@ export default function InboxPage() {
                   : "text-gray-400 hover:text-white"
               }`}
             >
-              {f === "high_priority" ? "Alta prioridad" : f === "unread" ? "Sin leer" : "Todos"}
+              {f === "high_priority" ? t("inbox.filter.high_priority") : f === "unread" ? t("inbox.filter.unread") : t("inbox.filter.all")}
             </button>
           ))}
         </div>
@@ -504,20 +506,20 @@ export default function InboxPage() {
           <div className="flex flex-col items-center justify-center py-20 text-gray-500">
             <MailOpen className="w-12 h-12 mb-4 opacity-50" />
             <p className="text-lg font-medium">
-              {folder === "drafts" ? "Sin borradores" : "Inbox vacío"}
+              {folder === "drafts" ? t("inbox.empty.drafts_title") : t("inbox.empty.inbox_title")}
             </p>
             <p className="text-sm mt-1">
               {filter === "unread"
-                ? "No hay mensajes sin leer"
+                ? t("inbox.empty.no_unread")
                 : filter === "high_priority"
-                ? "No hay mensajes de alta prioridad"
+                ? t("inbox.empty.no_high_priority")
                 : folder === "sent"
-                ? "No hay emails enviados"
+                ? t("inbox.empty.no_sent")
                 : folder === "drafts"
-                ? "No tienes borradores guardados"
+                ? t("inbox.empty.no_drafts")
                 : folder === "all"
-                ? "No hay emails"
-                : "Los emails aparecerán aquí"}
+                ? t("inbox.empty.no_emails")
+                : t("inbox.empty.emails_will_appear")}
             </p>
           </div>
         ) : (
@@ -573,9 +575,9 @@ export default function InboxPage() {
                           </span>
                           {(item.lead_total_count || 0) > 1 && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-gray-400">
-                              {item.lead_total_count} mensajes
+                              {item.lead_total_count} {t("inbox.thread.messages")}
                               {(item.lead_unread_count || 0) > 0 && (
-                                <span className="ml-1 text-eko-blue">({item.lead_unread_count} sin leer)</span>
+                                <span className="ml-1 text-eko-blue">({item.lead_unread_count} {t("inbox.thread.unread_lower")})</span>
                               )}
                             </span>
                           )}
@@ -584,16 +586,16 @@ export default function InboxPage() {
                               ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
                               : "bg-eko-blue/10 text-eko-blue border-eko-blue/20"
                           }`}>
-                            {item.direction === "outbound" ? "Último: enviado" : "Último: recibido"}
+                            {item.direction === "outbound" ? t("inbox.direction.last_sent") : t("inbox.direction.last_received")}
                           </span>
                           {item.auto_status_changed && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-eko-green/10 text-eko-green border border-eko-green/20">
-                              Status auto-actualizado
+                              {t("inbox.badge.status_auto_updated")}
                             </span>
                           )}
                         </div>
                         <p className="text-sm text-gray-300 truncate">
-                          {item.subject || "(sin asunto)"}
+                          {item.subject || t("inbox.no_subject")}
                         </p>
                         <p className="text-xs text-gray-500 truncate">
                           {stripHtml(item.content).substring(0, 120)}
@@ -632,7 +634,7 @@ export default function InboxPage() {
                           }}
                           disabled={deletingIds.has(item.id)}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                          title="Eliminar"
+                          title={t("common.delete")}
                         >
                           {deletingIds.has(item.id) ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -648,7 +650,7 @@ export default function InboxPage() {
                             }}
                             disabled={markingRead === item.id}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-eko-blue hover:bg-eko-blue/10 transition-colors"
-                            title="Marcar como leído"
+                            title={t("inbox.action.mark_read")}
                           >
                             {markingRead === item.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -675,7 +677,7 @@ export default function InboxPage() {
                           <div className="flex items-center gap-2 mb-1">
                             <Zap className="w-3.5 h-3.5 text-eko-blue" />
                             <span className="text-xs font-medium text-eko-blue">
-                              Resumen AI
+                              {t("inbox.ai_summary")}
                             </span>
                           </div>
                           <p className="text-sm text-gray-300">{item.summary}</p>
@@ -684,7 +686,7 @@ export default function InboxPage() {
 
                       {/* Thread / Conversation */}
                       <div className="mb-4">
-                        <p className="text-xs text-gray-500 font-medium mb-2">Conversación</p>
+                        <p className="text-xs text-gray-500 font-medium mb-2">{t("inbox.thread.title")}</p>
                         {loadingConversation ? (
                           <div className="flex items-center justify-center py-4">
                             <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
@@ -707,7 +709,7 @@ export default function InboxPage() {
                                 >
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="text-[10px] font-medium uppercase tracking-wider text-gray-500">
-                                      {msg.direction === "outbound" ? "Nosotros" : "Cliente"}
+                                      {msg.direction === "outbound" ? t("inbox.thread.us") : t("inbox.thread.client")}
                                     </span>
                                     <span className="text-[10px] text-gray-600">
                                       {new Date(msg.created_at).toLocaleString("es-ES", {
@@ -718,7 +720,7 @@ export default function InboxPage() {
                                       })}
                                     </span>
                                   </div>
-                                  <p className="font-medium text-xs mb-1 opacity-80">{msg.subject || "(sin asunto)"}</p>
+                                  <p className="font-medium text-xs mb-1 opacity-80">{msg.subject || t("inbox.no_subject")}</p>
                                   <div
                                     className="whitespace-pre-wrap prose prose-invert prose-sm max-w-none"
                                     dangerouslySetInnerHTML={{ __html: msg.content }}
@@ -728,14 +730,14 @@ export default function InboxPage() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-gray-500 italic">No hay mensajes previos en esta conversación.</p>
+                          <p className="text-sm text-gray-500 italic">{t("inbox.thread.empty")}</p>
                         )}
                       </div>
 
                       {/* Forward section */}
                       {showForward && item.direction === "inbound" && (
                         <div className="mb-4 rounded-lg bg-white/[0.03] border border-white/10 p-3">
-                          <p className="text-xs text-gray-500 font-medium mb-2">Reenviar email</p>
+                          <p className="text-xs text-gray-500 font-medium mb-2">{t("inbox.forward.title")}</p>
                           {forwardError && (
                             <div className="p-2 mb-2 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-xs">
                               {forwardError}
@@ -743,13 +745,13 @@ export default function InboxPage() {
                           )}
                           <input
                             type="email"
-                            placeholder="Email destino"
+                            placeholder={t("inbox.forward.email_placeholder")}
                             value={forwardEmail}
                             onChange={(e) => setForwardEmail(e.target.value)}
                             className="w-full px-3 py-2 mb-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:ring-2 focus:ring-eko-blue placeholder-gray-600"
                           />
                           <textarea
-                            placeholder="Nota opcional..."
+                            placeholder={t("inbox.forward.note_placeholder")}
                             value={forwardNote}
                             onChange={(e) => setForwardNote(e.target.value)}
                             rows={2}
@@ -766,13 +768,13 @@ export default function InboxPage() {
                               ) : (
                                 <Send className="w-4 h-4" />
                               )}
-                              Reenviar
+                              {t("inbox.forward.send")}
                             </button>
                             <button
                               onClick={() => { setShowForward(false); setForwardEmail(""); setForwardNote(""); }}
                               className="px-4 py-2 border border-white/10 text-gray-300 rounded-lg hover:bg-white/5 transition-colors text-sm"
                             >
-                              Cancelar
+                              {t("common.cancel")}
                             </button>
                           </div>
                         </div>
@@ -781,7 +783,7 @@ export default function InboxPage() {
                       {/* Quick Manual Reply */}
                       {item.direction === "inbound" && (
                         <div className="mb-4 rounded-lg bg-white/[0.03] border border-white/10 p-3">
-                          <p className="text-xs text-gray-500 font-medium mb-2">Responder rápido</p>
+                          <p className="text-xs text-gray-500 font-medium mb-2">{t("inbox.quick_reply.title")}</p>
                           {quickReplyError && (
                             <div className="p-2 mb-2 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-xs">
                               {quickReplyError}
@@ -794,13 +796,13 @@ export default function InboxPage() {
                           )}
                           <input
                             type="text"
-                            placeholder="Asunto"
+                            placeholder={t("inbox.field.subject")}
                             value={quickReplySubject}
                             onChange={(e) => setQuickReplySubject(e.target.value)}
                             className="w-full px-3 py-2 mb-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:ring-2 focus:ring-eko-blue placeholder-gray-600"
                           />
                           <textarea
-                            placeholder="Escribe tu respuesta..."
+                            placeholder={t("inbox.quick_reply.body_placeholder")}
                             value={quickReplyBody}
                             onChange={(e) => setQuickReplyBody(e.target.value)}
                             rows={3}
@@ -811,8 +813,8 @@ export default function InboxPage() {
                             <label className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 border-dashed rounded-lg text-sm text-gray-400 hover:bg-white/[0.07] hover:text-gray-300 transition-colors cursor-pointer">
                               <Edit3 className="w-4 h-4" />
                               {quickReplyAttachments.length > 0
-                                ? `${quickReplyAttachments.length} archivo(s) seleccionado(s)`
-                                : "Adjuntar archivo"}
+                                ? `${quickReplyAttachments.length} ${t("inbox.attachment.files_selected")}`
+                                : t("inbox.attachment.attach")}
                               <input
                                 type="file"
                                 multiple
@@ -857,7 +859,7 @@ export default function InboxPage() {
                               ) : (
                                 <Send className="w-4 h-4" />
                               )}
-                              Enviar respuesta
+                              {t("inbox.action.send_reply")}
                             </button>
                             <button
                               onClick={handleSaveDraft}
@@ -869,7 +871,7 @@ export default function InboxPage() {
                               ) : (
                                 <Edit3 className="w-4 h-4" />
                               )}
-                              Guardar borrador
+                              {t("inbox.action.save_draft")}
                             </button>
                           </div>
                         </div>
@@ -884,14 +886,14 @@ export default function InboxPage() {
                               className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
                             >
                               <Wand2 className="w-4 h-4" />
-                              Responder con IA
+                              {t("inbox.action.reply_ai")}
                             </button>
                             <button
                               onClick={() => { setShowForward(true); setReplyTarget(item); }}
                               className="flex items-center gap-2 px-4 py-2 border border-white/10 text-gray-300 rounded-lg hover:bg-white/5 transition-colors text-sm"
                             >
                               <ArrowLeft className="w-4 h-4" />
-                              Reenviar
+                              {t("inbox.action.forward")}
                             </button>
                           </>
                         )}
@@ -905,14 +907,14 @@ export default function InboxPage() {
                           ) : (
                             <Trash2 className="w-4 h-4" />
                           )}
-                          Eliminar
+                          {t("common.delete")}
                         </button>
                       </div>
 
                       {/* Status change info */}
                       {item.auto_status_changed && (
                         <div className="mt-3 text-xs text-gray-500">
-                          Status cambiado automáticamente: {item.previous_status} → {item.lead_status}
+                          {t("inbox.status_changed_prefix")}: {item.previous_status} → {item.lead_status}
                         </div>
                       )}
                     </div>
@@ -934,7 +936,7 @@ export default function InboxPage() {
               <div className="flex items-center gap-3">
                 <MessageSquare className="w-5 h-5 text-purple-400" />
                 <div>
-                  <h3 className="font-semibold text-white">Responder a {replyTarget.lead_name}</h3>
+                  <h3 className="font-semibold text-white">{t("inbox.modal.reply_to")} {replyTarget.lead_name}</h3>
                   <p className="text-xs text-gray-400">{replyTarget.subject}</p>
                 </div>
               </div>
@@ -962,7 +964,7 @@ export default function InboxPage() {
                 </div>
               ) : conversation.length > 0 ? (
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  <p className="text-xs text-gray-500 font-medium">Conversación previa</p>
+                  <p className="text-xs text-gray-500 font-medium">{t("inbox.modal.previous_conversation")}</p>
                   {conversation.slice(0, 5).map((msg) => (
                     <div
                       key={msg.id}
@@ -973,7 +975,7 @@ export default function InboxPage() {
                       }`}
                     >
                       <p className="text-xs text-gray-500 mb-0.5">
-                        {msg.direction === "outbound" ? "Nosotros" : "Cliente"}
+                        {msg.direction === "outbound" ? t("inbox.thread.us") : t("inbox.thread.client")}
                       </p>
                       <p className="text-gray-300 line-clamp-2">{msg.content}</p>
                     </div>
@@ -985,28 +987,28 @@ export default function InboxPage() {
               {!aiReply && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Tono</label>
+                    <label className="block text-xs text-gray-500 mb-1">{t("inbox.modal.tone")}</label>
                     <select
                       value={replyTone}
                       onChange={(e) => setReplyTone(e.target.value)}
                       className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:ring-2 focus:ring-purple-500"
                     >
-                      <option value="professional">Profesional</option>
-                      <option value="friendly">Amigable</option>
-                      <option value="assertive">Asertivo</option>
-                      <option value="consultative">Consultivo</option>
+                      <option value="professional">{t("inbox.tone.professional")}</option>
+                      <option value="friendly">{t("inbox.tone.friendly")}</option>
+                      <option value="assertive">{t("inbox.tone.assertive")}</option>
+                      <option value="consultative">{t("inbox.tone.consultative")}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Longitud</label>
+                    <label className="block text-xs text-gray-500 mb-1">{t("inbox.modal.length")}</label>
                     <select
                       value={replyLength}
                       onChange={(e) => setReplyLength(e.target.value)}
                       className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:ring-2 focus:ring-purple-500"
                     >
-                      <option value="short">Corta</option>
-                      <option value="medium">Media</option>
-                      <option value="long">Larga</option>
+                      <option value="short">{t("inbox.length.short")}</option>
+                      <option value="medium">{t("inbox.length.medium")}</option>
+                      <option value="long">{t("inbox.length.long")}</option>
                     </select>
                   </div>
                 </div>
@@ -1024,7 +1026,7 @@ export default function InboxPage() {
                   ) : (
                     <Wand2 className="w-5 h-5" />
                   )}
-                  {generatingReply ? "Generando respuesta..." : "Generar respuesta con IA"}
+                  {generatingReply ? t("inbox.modal.generating") : t("inbox.modal.generate_ai")}
                 </button>
               )}
 
@@ -1034,17 +1036,17 @@ export default function InboxPage() {
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-purple-400" />
                     <span className="text-sm text-purple-400 font-medium">
-                      Respuesta generada ({Math.round(aiReply.confidence * 100)}% confianza)
+                      {t("inbox.modal.generated_reply")} ({Math.round(aiReply.confidence * 100)}% {t("inbox.modal.confidence")})
                     </span>
                     {aiReply.suggested_next_action && (
                       <span className="text-xs text-gray-500 ml-auto">
-                        Siguiente paso: {aiReply.suggested_next_action}
+                        {t("inbox.modal.next_step")}: {aiReply.suggested_next_action}
                       </span>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Asunto</label>
+                    <label className="block text-xs text-gray-500 mb-1">{t("inbox.field.subject")}</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
@@ -1056,7 +1058,7 @@ export default function InboxPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Mensaje</label>
+                    <label className="block text-xs text-gray-500 mb-1">{t("inbox.field.message")}</label>
                     <textarea
                       value={editedBody}
                       onChange={(e) => setEditedBody(e.target.value)}
@@ -1076,7 +1078,7 @@ export default function InboxPage() {
                       ) : (
                         <Send className="w-4 h-4" />
                       )}
-                      {sendingReply ? "Enviando..." : "Enviar respuesta"}
+                      {sendingReply ? t("inbox.action.sending") : t("inbox.action.send_reply")}
                     </button>
                     <button
                       onClick={() => {
@@ -1086,7 +1088,7 @@ export default function InboxPage() {
                       }}
                       className="px-4 py-2 border border-white/10 text-gray-300 rounded-lg hover:bg-white/5 transition-colors text-sm"
                     >
-                      Regenerar
+                      {t("inbox.action.regenerate")}
                     </button>
                   </div>
                 </div>

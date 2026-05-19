@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.19";
+export const CURRENT_VERSION = "0.7.20";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,19 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.20",
+    date: "2026-05-19",
+    title: "i18n cobertura completa — 14 páginas internas traducidas (568 nuevas keys EN/ES)",
+    changes: [
+      "Las 14 páginas que en v0.7.19 quedaron con texto hardcoded en español ahora están totalmente traducidas: leads, pipeline, deals, proposals, voice-agent, content-studio, inbox, sequences, campaigns, calendar, analytics, landing-pages, settings, billing",
+      "568 nuevas keys agregadas al diccionario (en/es), namespaced por página (leads.*, inbox.*, landing.*, deals.*, proposals.*, voice.*, content.*, sequences.*, campaigns.*, calendar.*, analytics.*, settings.*, billing.*) — 1356 entries totales en translations.ts",
+      "Delegación a 3 agentes en paralelo (~15 min total) — cada uno con un namespace propio para evitar collisions; merge automático con script Python (cero collisions encontradas)",
+      "Cero regresiones: las 15 rutas (/, /leads, /pipeline, /deals, /proposals, /voice-agent, /content-studio, /inbox, /sequences, /campaigns, /calendar, /analytics, /landing-pages, /settings, /billing) responden HTTP 200 después del deploy",
+      "Brand names preservados en ambos idiomas (Eko AI, VAPI, Stripe, Resend, Coinbase, Kimi, MiniMax, etc.) y terms técnicos comunes en español tech (Inbox, Lead, Deal, Pipeline, Score, Workspace) también preservados intencionalmente",
+      "Cobertura total ahora: Navbar + Dashboard + ModulesGrid + RecentLeads + DiscoveryForm (v0.7.19) + las 14 páginas (v0.7.20) = cada rincón visible de Eko AI cambia al instante con el selector EN/ES",
+    ],
+  },
   {
     version: "0.7.19",
     date: "2026-05-19",

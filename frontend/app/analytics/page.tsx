@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, TrendingUp, Mail, Eye, MousePointer, MessageCircle, Calendar, DollarSign, Target } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { useT } from "@/contexts/I18nProvider";
 import { analyticsApi, campaignsApi } from "@/lib/api";
 
 interface Campaign {
@@ -38,6 +39,7 @@ interface CampaignAnalytics {
 
 export default function AnalyticsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const { t } = useT();
   const [selectedCampaign, setSelectedCampaign] = useState<number | null>(null);
   const [campaignAnalytics, setCampaignAnalytics] = useState<CampaignAnalytics | null>(null);
   const [pipeline, setPipeline] = useState<any>(null);
@@ -87,13 +89,13 @@ export default function AnalyticsPage() {
   }
 
   const funnelStages = campaignAnalytics ? [
-    { label: "Leads", value: campaignAnalytics.funnel.leads, icon: <Target className="w-4 h-4" />, color: "text-gray-400" },
-    { label: "Emails enviados", value: campaignAnalytics.funnel.emails_sent, icon: <Mail className="w-4 h-4" />, color: "text-eko-blue" },
-    { label: "Abiertos", value: campaignAnalytics.funnel.emails_opened, icon: <Eye className="w-4 h-4" />, color: "text-eko-green" },
-    { label: "Clicks", value: campaignAnalytics.funnel.emails_clicked, icon: <MousePointer className="w-4 h-4" />, color: "text-gold" },
-    { label: "Respuestas", value: campaignAnalytics.funnel.replies, icon: <MessageCircle className="w-4 h-4" />, color: "text-purple-400" },
-    { label: "Reuniones", value: campaignAnalytics.funnel.meetings_booked, icon: <Calendar className="w-4 h-4" />, color: "text-pink-400" },
-    { label: "Cerrados", value: campaignAnalytics.funnel.closed_won, icon: <DollarSign className="w-4 h-4" />, color: "text-eko-green" },
+    { label: t("analytics.funnel.leads"), value: campaignAnalytics.funnel.leads, icon: <Target className="w-4 h-4" />, color: "text-gray-400" },
+    { label: t("analytics.funnel.emails_sent"), value: campaignAnalytics.funnel.emails_sent, icon: <Mail className="w-4 h-4" />, color: "text-eko-blue" },
+    { label: t("analytics.funnel.opened"), value: campaignAnalytics.funnel.emails_opened, icon: <Eye className="w-4 h-4" />, color: "text-eko-green" },
+    { label: t("analytics.funnel.clicks"), value: campaignAnalytics.funnel.emails_clicked, icon: <MousePointer className="w-4 h-4" />, color: "text-gold" },
+    { label: t("analytics.funnel.replies"), value: campaignAnalytics.funnel.replies, icon: <MessageCircle className="w-4 h-4" />, color: "text-purple-400" },
+    { label: t("analytics.funnel.meetings"), value: campaignAnalytics.funnel.meetings_booked, icon: <Calendar className="w-4 h-4" />, color: "text-pink-400" },
+    { label: t("analytics.funnel.closed"), value: campaignAnalytics.funnel.closed_won, icon: <DollarSign className="w-4 h-4" />, color: "text-eko-green" },
   ] : [];
 
   return (
@@ -101,8 +103,8 @@ export default function AnalyticsPage() {
       <Navbar />
       <main className="pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold font-display">Analytics</h1>
-          <p className="text-gray-400 text-sm">Métricas de pipeline y campañas</p>
+          <h1 className="text-2xl font-bold font-display">{t("analytics.title")}</h1>
+          <p className="text-gray-400 text-sm">{t("analytics.subtitle")}</p>
         </div>
 
         {/* Pipeline Overview */}
@@ -121,19 +123,19 @@ export default function AnalyticsPage() {
         {performance && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-              <div className="text-xs text-gray-500 mb-1">Total Leads</div>
+              <div className="text-xs text-gray-500 mb-1">{t("analytics.perf.total_leads")}</div>
               <div className="text-2xl font-bold font-display">{performance.total_leads}</div>
             </div>
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-              <div className="text-xs text-gray-500 mb-1">Contactados</div>
+              <div className="text-xs text-gray-500 mb-1">{t("analytics.perf.contacted")}</div>
               <div className="text-2xl font-bold font-display text-eko-blue">{performance.contacted}</div>
             </div>
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-              <div className="text-xs text-gray-500 mb-1">Cerrados</div>
+              <div className="text-xs text-gray-500 mb-1">{t("analytics.perf.closed")}</div>
               <div className="text-2xl font-bold font-display text-eko-green">{performance.closed_won}</div>
             </div>
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-              <div className="text-xs text-gray-500 mb-1">Conversión</div>
+              <div className="text-xs text-gray-500 mb-1">{t("analytics.perf.conversion")}</div>
               <div className="text-2xl font-bold font-display text-gold">{performance.conversion_rate}%</div>
             </div>
           </div>
@@ -141,7 +143,7 @@ export default function AnalyticsPage() {
 
         {/* Campaign Selector */}
         <div className="mb-6">
-          <h2 className="text-lg font-medium mb-3">Analytics por campaña</h2>
+          <h2 className="text-lg font-medium mb-3">{t("analytics.per_campaign")}</h2>
           <div className="flex flex-wrap gap-2">
             {campaigns.map((camp) => (
               <button
@@ -160,7 +162,7 @@ export default function AnalyticsPage() {
               </button>
             ))}
             {campaigns.length === 0 && (
-              <p className="text-sm text-gray-500">No hay campañas activas.</p>
+              <p className="text-sm text-gray-500">{t("analytics.no_campaigns")}</p>
             )}
           </div>
         </div>
@@ -168,8 +170,8 @@ export default function AnalyticsPage() {
         {/* Campaign Funnel */}
         {campaignAnalytics && (
           <div className="rounded-xl border border-white/5 bg-white/[0.02] p-6">
-            <h3 className="text-sm font-medium mb-4">{campaignAnalytics.campaign_name} — Funnel</h3>
-            
+            <h3 className="text-sm font-medium mb-4">{campaignAnalytics.campaign_name} — {t("analytics.funnel_title")}</h3>
+
             <div className="space-y-3 mb-6">
               {funnelStages.map((stage, idx) => {
                 const prevValue = idx > 0 ? funnelStages[idx - 1].value : stage.value;
@@ -206,23 +208,23 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4 border-t border-white/5">
               <div className="text-center">
                 <div className="text-lg font-bold font-display text-eko-green">{campaignAnalytics.rates.open_rate}%</div>
-                <div className="text-xs text-gray-500">Open rate</div>
+                <div className="text-xs text-gray-500">{t("analytics.rate.open")}</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold font-display text-gold">{campaignAnalytics.rates.click_rate}%</div>
-                <div className="text-xs text-gray-500">Click rate</div>
+                <div className="text-xs text-gray-500">{t("analytics.rate.click")}</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold font-display text-purple-400">{campaignAnalytics.rates.reply_rate}%</div>
-                <div className="text-xs text-gray-500">Reply rate</div>
+                <div className="text-xs text-gray-500">{t("analytics.rate.reply")}</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold font-display text-pink-400">{campaignAnalytics.rates.meeting_rate}%</div>
-                <div className="text-xs text-gray-500">Meeting rate</div>
+                <div className="text-xs text-gray-500">{t("analytics.rate.meeting")}</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold font-display text-eko-blue">{campaignAnalytics.rates.conversion_rate}%</div>
-                <div className="text-xs text-gray-500">Conversion</div>
+                <div className="text-xs text-gray-500">{t("analytics.rate.conversion")}</div>
               </div>
             </div>
           </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useT } from "@/contexts/I18nProvider";
 import {
   DndContext,
   DragOverlay,
@@ -57,13 +58,13 @@ interface Forecast {
   total_revenue: number;
 }
 
-const DEAL_STATUSES = [
-  { key: "prospecting", label: "Prospecting", color: "bg-gray-500/10 text-gray-400 border-gray-500/20" },
-  { key: "qualification", label: "Qualification", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-  { key: "proposal", label: "Proposal", color: "bg-gold/10 text-gold border-gold/20" },
-  { key: "negotiation", label: "Negotiation", color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
-  { key: "closed_won", label: "Closed Won", color: "bg-eko-green/10 text-eko-green border-eko-green/20" },
-  { key: "closed_lost", label: "Closed Lost", color: "bg-red-500/10 text-red-400 border-red-500/20" },
+const DEAL_STATUS_KEYS = [
+  { key: "prospecting", labelKey: "deals.stage.prospecting", color: "bg-gray-500/10 text-gray-400 border-gray-500/20" },
+  { key: "qualification", labelKey: "deals.stage.qualification", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+  { key: "proposal", labelKey: "deals.stage.proposal", color: "bg-gold/10 text-gold border-gold/20" },
+  { key: "negotiation", labelKey: "deals.stage.negotiation", color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+  { key: "closed_won", labelKey: "deals.stage.closed_won", color: "bg-eko-green/10 text-eko-green border-eko-green/20" },
+  { key: "closed_lost", labelKey: "deals.stage.closed_lost", color: "bg-red-500/10 text-red-400 border-red-500/20" },
 ];
 
 function DealCard({
@@ -137,10 +138,11 @@ function DealColumn({
   deals,
   children,
 }: {
-  status: (typeof DEAL_STATUSES)[number];
+  status: (typeof DEAL_STATUS_KEYS)[number];
   deals: Deal[];
   children: React.ReactNode;
 }) {
+  const { t } = useT();
   const { setNodeRef, isOver } = useDroppable({
     id: `column-${status.key}`,
     data: { status: status.key },
@@ -157,7 +159,7 @@ function DealColumn({
   return (
     <div className="flex flex-col min-w-[200px]">
       <div className={`flex items-center justify-between px-3 py-2 rounded-t-lg border border-b-0 ${status.color}`}>
-        <span className="text-xs font-medium">{status.label}</span>
+        <span className="text-xs font-medium">{t(status.labelKey as any)}</span>
         <span className="text-xs opacity-70">{deals.length}</span>
       </div>
       <div
@@ -169,7 +171,7 @@ function DealColumn({
         {children}
         {deals.length > 0 && (
           <div className="text-[10px] text-gray-600 text-center pt-1">
-            Total: {formatCurrency(totalValue)}
+            {t("deals.total")}: {formatCurrency(totalValue)}
           </div>
         )}
       </div>
@@ -180,6 +182,7 @@ function DealColumn({
 export default function DealsPage() {
   const router = useRouter();
   const [deals, setDeals] = useState<Deal[]>([]);
+  const { t } = useT();
   const [forecast, setForecast] = useState<Forecast | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -243,7 +246,7 @@ export default function DealsPage() {
       loadDeals();
     } catch (err) {
       console.error(err);
-      alert("Error creating deal");
+      alert(t("deals.error.create"));
     } finally {
       setCreating(false);
     }
@@ -279,7 +282,7 @@ export default function DealsPage() {
       setDeals((prev) =>
         prev.map((d) => (d.id === deal.id ? { ...d, status: deal.status } : d))
       );
-      alert("Error moviendo el deal");
+      alert(t("deals.error.move"));
     } finally {
       setUpdatingId(null);
     }
@@ -305,8 +308,8 @@ export default function DealsPage() {
               <Briefcase className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold font-display">Deals</h1>
-              <p className="text-gray-400 text-sm">Pipeline de oportunidades</p>
+              <h1 className="text-2xl font-bold font-display">{t("deals.title")}</h1>
+              <p className="text-gray-400 text-sm">{t("deals.subtitle")}</p>
             </div>
           </div>
           <button
@@ -314,7 +317,7 @@ export default function DealsPage() {
             className="flex items-center gap-2 rounded-lg bg-eko-blue px-4 py-2 text-sm font-medium hover:bg-eko-blue-dark transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Nuevo deal
+            {t("deals.new")}
           </button>
         </div>
 
@@ -324,46 +327,46 @@ export default function DealsPage() {
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className="w-4 h-4 text-eko-blue" />
-                <span className="text-xs text-gray-500">Pipeline</span>
+                <span className="text-xs text-gray-500">{t("deals.forecast.pipeline")}</span>
               </div>
               <p className="text-lg font-bold">{formatCurrency(forecast.total_pipeline_value)}</p>
             </div>
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="w-4 h-4 text-eko-green" />
-                <span className="text-xs text-gray-500">Weighted</span>
+                <span className="text-xs text-gray-500">{t("deals.forecast.weighted")}</span>
               </div>
               <p className="text-lg font-bold text-eko-green">{formatCurrency(forecast.total_weighted_value)}</p>
             </div>
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="w-4 h-4 text-gold" />
-                <span className="text-xs text-gray-500">Este Mes</span>
+                <span className="text-xs text-gray-500">{t("deals.forecast.this_month")}</span>
               </div>
               <p className="text-lg font-bold">{formatCurrency(forecast.expected_revenue_this_month)}</p>
             </div>
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Briefcase className="w-4 h-4 text-gray-400" />
-                <span className="text-xs text-gray-500">Abiertos</span>
+                <span className="text-xs text-gray-500">{t("deals.forecast.open")}</span>
               </div>
               <p className="text-lg font-bold">{forecast.deals_count}</p>
             </div>
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle className="w-4 h-4 text-eko-green" />
-                <span className="text-xs text-gray-500">Ganados</span>
+                <span className="text-xs text-gray-500">{t("deals.forecast.won")}</span>
               </div>
               <p className="text-lg font-bold text-eko-green">{formatCurrency(forecast.closed_won_value)}</p>
-              <p className="text-[10px] text-gray-600">{forecast.closed_won_count} deals</p>
+              <p className="text-[10px] text-gray-600">{forecast.closed_won_count} {t("deals.deals_short")}</p>
             </div>
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
               <div className="flex items-center gap-2 mb-2">
                 <X className="w-4 h-4 text-red-400" />
-                <span className="text-xs text-gray-500">Perdidos</span>
+                <span className="text-xs text-gray-500">{t("deals.forecast.lost")}</span>
               </div>
               <p className="text-lg font-bold text-red-400">{formatCurrency(forecast.closed_lost_value)}</p>
-              <p className="text-[10px] text-gray-600">{forecast.closed_lost_count} deals</p>
+              <p className="text-[10px] text-gray-600">{forecast.closed_lost_count} {t("deals.deals_short")}</p>
             </div>
           </div>
         )}
@@ -373,38 +376,38 @@ export default function DealsPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="w-full max-w-md rounded-xl border border-white/10 bg-eko-graphite p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium">Nuevo Deal</h3>
+                <h3 className="font-medium">{t("deals.new")}</h3>
                 <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-white">
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Lead</label>
+                  <label className="block text-xs text-gray-500 mb-1">{t("deals.field.lead")}</label>
                   <select
                     value={newDeal.lead_id}
                     onChange={(e) => setNewDeal({ ...newDeal, lead_id: e.target.value })}
                     className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                   >
-                    <option value="">Seleccionar lead...</option>
+                    <option value="">{t("deals.field.lead_placeholder")}</option>
                     {leads.map((l) => (
                       <option key={l.id} value={l.id}>{l.business_name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Nombre del deal</label>
+                  <label className="block text-xs text-gray-500 mb-1">{t("deals.field.name")}</label>
                   <input
                     type="text"
                     value={newDeal.name}
                     onChange={(e) => setNewDeal({ ...newDeal, name: e.target.value })}
-                    placeholder="Ej: Website redesign project"
+                    placeholder={t("deals.field.name_placeholder")}
                     className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Valor ($)</label>
+                    <label className="block text-xs text-gray-500 mb-1">{t("deals.field.value")}</label>
                     <input
                       type="number"
                       value={newDeal.value}
@@ -414,7 +417,7 @@ export default function DealsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Probabilidad (%)</label>
+                    <label className="block text-xs text-gray-500 mb-1">{t("deals.field.probability")}</label>
                     <input
                       type="number"
                       value={newDeal.probability}
@@ -426,7 +429,7 @@ export default function DealsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Fecha de cierre esperada</label>
+                  <label className="block text-xs text-gray-500 mb-1">{t("deals.field.expected_close")}</label>
                   <input
                     type="date"
                     value={newDeal.expected_close_date}
@@ -435,11 +438,11 @@ export default function DealsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Descripción</label>
+                  <label className="block text-xs text-gray-500 mb-1">{t("deals.field.description")}</label>
                   <textarea
                     value={newDeal.description}
                     onChange={(e) => setNewDeal({ ...newDeal, description: e.target.value })}
-                    placeholder="Detalles del deal..."
+                    placeholder={t("deals.field.description_placeholder")}
                     rows={3}
                     className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                   />
@@ -450,13 +453,13 @@ export default function DealsPage() {
                     disabled={creating || !newDeal.lead_id || !newDeal.name.trim()}
                     className="flex-1 rounded-lg bg-eko-blue px-4 py-2 text-sm font-medium hover:bg-eko-blue-dark disabled:opacity-50 transition-colors"
                   >
-                    {creating ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Crear Deal"}
+                    {creating ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : t("deals.create")}
                   </button>
                   <button
                     onClick={() => setShowCreate(false)}
                     className="rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-400 hover:bg-white/5 transition-colors"
                   >
-                    Cancelar
+                    {t("common.cancel")}
                   </button>
                 </div>
               </div>
@@ -472,8 +475,8 @@ export default function DealsPage() {
         ) : deals.length === 0 ? (
           <div className="text-center py-20 text-gray-500">
             <Briefcase className="w-12 h-12 mb-4 mx-auto opacity-50" />
-            <p className="text-lg font-medium">No hay deals</p>
-            <p className="text-sm mt-1">Crea tu primer deal para empezar a trackear oportunidades.</p>
+            <p className="text-lg font-medium">{t("deals.empty")}</p>
+            <p className="text-sm mt-1">{t("deals.empty_hint")}</p>
           </div>
         ) : (
           <DndContext
@@ -482,7 +485,7 @@ export default function DealsPage() {
             onDragEnd={handleDragEnd}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-              {DEAL_STATUSES.map((status) => (
+              {DEAL_STATUS_KEYS.map((status) => (
                 <DealColumn
                   key={status.key}
                   status={status}

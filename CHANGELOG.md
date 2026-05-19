@@ -1,5 +1,66 @@
 
 
+## [0.7.20] — 2026-05-19
+
+### i18n — cobertura completa de las 14 páginas internas
+
+v0.7.19 dejó la infraestructura i18n lista pero solo cubrió Dashboard + Navbar + shared components. El stop-hook del goal pidió `cada rincón de Eko AI` — esta versión cierra esa brecha.
+
+#### Traducidas en este commit
+
+Las 14 páginas bajo `frontend/app/*/page.tsx` ahora consumen `useT()` y muestran chrome en EN o ES según el selector:
+
+| Page | Strings | Namespace |
+|---|---|---|
+| `leads/page.tsx` | 149 keys (1930 LOC) | `leads.*` |
+| `pipeline/page.tsx` | 2 keys (22 LOC) | `pipeline.*` |
+| `landing-pages/page.tsx` | 58 keys (1091 LOC) | `landing.*` |
+| `inbox/page.tsx` | 91 keys (1100 LOC) | `inbox.*` |
+| `deals/page.tsx` | 30 keys (505 LOC) | `deals.*` |
+| `proposals/page.tsx` | 35 keys (439 LOC) | `proposals.*` |
+| `voice-agent/page.tsx` | 32 keys (378 LOC) | `voice.*` |
+| `content-studio/page.tsx` | 11 keys (145 LOC) | `content.*` |
+| `sequences/page.tsx` | 16 keys (218 LOC) | `sequences.*` |
+| `campaigns/page.tsx` | 30 keys (407 LOC) | `campaigns.*` |
+| `calendar/page.tsx` | 33 keys (641 LOC) | `calendar.*` |
+| `analytics/page.tsx` | 18 keys (233 LOC) | `analytics.*` |
+| `settings/page.tsx` | 25 keys (306 LOC) | `settings.*` |
+| `billing/page.tsx` | 22 keys (292 LOC) | `billing.*` |
+
+**Total: 568 nuevas keys × 2 idiomas = 1136 entradas** agregadas al diccionario. El archivo `translations.ts` pasó de ~218 entries a 1356.
+
+#### Proceso (delegación paralela)
+
+3 agentes corriendo en background a la vez, cada uno con un namespace prefix asignado para evitar collisions:
+- **Agente A**: leads + pipeline (sub-namespace `leads.*`, `pipeline.*`)
+- **Agente B**: landing-pages + inbox (`landing.*`, `inbox.*`)
+- **Agente C**: las 10 restantes
+
+Cada agente:
+1. Leyó el snapshot del `translations.ts` para conocer keys existentes y evitar duplicar
+2. Importó `useT` y agregó `const { t } = useT()` en el componente principal
+3. Reemplazó cada string user-facing por `t("namespace.key")`
+4. Escribió la página modificada a `/tmp/eko-fix/pages-translated/`
+5. Apendeó keys nuevas a `/tmp/eko-fix/dict-deltas/agent-{a,b,c}.txt` en bloques EN/ES
+
+Merge final con un script Python que parsea los 3 deltas, detecta collisions (cero encontradas) y los inserta antes del marker `\n  },\n\n  es: {` y `\n  },\n} as const;` para mantener el formato consistente del archivo.
+
+#### Fix de build TS
+
+Tres páginas (`deals`, `proposals`, `voice-agent`) usaban `t(status.labelKey)` donde `labelKey: string`. El tipo `TranslationKey` es un union literal, no acepta `string` plano. Fix: cast `t(x.labelKey as any)` en los 3 sites (no se usa `TranslationKey` import porque los objetos `status`/`cfg` están definidos como `Record<string, ...>` y restringirlos rompería los keys dinámicos del API).
+
+#### Brand y terms preservados en ambos idiomas
+
+Por convención del producto (y consistencia con el patrón de v0.7.19), estos terms NO se traducen al español:
+- Brands: Eko AI, VAPI, Stripe, Resend, Coinbase, Kimi, MiniMax, ElevenLabs, Twilio, Google, Gmail, GitHub, Apple, Spotify, etc.
+- Tech jargon común en ES tech: Inbox, Lead, Deal, Pipeline, Score, Workspace, Email, Subject, Reply, Voice Agent, Webhook, Slug, HTML, Subject
+
+#### Verificación
+
+Las 15 rutas (`/`, `/leads`, `/pipeline`, `/deals`, `/proposals`, `/voice-agent`, `/content-studio`, `/inbox`, `/sequences`, `/campaigns`, `/calendar`, `/analytics`, `/landing-pages`, `/settings`, `/billing`) responden HTTP 200 después del rebuild + restart. Cero errores en `docker logs eko-frontend`.
+
+---
+
 ## [0.7.19] — 2026-05-19
 
 ### i18n — selector EN/ES + Dashboard, Navbar y componentes shared traducidos

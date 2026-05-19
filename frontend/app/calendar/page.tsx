@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useT } from "@/contexts/I18nProvider";
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -55,6 +56,7 @@ interface Booking {
 
 export default function CalendarPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const { t } = useT();
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"upcoming" | "all" | "past">("upcoming");
   const [cancellingId, setCancellingId] = useState<number | null>(null);
@@ -79,21 +81,21 @@ export default function CalendarPage() {
       setBookings(res.data);
     } catch (err: any) {
       console.error("Failed to load bookings:", err);
-      setError(err?.response?.data?.detail || "Failed to load meetings. Please try again.");
+      setError(err?.response?.data?.detail || t("calendar.error.load"));
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleCancel = async (id: number) => {
-    if (!confirm("Cancel this meeting?")) return;
+    if (!confirm(t("calendar.confirm.cancel"))) return;
     setCancellingId(id);
     try {
       await calendarApi.cancelBooking(id, "Cancelled by user");
       await loadBookings();
     } catch (err) {
       console.error("Failed to cancel:", err);
-      alert("Failed to cancel meeting.");
+      alert(t("calendar.error.cancel"));
     } finally {
       setCancellingId(null);
     }
@@ -109,21 +111,21 @@ export default function CalendarPage() {
       await loadBookings();
     } catch (err) {
       console.error("Failed to update notes:", err);
-      alert("Failed to save notes.");
+      alert(t("calendar.error.save_notes"));
     } finally {
       setSavingNotes(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this meeting permanently? This cannot be undone.")) return;
+    if (!confirm(t("calendar.confirm.delete"))) return;
     try {
       await calendarApi.deleteBooking(id);
       setSelectedBooking(null);
       await loadBookings();
     } catch (err) {
       console.error("Failed to delete:", err);
-      alert("Failed to delete meeting.");
+      alert(t("calendar.error.delete"));
     }
   };
 
@@ -142,6 +144,16 @@ export default function CalendarPage() {
     }
   };
 
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case "confirmed": return t("calendar.status.confirmed");
+      case "pending": return t("calendar.status.pending");
+      case "cancelled": return t("calendar.status.cancelled");
+      case "completed": return t("calendar.status.completed");
+      default: return status;
+    }
+  };
+
   const getLocationIcon = (type: string | null) => {
     switch (type) {
       case "video":
@@ -152,6 +164,15 @@ export default function CalendarPage() {
         return <MapPin className="w-4 h-4" />;
       default:
         return <Video className="w-4 h-4" />;
+    }
+  };
+
+  const locationLabel = (type: string | null) => {
+    switch (type) {
+      case "video": return t("calendar.location.video");
+      case "phone": return t("calendar.location.phone");
+      case "in_person": return t("calendar.location.in_person");
+      default: return t("calendar.location.video");
     }
   };
 
@@ -215,6 +236,14 @@ export default function CalendarPage() {
     );
   };
 
+  const filterLabel = (f: "upcoming" | "all" | "past") => {
+    switch (f) {
+      case "upcoming": return t("calendar.filter.upcoming");
+      case "all": return t("calendar.filter.all");
+      case "past": return t("calendar.filter.past");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-eko-graphite">
       <Navbar />
@@ -223,9 +252,9 @@ export default function CalendarPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold font-display">Calendar</h1>
+            <h1 className="text-2xl font-bold font-display">{t("calendar.title")}</h1>
             <p className="text-gray-400 text-sm mt-1">
-              Meetings and appointments
+              {t("calendar.subtitle")}
             </p>
           </div>
 
@@ -241,7 +270,7 @@ export default function CalendarPage() {
                     : "text-gray-400 hover:text-white"
                 }`}
               >
-                {f}
+                {filterLabel(f)}
               </button>
             ))}
           </div>
@@ -263,11 +292,11 @@ export default function CalendarPage() {
         ) : bookings.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-500">
             <CalendarIcon className="w-12 h-12 mb-4 opacity-50" />
-            <p className="text-lg font-medium">No meetings found</p>
+            <p className="text-lg font-medium">{t("calendar.empty.title")}</p>
             <p className="text-sm">
               {filter === "upcoming"
-                ? "No upcoming meetings scheduled"
-                : "No meetings match this filter"}
+                ? t("calendar.empty.upcoming")
+                : t("calendar.empty.filter")}
             </p>
           </div>
         ) : (
@@ -289,7 +318,7 @@ export default function CalendarPage() {
                           booking.status
                         )}`}
                       >
-                        {booking.status}
+                        {statusLabel(booking.status)}
                       </span>
                     </div>
 
@@ -309,7 +338,7 @@ export default function CalendarPage() {
                       <div className="flex items-center gap-1.5">
                         {getLocationIcon(booking.location_type)}
                         <span className="capitalize">
-                          {booking.location_type || "Video"}
+                          {locationLabel(booking.location_type)}
                         </span>
                       </div>
                     </div>
@@ -341,7 +370,7 @@ export default function CalendarPage() {
                         className="inline-flex items-center gap-1.5 mt-3 text-sm text-eko-blue hover:text-eko-blue-dark"
                       >
                         <CheckCircle className="w-4 h-4" />
-                        Join meeting
+                        {t("calendar.join")}
                       </a>
                     )}
                   </div>
@@ -355,7 +384,7 @@ export default function CalendarPage() {
                         }}
                         disabled={cancellingId === booking.id}
                         className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-                        title="Cancel meeting"
+                        title={t("calendar.action.cancel")}
                       >
                         {cancellingId === booking.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -393,7 +422,7 @@ export default function CalendarPage() {
                       selectedBooking.status
                     )}`}
                   >
-                    {selectedBooking.status}
+                    {statusLabel(selectedBooking.status)}
                   </span>
                 </div>
                 <p className="text-gray-400 text-sm">
@@ -419,7 +448,7 @@ export default function CalendarPage() {
                     <User className="w-4 h-4 text-eko-blue" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Attendee</p>
+                    <p className="text-xs text-gray-500">{t("calendar.attendee")}</p>
                     <p className="text-sm text-white font-medium">
                       {selectedBooking.attendee_name}
                     </p>
@@ -434,9 +463,9 @@ export default function CalendarPage() {
                     {getLocationIcon(selectedBooking.location_type)}
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Location</p>
+                    <p className="text-xs text-gray-500">{t("calendar.location_label")}</p>
                     <p className="text-sm text-white font-medium capitalize">
-                      {selectedBooking.location_type || "Video"}
+                      {locationLabel(selectedBooking.location_type)}
                     </p>
                     {selectedBooking.location &&
                       selectedBooking.status !== "cancelled" && (
@@ -446,7 +475,7 @@ export default function CalendarPage() {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-xs text-eko-blue hover:underline"
                         >
-                          Join meeting <ExternalLink className="w-3 h-3" />
+                          {t("calendar.join")} <ExternalLink className="w-3 h-3" />
                         </a>
                       )}
                   </div>
@@ -459,7 +488,7 @@ export default function CalendarPage() {
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                       <Target className="w-4 h-4 text-eko-blue" />
-                      Lead Snapshot
+                      {t("calendar.lead_snapshot")}
                     </h3>
                     <a
                       href={`/leads/${selectedBooking.lead.id}`}
@@ -467,7 +496,7 @@ export default function CalendarPage() {
                       rel="noopener noreferrer"
                       className="text-xs text-eko-blue hover:underline flex items-center gap-1"
                     >
-                      View lead <ArrowRight className="w-3 h-3" />
+                      {t("calendar.view_lead")} <ArrowRight className="w-3 h-3" />
                     </a>
                   </div>
 
@@ -488,7 +517,7 @@ export default function CalendarPage() {
                     {selectedBooking.lead.total_score !== null &&
                       selectedBooking.lead.total_score !== undefined && (
                         <span className="px-2 py-0.5 rounded-full text-xs bg-eko-blue/20 text-eko-blue">
-                          Score: {selectedBooking.lead.total_score}/100
+                          {t("calendar.score")}: {selectedBooking.lead.total_score}/100
                         </span>
                       )}
                   </div>
@@ -526,7 +555,7 @@ export default function CalendarPage() {
                 <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
                   <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
                     <Lightbulb className="w-4 h-4 text-yellow-400" />
-                    AI Sales Brief
+                    {t("calendar.sales_brief")}
                   </h3>
                   {renderMarkdownLike(
                     selectedBooking.meta?.sales_brief || selectedBooking.notes
@@ -539,7 +568,7 @@ export default function CalendarPage() {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                     <ShieldAlert className="w-4 h-4 text-orange-400" />
-                    Notes
+                    {t("calendar.notes")}
                   </h3>
                   {!editingNotes ? (
                     <button
@@ -549,7 +578,7 @@ export default function CalendarPage() {
                       }}
                       className="text-xs text-eko-blue hover:underline"
                     >
-                      Edit
+                      {t("common.edit")}
                     </button>
                   ) : (
                     <div className="flex gap-2">
@@ -558,13 +587,13 @@ export default function CalendarPage() {
                         disabled={savingNotes}
                         className="text-xs px-2 py-1 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20"
                       >
-                        {savingNotes ? "Saving..." : "Save"}
+                        {savingNotes ? t("calendar.saving") : t("common.save")}
                       </button>
                       <button
                         onClick={() => setEditingNotes(false)}
                         className="text-xs px-2 py-1 rounded bg-gray-500/10 text-gray-400 hover:bg-gray-500/20"
                       >
-                        Cancel
+                        {t("common.cancel")}
                       </button>
                     </div>
                   )}
@@ -574,11 +603,11 @@ export default function CalendarPage() {
                     value={notesDraft}
                     onChange={(e) => setNotesDraft(e.target.value)}
                     className="w-full h-24 rounded-lg bg-white/5 border border-white/10 text-sm text-white p-3 focus:outline-none focus:border-eko-blue resize-none"
-                    placeholder="Add notes about this meeting..."
+                    placeholder={t("calendar.notes_placeholder")}
                   />
                 ) : (
                   <p className="text-sm text-gray-300 whitespace-pre-wrap">
-                    {selectedBooking.notes || "No notes added yet."}
+                    {selectedBooking.notes || t("calendar.no_notes")}
                   </p>
                 )}
               </div>
@@ -593,9 +622,9 @@ export default function CalendarPage() {
                     handleDelete(selectedBooking.id);
                   }}
                   className="px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                  title="Delete permanently"
+                  title={t("calendar.action.delete_perm")}
                 >
-                  Delete
+                  {t("common.delete")}
                 </button>
                 {/* Reschedule button */}
                 {selectedBooking.status !== "cancelled" &&
@@ -607,7 +636,7 @@ export default function CalendarPage() {
                       onClick={(e) => e.stopPropagation()}
                       className="px-3 py-2 rounded-lg text-sm text-eko-blue hover:bg-eko-blue/10 transition-colors"
                     >
-                      Reschedule
+                      {t("calendar.action.reschedule")}
                     </a>
                   )}
               </div>
@@ -616,7 +645,7 @@ export default function CalendarPage() {
                   onClick={() => setSelectedBooking(null)}
                   className="px-4 py-2 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
                 >
-                  Close
+                  {t("common.close")}
                 </button>
                 {selectedBooking.status !== "cancelled" &&
                   selectedBooking.status !== "completed" && (
@@ -628,7 +657,7 @@ export default function CalendarPage() {
                       disabled={cancellingId === selectedBooking.id}
                       className="px-4 py-2 rounded-lg text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors disabled:opacity-50"
                     >
-                      Cancel Meeting
+                      {t("calendar.action.cancel_meeting")}
                     </button>
                   )}
               </div>

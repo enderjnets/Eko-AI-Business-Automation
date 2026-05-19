@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Play, Pause, Loader2, Target, Pencil, Trash2, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { useT } from "@/contexts/I18nProvider";
 import { campaignsApi } from "@/lib/api";
 
 interface Campaign {
@@ -19,6 +20,7 @@ interface Campaign {
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const { t } = useT();
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<number | null>(null);
 
@@ -103,7 +105,7 @@ export default function CampaignsPage() {
     e.preventDefault();
     if (!editingCampaign) return;
     if (!editForm.name.trim()) {
-      setEditError("El nombre es obligatorio");
+      setEditError(t("campaigns.error.name_required"));
       return;
     }
     setEditLoading(true);
@@ -122,14 +124,14 @@ export default function CampaignsPage() {
       loadCampaigns();
     } catch (err: any) {
       console.error(err);
-      setEditError(err.response?.data?.detail || "Error guardando cambios");
+      setEditError(err.response?.data?.detail || t("campaigns.error.save"));
     } finally {
       setEditLoading(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("¿Eliminar esta campaña? Esta acción no se puede deshacer.")) return;
+    if (!confirm(t("campaigns.confirm.delete"))) return;
     setDeleteLoading(true);
     setDeletingId(id);
     try {
@@ -137,7 +139,7 @@ export default function CampaignsPage() {
       loadCampaigns();
     } catch (err) {
       console.error(err);
-      alert("Error eliminando campaña");
+      alert(t("campaigns.error.delete"));
     } finally {
       setDeleteLoading(false);
       setDeletingId(null);
@@ -154,18 +156,29 @@ export default function CampaignsPage() {
     }
   };
 
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case "active": return t("campaigns.status.active");
+      case "paused": return t("campaigns.status.paused");
+      case "draft": return t("campaigns.status.draft");
+      case "completed": return t("campaigns.status.completed");
+      case "archived": return t("campaigns.status.archived");
+      default: return status;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-eko-graphite">
       <Navbar />
       <main className="pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold font-display">Campañas</h1>
-            <p className="text-gray-400 text-sm">Gestiona tus campañas de outreach</p>
+            <h1 className="text-2xl font-bold font-display">{t("campaigns.title")}</h1>
+            <p className="text-gray-400 text-sm">{t("campaigns.subtitle")}</p>
           </div>
           <button className="flex items-center gap-2 rounded-lg bg-eko-blue px-4 py-2.5 text-sm font-medium hover:bg-eko-blue-dark transition-colors">
             <Plus className="w-4 h-4" />
-            Nueva Campaña
+            {t("campaigns.new")}
           </button>
         </div>
 
@@ -176,13 +189,13 @@ export default function CampaignsPage() {
         ) : campaigns.length === 0 ? (
           <div className="rounded-xl border border-white/5 bg-white/[0.02] p-12 text-center">
             <Target className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No hay campañas aún</h3>
+            <h3 className="text-lg font-medium mb-2">{t("campaigns.empty")}</h3>
             <p className="text-gray-500 text-sm mb-4">
-              Crea tu primera campaña para empezar a contactar leads.
+              {t("campaigns.empty_hint")}
             </p>
             <button className="flex items-center gap-2 mx-auto rounded-lg bg-eko-blue px-4 py-2.5 text-sm font-medium hover:bg-eko-blue-dark transition-colors">
               <Plus className="w-4 h-4" />
-              Crear Campaña
+              {t("campaigns.create")}
             </button>
           </div>
         ) : (
@@ -200,22 +213,22 @@ export default function CampaignsPage() {
                     </p>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full capitalize shrink-0 ${getStatusColor(campaign.status)}`}>
-                    {campaign.status}
+                    {statusLabel(campaign.status)}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <div className="text-center">
                     <p className="text-lg font-bold font-display">{campaign.leads_total}</p>
-                    <p className="text-xs text-gray-500">Leads</p>
+                    <p className="text-xs text-gray-500">{t("campaigns.metric.leads")}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-lg font-bold font-display">{campaign.leads_contacted}</p>
-                    <p className="text-xs text-gray-500">Contactados</p>
+                    <p className="text-xs text-gray-500">{t("campaigns.metric.contacted")}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-lg font-bold font-display">{campaign.leads_responded}</p>
-                    <p className="text-xs text-gray-500">Respuestas</p>
+                    <p className="text-xs text-gray-500">{t("campaigns.metric.replies")}</p>
                   </div>
                 </div>
 
@@ -231,7 +244,7 @@ export default function CampaignsPage() {
                       ) : (
                         <Play className="w-3.5 h-3.5" />
                       )}
-                      Lanzar
+                      {t("campaigns.action.launch")}
                     </button>
                   )}
                   {campaign.status === "active" && (
@@ -245,7 +258,7 @@ export default function CampaignsPage() {
                       ) : (
                         <Pause className="w-3.5 h-3.5" />
                       )}
-                      Pausar
+                      {t("campaigns.action.pause")}
                     </button>
                   )}
                 </div>
@@ -255,7 +268,7 @@ export default function CampaignsPage() {
                   <button
                     onClick={() => openEdit(campaign)}
                     className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                    title="Editar"
+                    title={t("common.edit")}
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
@@ -263,7 +276,7 @@ export default function CampaignsPage() {
                     onClick={() => handleDelete(campaign.id)}
                     disabled={deleteLoading && deletingId === campaign.id}
                     className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-                    title="Eliminar"
+                    title={t("common.delete")}
                   >
                     {deleteLoading && deletingId === campaign.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -283,7 +296,7 @@ export default function CampaignsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-xl border border-white/10 bg-eko-graphite shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-              <h3 className="font-medium text-sm">Editar Campaña</h3>
+              <h3 className="font-medium text-sm">{t("campaigns.edit_title")}</h3>
               <button
                 onClick={() => setEditingCampaign(null)}
                 className="p-1 rounded-lg hover:bg-white/10 text-gray-400"
@@ -300,60 +313,60 @@ export default function CampaignsPage() {
               )}
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Nombre *</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("campaigns.field.name")} *</label>
                 <input
                   type="text"
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  placeholder="Nombre de la campaña"
+                  placeholder={t("campaigns.field.name_placeholder")}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Descripción</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("campaigns.field.description")}</label>
                 <textarea
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                  placeholder="Descripción de la campaña..."
+                  placeholder={t("campaigns.field.description_placeholder")}
                   rows={2}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none resize-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Estado</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("campaigns.field.status")}</label>
                 <select
                   value={editForm.status}
                   onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                 >
-                  <option value="draft">Draft</option>
-                  <option value="active">Active</option>
-                  <option value="paused">Paused</option>
-                  <option value="completed">Completed</option>
-                  <option value="archived">Archived</option>
+                  <option value="draft">{t("campaigns.status.draft")}</option>
+                  <option value="active">{t("campaigns.status.active")}</option>
+                  <option value="paused">{t("campaigns.status.paused")}</option>
+                  <option value="completed">{t("campaigns.status.completed")}</option>
+                  <option value="archived">{t("campaigns.status.archived")}</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Asunto del email</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("campaigns.field.email_subject")}</label>
                 <input
                   type="text"
                   value={editForm.email_subject_template}
                   onChange={(e) => setEditForm({ ...editForm, email_subject_template: e.target.value })}
-                  placeholder="Ej: Quick question about your business"
+                  placeholder={t("campaigns.field.email_subject_placeholder")}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Cuerpo del email</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t("campaigns.field.email_body")}</label>
                 <textarea
                   value={editForm.email_body_template}
                   onChange={(e) => setEditForm({ ...editForm, email_body_template: e.target.value })}
-                  placeholder="Plantilla del cuerpo del email..."
+                  placeholder={t("campaigns.field.email_body_placeholder")}
                   rows={4}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none resize-none"
                 />
@@ -361,7 +374,7 @@ export default function CampaignsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Delay follow-up (horas)</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{t("campaigns.field.followup_delay")}</label>
                   <input
                     type="number"
                     value={editForm.follow_up_delay_hours}
@@ -371,7 +384,7 @@ export default function CampaignsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Max follow-ups</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{t("campaigns.field.max_followups")}</label>
                   <input
                     type="number"
                     value={editForm.max_follow_ups}
@@ -390,13 +403,13 @@ export default function CampaignsPage() {
                 disabled={editLoading}
                 className="flex-1 rounded-lg bg-eko-blue py-2.5 text-sm font-medium hover:bg-eko-blue-dark disabled:opacity-50 transition-colors"
               >
-                {editLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Guardar Cambios"}
+                {editLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : t("campaigns.save_changes")}
               </button>
               <button
                 onClick={() => setEditingCampaign(null)}
                 className="rounded-lg border border-white/10 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 transition-colors"
               >
-                Cancelar
+                {t("common.cancel")}
               </button>
             </div>
           </div>
