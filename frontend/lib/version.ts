@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.14";
+export const CURRENT_VERSION = "0.7.15";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,18 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.15",
+    date: "2026-05-19",
+    title: "Email pipeline — circuit breaker para Resend daily_quota_exceeded",
+    changes: [
+      "Bug raíz descubierto: 3 leads de prueba (testeko@example.com, testuser123@example.com, checkmark@test.com) estaban en loop infinito en la nurture sequence — ~864 retry attempts/día agotaron toda la quota free-tier de Resend (100/día) → 1338 envíos fallidos / 0 exitosos",
+      "Síntoma reportado por user: llenó form de Landing Page con su email + icapellis.com pero no le llegó el análisis AI (el lead 615 se enriqueció perfecto, score 73-80, pero send falló con daily_quota_exceeded)",
+      "Hotfix: borrados los 3 leads de prueba → loop bajó de ~36 fails/5min a 2/5min (18x menos)",
+      "Circuit breaker en backend/app/agents/outreach/channels/email.py: cuando Resend devuelve daily_quota_exceeded, se setea key Redis 'email:quota_exhausted:resend' con TTL hasta UTC midnight; las siguientes llamadas a send() short-circuitan inmediatamente sin pegarle a Resend",
+      "Lead 615 (icapellis.com) reenvío programado vía 'at' job a 18:05 MDT (5min después del reset de quota Resend a 00:00 UTC)",
+    ],
+  },
   {
     version: "0.7.14",
     date: "2026-05-19",

@@ -1,5 +1,71 @@
 
 
+## [0.7.15] — 2026-05-19
+
+### Email pipeline — circuit breaker para Resend daily_quota_exceeded
+
+Usuario reportó: llenó el form de una Landing Page con su email + `https://www.icapellis.com` pero el correo con el análisis AI nunca llegó. La investigación reveló dos problemas conectados:
+
+#### Root cause
+
+1. **Lead 615 (Ender Ocando, enderjnets@gmail.com) se creó OK y se enriqueció perfecto** — score 73-80, proposal completa, research scraped icapellis.com (Wix site, basic, missing services/pricing/hours). El pipeline trabajó.
+2. **El email NO se envió** porque Resend devolvió `daily_quota_exceeded`. Free tier: 100 emails/día. Mensaje: *"You have reached your daily email sending quota."*
+3. **Root cause del quota agotado**: 3 leads de prueba viejos (`testeko@example.com`, `testuser123@example.com`, `checkmark@test.com`) estaban atrapados en la **nurture sequence 2** (Landing Page Nurturing), reintentando envíos cada ~5 min. Logs muestran 24 attempts en 2h por cada uno = ~864 envíos/día consumiendo quota. Resultado: **1338 envíos fallidos / 0 exitosos** hoy antes de que el lead 615 entrara — su único intento también falló por la misma razón.
+
+#### Cambios
+
+##### 1. Hotfix data (immediato, sin código)
+
+Borrados los 3 leads de prueba (605, 609, 610) vía `DELETE /api/v1/leads/{id}` — el sequence executor dejó de reintentarlos. Rate de fails cayó de ~36/5min a 2/5min (**18x reducción**).
+
+##### 2. Circuit breaker (backend/app/agents/outreach/channels/email.py)
+
+Cuando Resend devuelve un error que contiene `daily_quota_exceeded` o `daily email sending quota`, se setea una key Redis `email:quota_exhausted:resend` con TTL calculado hasta la próxima UTC midnight (cuando Resend resetea). Las siguientes llamadas a `send()` chequean esa key al inicio y short-circuitan con `RuntimeError("Email quota exhausted (circuit breaker open until UTC midnight)")` antes de pegarle a Resend.
+
+```python
+def _trip_quota_breaker(reason: str) -> None:
+    r = _redis_client()
+    if r is None:
+        return
+    now = datetime.now(timezone.utc)
+    next_midnight_utc = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    ttl = max(60, int((next_midnight_utc - now).total_seconds()))
+    r.set(_QUOTA_KEY, reason, ex=ttl)
+```
+
+```python
+async def send(self, ...):
+    if _is_quota_breaker_open():
+        raise RuntimeError("Email quota exhausted (circuit breaker open until UTC midnight)")
+    try:
+        # ... existing send code ...
+    except Exception as e:
+        err_str = str(e).lower()
+        if "daily_quota_exceeded" in err_str or "daily email sending quota" in err_str:
+            _trip_quota_breaker(str(e)[:200])
+        # ... existing error handling ...
+```
+
+##### 3. Verificación end-to-end
+
+Sembré la key manualmente con TTL hasta UTC midnight, disparé manualmente `enrich_and_welcome_lead(615)`. Resultado en logs del worker:
+
+```
+[Celery] Failed to send analysis email to lead 615: Email quota exhausted (circuit breaker open until UTC midnight)
+```
+
+En lugar de pegarle a Resend → recibir 429 → loggear daily quota error. Resend no fue tocado.
+
+##### 4. Reenvío programado para lead 615
+
+`at` job en el ROG agendado a 18:05 MDT (5min después del reset de quota Resend a 00:00 UTC). Cuando dispare, llamará `enrich_and_welcome_lead.delay(615)` y la key Redis ya habrá expirado (TTL hasta 00:00 UTC) → send() llega a Resend → email se envía.
+
+#### Por qué Resend devolvió quota error en producción
+
+El plan Resend actual está en free-tier (verificado vía `GET /domains`: el dominio `biz.ekoaiautomation.com` está verified pero la cuenta no ha sido upgraded). Free tier: 100/día. Plan Pro: $20/mes = 50K emails/mes (~1700/día). Decisión de upgrade pendiente.
+
+---
+
 ## [0.7.14] — 2026-05-19
 
 ### Landing Pages — fix client-side crash en Save & Activate

@@ -1,7 +1,8 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
+import redis
 import resend
 
 from app.config import get_settings
@@ -17,6 +18,46 @@ settings = get_settings()
 resend.api_key = settings.RESEND_API_KEY
 
 logger = logging.getLogger(__name__)
+
+
+# Circuit breaker for Resend daily quota — when triggered, all sends short-circuit
+# until UTC midnight rather than hitting Resend 1000+ times for nothing.
+_QUOTA_KEY = "email:quota_exhausted:resend"
+
+
+def _redis_client():
+    try:
+        return redis.from_url(settings.REDIS_URL, socket_timeout=2, socket_connect_timeout=2)
+    except Exception as e:
+        logger.warning(f"Email circuit breaker: redis unreachable ({e}); breaker disabled")
+        return None
+
+
+def _is_quota_breaker_open() -> bool:
+    r = _redis_client()
+    if r is None:
+        return False
+    try:
+        return bool(r.exists(_QUOTA_KEY))
+    except Exception:
+        return False
+
+
+def _trip_quota_breaker(reason: str) -> None:
+    r = _redis_client()
+    if r is None:
+        return
+    now = datetime.now(timezone.utc)
+    next_midnight_utc = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    ttl = max(60, int((next_midnight_utc - now).total_seconds()))
+    try:
+        r.set(_QUOTA_KEY, reason, ex=ttl)
+        logger.warning(
+            f"Email circuit breaker TRIPPED: {reason}. All sends paused for {ttl}s "
+            f"(until {next_midnight_utc.isoformat()})."
+        )
+    except Exception as e:
+        logger.warning(f"Email circuit breaker: failed to set redis key ({e})")
 
 
 # Email templates library — optimized based on 2025-2026 B2B benchmarks
@@ -330,6 +371,13 @@ Denver, CO<br>
         Returns:
             Resend API response with message_id
         """
+        # Short-circuit if daily quota was already exhausted earlier today —
+        # avoids hammering Resend's API hundreds of times for nothing.
+        if _is_quota_breaker_open():
+            raise RuntimeError(
+                "Email quota exhausted (circuit breaker open until UTC midnight)"
+            )
+
         try:
             email_tags = [{"name": "lead_id", "value": str(lead_id)}] if lead_id else []
             if campaign_id:
@@ -396,7 +444,13 @@ Denver, CO<br>
             
         except Exception as e:
             logger.error(f"Failed to send email to {to_email}: {e}")
-            
+
+            # Trip the circuit breaker on Resend daily quota errors so the rest
+            # of today's sends short-circuit instead of hammering the API.
+            err_str = str(e).lower()
+            if "daily_quota_exceeded" in err_str or "daily email sending quota" in err_str:
+                _trip_quota_breaker(str(e)[:200])
+
             # Paperclip: log email error
             try:
                 on_email_error(
