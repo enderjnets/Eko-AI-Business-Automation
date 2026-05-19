@@ -1,5 +1,78 @@
 
 
+## [0.7.18] — 2026-05-19
+
+### Dashboard — agregados Landing Pages + Billing, orden lógico por funnel
+
+El user notó que **faltaba el módulo de Landing Pages** en el grid del dashboard (lo vio sólo via `/landing-pages` directo). Auditoría de rutas reveló que también faltaba **Billing**.
+
+#### Rutas internas vs externas
+
+Hice un inventario de todas las pages bajo `frontend/app/*/page.tsx`:
+
+| Página | En MODULES (v0.7.17)? | Acción |
+|---|---|---|
+| `/leads` | ✓ | mantener |
+| `/landing-pages` | ✗ | **agregar** (LayoutTemplate, sky) |
+| `/inbox` | ✓ | mantener |
+| `/sequences` | ✓ | mantener |
+| `/campaigns` | ✓ | mantener |
+| `/voice-agent` | ✓ | mantener |
+| `/calendar` | ✓ | mantener |
+| `/pipeline` | ✓ | mantener |
+| `/deals` | ✓ | mantener |
+| `/proposals` | ✓ | mantener |
+| `/content-studio` | ✓ | mantener |
+| `/analytics` | ✓ | mantener |
+| `/billing` | ✗ | **agregar** (CreditCard, amber) |
+| `/settings` | ✓ | mantener |
+| `/book-demo` | n/a | público — no aplica |
+| `/checkout` | n/a | público — no aplica |
+| `/landing` | n/a | landing home pública — no aplica |
+| `/pricing` | n/a | público — no aplica |
+| `/login` | n/a | auth — no aplica |
+
+#### Nuevo orden default (sales funnel)
+
+```
+1. ACQUIRE
+   1. Leads (eko-blue)
+   2. Landing Pages (sky)
+2. ENGAGE
+   3. Inbox (rose)        ← badge unread
+   4. Secuencias (purple)
+   5. Campañas (cyan)
+   6. Voice (teal)
+   7. Calendar (orange)
+3. CLOSE
+   8. Pipeline (eko-green)
+   9. Deals (gold)
+   10. Propuestas (indigo)
+4. GROW
+   11. Content (pink)
+   12. Analytics (emerald)
+5. OPS
+   13. Billing (amber)
+   14. Config (gray)
+```
+
+Cambio el color de **Voice** de `cyan-400` → `teal-400` para diferenciarlo de Campañas (que también era cyan) — ahora cada módulo tiene un color único.
+
+#### Migración
+
+`frontend/components/ModulesGrid.tsx`: bumpeo las localStorage keys de `_v1` a `_v2`:
+
+```ts
+const LS_ORDER  = "eko_dashboard_modules_order_v2";
+const LS_HIDDEN = "eko_dashboard_modules_hidden_v2";
+```
+
+El bump fuerza el nuevo default en todos los browsers (los v1 quedan huérfanos en localStorage sin efecto). Los usuarios que customizaron orden en v0.7.17 (lanzamiento de hoy) pierden ese custom — está bien, era una pre-versión sin Landing Pages ni Billing igual.
+
+La funcionalidad de drag-and-drop, jiggle, add/remove sigue **idéntica**. El user puede re-customizar el nuevo orden si prefiere.
+
+---
+
 ## [0.7.17] — 2026-05-19
 
 ### Dashboard — módulos reordenables + agregar/quitar (estilo macOS Tahoe)

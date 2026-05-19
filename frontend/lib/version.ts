@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.17";
+export const CURRENT_VERSION = "0.7.18";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,18 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.18",
+    date: "2026-05-19",
+    title: "Dashboard — agregados Landing Pages + Billing, orden lógico por funnel",
+    changes: [
+      "Faltaba Landing Pages en el grid de módulos del dashboard — agregado con icono LayoutTemplate (sky)",
+      "Faltaba Billing (Stripe & plan) — agregado con icono CreditCard (amber)",
+      "Reordenados los 14 módulos por flujo lógico del funnel: ACQUIRE (Leads, Landing Pages) → ENGAGE (Inbox, Sequences, Campaigns, Voice, Calendar) → CLOSE (Pipeline, Deals, Proposals) → GROW (Content, Analytics) → OPS (Billing, Config)",
+      "Bump localStorage key v1 → v2 para que el nuevo default aplique en todos los browsers — los reorders custom previos se resetean (eran de la sesión del lanzamiento de drag-and-drop hoy mismo)",
+      "La funcionalidad de drag-and-drop, jiggle edit mode y add/remove sigue intacta — el user puede re-customizar el nuevo orden",
+    ],
+  },
   {
     version: "0.7.17",
     date: "2026-05-19",

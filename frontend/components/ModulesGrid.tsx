@@ -35,8 +35,12 @@ interface ModulesGridProps {
   unreadCount?: number;
 }
 
-const LS_ORDER = "eko_dashboard_modules_order_v1";
-const LS_HIDDEN = "eko_dashboard_modules_hidden_v1";
+// v2 bump (2026-05-19): added /landing-pages and /billing modules + reorganized
+// the canonical order to follow the sales funnel (acquire → engage → close →
+// grow → ops). Bumping the key forces every browser to pick up the new default
+// instead of preserving the v1 order (which was incomplete).
+const LS_ORDER = "eko_dashboard_modules_order_v2";
+const LS_HIDDEN = "eko_dashboard_modules_hidden_v2";
 
 function loadOrder(canonical: string[]): string[] {
   if (typeof window === "undefined") return canonical;

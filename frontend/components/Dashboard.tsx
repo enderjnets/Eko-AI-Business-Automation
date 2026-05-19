@@ -18,6 +18,8 @@ import {
   FileText,
   Mic,
   Clapperboard,
+  LayoutTemplate,
+  CreditCard,
   Loader2,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -29,18 +31,27 @@ import ModulesGrid, { type ModuleDef } from "@/components/ModulesGrid";
 import { analyticsApi, emailsApi, dealsApi } from "@/lib/api";
 
 
+// Default order follows a logical sales funnel: ACQUIRE → ENGAGE → CLOSE → GROW → OPS.
+// The user can reorder/hide via the Editar mode; this is just the seed layout.
 const MODULES: ModuleDef[] = [
+  // 1. Acquire — leads enter the system
   { href: "/leads", label: "Leads", subtitle: "Gestión de prospectos", icon: Users, color: "text-eko-blue bg-eko-blue/10 border-eko-blue/20" },
-  { href: "/pipeline", label: "Pipeline", subtitle: "Kanban de ventas", icon: GitBranch, color: "text-eko-green bg-eko-green/10 border-eko-green/20" },
-  { href: "/deals", label: "Deals", subtitle: "Oportunidades", icon: Briefcase, color: "text-gold bg-gold/10 border-gold/20" },
-  { href: "/proposals", label: "Propuestas", subtitle: "AI proposals", icon: FileText, color: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20" },
-  { href: "/voice-agent", label: "Voice", subtitle: "VAPI calls", icon: Mic, color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },
-  { href: "/content-studio", label: "Content", subtitle: "Videos & redes", icon: Clapperboard, color: "text-pink-400 bg-pink-500/10 border-pink-500/20" },
+  { href: "/landing-pages", label: "Landing Pages", subtitle: "Captura web", icon: LayoutTemplate, color: "text-sky-400 bg-sky-500/10 border-sky-500/20" },
+  // 2. Engage — talk to them
   { href: "/inbox", label: "Inbox", subtitle: "Replies de leads", icon: Inbox, color: "text-rose bg-rose/10 border-rose/20", badgeKey: "unread" },
   { href: "/sequences", label: "Secuencias", subtitle: "Automatización", icon: ListOrdered, color: "text-purple-400 bg-purple-500/10 border-purple-500/20" },
   { href: "/campaigns", label: "Campañas", subtitle: "Email outreach", icon: Mail, color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },
+  { href: "/voice-agent", label: "Voice", subtitle: "VAPI calls", icon: Mic, color: "text-teal-400 bg-teal-500/10 border-teal-500/20" },
   { href: "/calendar", label: "Calendar", subtitle: "Reuniones", icon: Calendar, color: "text-orange-400 bg-orange-500/10 border-orange-500/20" },
+  // 3. Close — convert
+  { href: "/pipeline", label: "Pipeline", subtitle: "Kanban de ventas", icon: GitBranch, color: "text-eko-green bg-eko-green/10 border-eko-green/20" },
+  { href: "/deals", label: "Deals", subtitle: "Oportunidades", icon: Briefcase, color: "text-gold bg-gold/10 border-gold/20" },
+  { href: "/proposals", label: "Propuestas", subtitle: "AI proposals", icon: FileText, color: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20" },
+  // 4. Grow — marketing + insights
+  { href: "/content-studio", label: "Content", subtitle: "Videos & redes", icon: Clapperboard, color: "text-pink-400 bg-pink-500/10 border-pink-500/20" },
   { href: "/analytics", label: "Analytics", subtitle: "Métricas", icon: BarChart3, color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
+  // 5. Ops — admin
+  { href: "/billing", label: "Billing", subtitle: "Stripe & plan", icon: CreditCard, color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
   { href: "/settings", label: "Config", subtitle: "API keys y prefs", icon: Settings, color: "text-gray-300 bg-gray-500/10 border-gray-500/20" },
 ];
 
