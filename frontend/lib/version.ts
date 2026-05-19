@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.11";
+export const CURRENT_VERSION = "0.7.12";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,16 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.12",
+    date: "2026-05-19",
+    title: "Landing Pages — Active preview: línea blanca del scrollbar eliminada",
+    changes: [
+      "Fix: línea blanca vertical en el borde derecho del preview del card 'LANDING PAGE EN USO' era el scrollbar nativo del iframe (la LP es ~4000px, iframe a 800px)",
+      "Solución: iframe width = VW + 24 (1304px), scale calculado con VW = 1280 — la scrollbar queda 5px fuera del container y overflow-hidden la clipa",
+      "Bonus: colorScheme dark en el iframe — scrollbar dark en caso de Firefox/Safari donde el clipping no sea exacto",
+    ],
+  },
   {
     version: "0.7.11",
     date: "2026-05-19",

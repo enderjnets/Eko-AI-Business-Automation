@@ -1,5 +1,21 @@
 
 
+## [0.7.12] — 2026-05-19
+
+### Landing Pages — Active preview: línea blanca del scrollbar eliminada
+
+Tras v0.7.11 (preview rediseñado), el usuario notó una línea blanca vertical en el borde derecho del preview del card "LANDING PAGE EN USO". **Causa**: el iframe se rendereaba a 1280×800 px, pero la landing page real es ~3500–4500 px de alto. El navegador mostraba la scrollbar vertical nativa (default light en Chromium) en el borde derecho del iframe. Como el iframe escalado tenía exactamente el ancho del container, la scrollbar quedaba DENTRO del área visible y no la clipaba `overflow-hidden`.
+
+#### Fix
+- Iframe ahora se renderea a `width = VW + 24 = 1304 px` (24px de buffer extra)
+- `scale` sigue calculándose con `VW = 1280` para que el contenido útil llene exactamente el container
+- La scrollbar queda en pixels ~1287–1304 del iframe → tras el scale, queda 3–5 px PASADO el borde derecho del container → `overflow-hidden` la clipa
+- Bonus: `colorScheme: dark` en el iframe — si por alguna razón el clipping no es perfecto en Firefox/Safari, la scrollbar sería dark (invisible contra `bg-[#0F172A]`) en vez de white
+
+#### Files
+- `frontend/app/landing-pages/page.tsx` — añadido `SCROLLBAR_BUFFER = 24` const + 2 líneas en el iframe style
+
+
 ## [0.7.11] — 2026-05-19
 
 ### Landing Pages — Active card preview thumbnail rediseñado

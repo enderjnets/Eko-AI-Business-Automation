@@ -110,6 +110,11 @@ function ActivePreview({ slug }: { slug: string }) {
   const [scale, setScale] = useState(0.25);
   const VW = 1280;
   const VH = 800;
+  // Iframe is rendered wider than the visible area so the native browser
+  // scrollbar (page content is taller than VH) falls past the container's
+  // right edge and gets clipped by overflow-hidden. Without this buffer
+  // the scrollbar shows as a white sliver on the right of the preview.
+  const SCROLLBAR_BUFFER = 24;
 
   useEffect(() => {
     const el = ref.current;
@@ -131,10 +136,11 @@ function ActivePreview({ slug }: { slug: string }) {
         src={`/api/v1/landing-pages/public/${slug}`}
         className="absolute top-0 left-0 border-0 pointer-events-none"
         style={{
-          width: `${VW}px`,
+          width: `${VW + SCROLLBAR_BUFFER}px`,
           height: `${VH}px`,
           transform: `scale(${scale})`,
           transformOrigin: "top left",
+          colorScheme: "dark",
         }}
         sandbox="allow-scripts"
         title="Active preview"
