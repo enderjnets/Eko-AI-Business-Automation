@@ -102,6 +102,29 @@ const PROMPT_TEMPLATES = [
   },
 ];
 
+// Normalize any API error shape to a string so it never crashes the React tree.
+// FastAPI 422 returns `detail` as an array of validation objects; rendering an
+// object directly as a JSX child throws "Objects are not valid as a React child".
+function formatApiError(err: any, fallback: string): string {
+  const detail = err?.response?.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d: any) => {
+        if (typeof d === "string") return d;
+        const field = Array.isArray(d?.loc)
+          ? d.loc.filter((x: any) => x !== "body").join(".")
+          : "";
+        const msg = d?.msg || JSON.stringify(d);
+        return field ? `${field}: ${msg}` : msg;
+      })
+      .join(" · ");
+  }
+  if (detail && typeof detail === "object") return detail.msg || JSON.stringify(detail);
+  if (err?.message) return err.message;
+  return fallback;
+}
+
 // Active landing page thumbnail — scales the iframe to fill the card width
 // at a fixed 16:10 aspect ratio. Recomputes scale via ResizeObserver so the
 // preview always fills the available space without leaving a white frame.
@@ -187,7 +210,7 @@ export default function LandingPagesPage() {
       setPages(res.data.items || []);
       setError("");
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Failed to load landing pages");
+      setError(formatApiError(e, "Failed to load landing pages"));
     } finally {
       setLoading(false);
     }
@@ -199,7 +222,7 @@ export default function LandingPagesPage() {
       const res = await landingPagesApi.compare();
       setCompareData(res.data || []);
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Failed to load comparison");
+      setError(formatApiError(e, "Failed to load comparison"));
     } finally {
       setLoadingCompare(false);
     }
@@ -259,7 +282,7 @@ export default function LandingPagesPage() {
       setIsCreating(false);
       setSelectedPage(null);
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Failed to save");
+      setError(formatApiError(e, "Failed to save"));
     }
   };
 
@@ -288,7 +311,7 @@ export default function LandingPagesPage() {
         await loadPages();
         await loadCompare();
       } catch (e: any) {
-        setError(e.response?.data?.detail || "Failed to create draft");
+        setError(formatApiError(e, "Failed to create draft"));
         return;
       }
     }
@@ -328,7 +351,7 @@ export default function LandingPagesPage() {
         setIsCreating(false);
       }
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Delete failed");
+      setError(formatApiError(e, "Delete failed"));
     }
   };
 
@@ -338,7 +361,7 @@ export default function LandingPagesPage() {
       await loadPages();
       await loadCompare();
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Clone failed");
+      setError(formatApiError(e, "Clone failed"));
     }
   };
 
@@ -348,7 +371,7 @@ export default function LandingPagesPage() {
       await loadPages();
       await loadCompare();
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Activate failed");
+      setError(formatApiError(e, "Activate failed"));
     }
   };
 
@@ -358,7 +381,7 @@ export default function LandingPagesPage() {
       await loadPages();
       await loadCompare();
     } catch (e: any) {
-      setError(e.response?.data?.detail || "Deactivate failed");
+      setError(formatApiError(e, "Deactivate failed"));
     }
   };
 
@@ -909,14 +932,18 @@ export default function LandingPagesPage() {
 
                     <button
                       onClick={() => handleSave(false)}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#334155] text-white text-sm font-medium hover:bg-[#475569] transition-colors"
+                      disabled={!formName.trim() || !formSlug.trim()}
+                      title={!formName.trim() || !formSlug.trim() ? "Name and slug are required" : ""}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#334155] text-white text-sm font-medium hover:bg-[#475569] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Save className="w-3.5 h-3.5" />
                       Save Draft
                     </button>
                     <button
                       onClick={() => handleSave(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0B4FD8] text-white text-sm font-medium hover:bg-[#0A3FB8] transition-colors"
+                      disabled={!formName.trim() || !formSlug.trim()}
+                      title={!formName.trim() || !formSlug.trim() ? "Name and slug are required" : ""}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0B4FD8] text-white text-sm font-medium hover:bg-[#0A3FB8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Star className="w-3.5 h-3.5" />
                       Save & Activate
@@ -977,7 +1004,7 @@ export default function LandingPagesPage() {
                             await loadPages();
                             await loadCompare();
                           } catch (e: any) {
-                            setError(e.response?.data?.detail || "Failed to toggle active state");
+                            setError(formatApiError(e, "Failed to toggle active state"));
                           }
                         }}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${

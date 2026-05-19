@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.13";
+export const CURRENT_VERSION = "0.7.14";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,17 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.14",
+    date: "2026-05-19",
+    title: "Landing Pages — fix client-side crash en Save & Activate",
+    changes: [
+      "Fix crítico: 'Application error: a client-side exception has occurred' al clickear Save & Activate sin llenar name/slug — el backend devolvía 422 con detail=array-de-objects y React tiraba 'Objects are not valid as a React child' al renderizarlo",
+      "Nuevo helper formatApiError() normaliza cualquier shape de error de FastAPI (string, array de validation errors, object) a un string legible — aplicado a las 9 llamadas setError() de la página",
+      "Save Draft y Save & Activate ahora se deshabilitan cuando name o slug están vacíos — UX previene el 422 antes de llegar al backend",
+      "Tooltip 'Name and slug are required' cuando los botones están disabled",
+    ],
+  },
   {
     version: "0.7.13",
     date: "2026-05-19",

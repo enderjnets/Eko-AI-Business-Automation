@@ -1,5 +1,47 @@
 
 
+## [0.7.14] — 2026-05-19
+
+### Landing Pages — fix client-side crash en Save & Activate
+
+Inmediatamente después de shippear v0.7.13 el usuario reportó: al abrir el modal Create Landing Page, seleccionar un template (cualquiera de los 10) y clickear "Save & Activate", la página completa se pintaba en negro con el mensaje *"Application error: a client-side exception has occurred (see the browser console for more information)."*
+
+#### Root cause encadenado
+
+1. **El backend devuelve 422** cuando `name` o `slug` están vacíos — `LandingPageBase` los tiene como `Field(..., min_length=1)`. El payload del frontend incluía `name=""` y `slug=""` porque el modal arranca con los inputs en blanco, no había validación in-place y el usuario podía clickear el botón.
+2. **FastAPI 422 devuelve `detail` como array de validation errors** (`[{type, loc, msg, input, url}, ...]`), no como string.
+3. **El frontend hacía** `setError(e.response?.data?.detail || "Failed to save")` — el estado `error` queda con un array de objects en vez de un string.
+4. **La JSX renderiza `{error}` directo** (línea 406 de `page.tsx`) — React 18 tira *"Objects are not valid as a React child (found: object with keys {type, loc, msg, input, url})."* En producción de Next.js esto se muestra como el genérico "Application error".
+
+El bug afectaba todas las llamadas `setError(e.response?.data?.detail || ...)` de la página (10 ocurrencias) — cualquier endpoint que devolviera 422 podía crashear la app, no sólo el de create.
+
+#### Cambios
+
+- **Nuevo helper `formatApiError(err, fallback): string`** al top de `frontend/app/landing-pages/page.tsx`. Normaliza cualquier shape de error de FastAPI:
+  - `detail` string → tal cual
+  - `detail` array → `"name: ensure this value has at least 1 characters · slug: ..."`
+  - `detail` object → `msg` o JSON.stringify
+  - sin detail → `err.message` o fallback
+- **9 llamadas setError() reemplazadas** por `setError(formatApiError(e, "..."))`: loadPages (L213), loadCompare (L225), handleSave (L285), handleGenerate create (L314), delete (L354), clone (L364), activate (L374), deactivate (L384), toggle active (L1003).
+- **Save Draft + Save & Activate se deshabilitan** cuando `formName` o `formSlug` están vacíos:
+  - `disabled={!formName.trim() || !formSlug.trim()}`
+  - `title="Name and slug are required"` cuando está disabled
+  - Clases `disabled:opacity-50 disabled:cursor-not-allowed`
+- **No se tocó el backend** — el 422 es validación legítima y el shape de respuesta es estándar de FastAPI. El bug era 100% frontend.
+
+#### Verificación
+
+- Repro original: abrir modal, seleccionar template, click Save & Activate sin llenar nada → botón disabled, no crashea ✓
+- Programático (curl con name="" slug=""): backend devuelve 422 → si se forzara el setError, ahora se vería un mensaje legible no `[object Object]` ✓
+- Happy path: name + slug + template + Save & Activate → LP creada y activada ✓
+- Otros errores (409 slug duplicado): siguen mostrándose legibles ✓
+
+#### Por qué no se detectó en v0.7.13
+
+El flujo end-to-end de QA de v0.7.13 SIEMPRE llenó name + slug antes de clickear Save (porque la prueba era para verificar template_id, no error handling). El usuario al usar el modal por primera vez naturalmente clickeó Save & Activate antes de llenar todo, gatillando el caso edge.
+
+---
+
 ## [0.7.13] — 2026-05-19
 
 ### Landing Pages — 10 templates con selector visual en Create modal
