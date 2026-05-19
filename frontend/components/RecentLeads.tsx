@@ -82,13 +82,14 @@ export default function RecentLeads({ refreshTrigger }: RecentLeadsProps) {
       ) : (
         <div className="space-y-3">
           {leads.map((lead) => (
-            <div
+            <Link
               key={lead.id}
-              className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] p-4 hover:bg-white/[0.04] transition-colors"
+              href={`/leads/${lead.id}`}
+              className="group flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] p-4 hover:bg-white/[0.06] hover:border-white/10 transition-colors cursor-pointer"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-medium text-sm truncate">{lead.business_name}</h3>
+                  <h3 className="font-medium text-sm truncate group-hover:text-eko-blue transition-colors">{lead.business_name}</h3>
                   {lead.category && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-gray-400">
                       {lead.category}
@@ -118,8 +119,9 @@ export default function RecentLeads({ refreshTrigger }: RecentLeadsProps) {
                 <span className="text-xs px-2 py-1 rounded-full bg-white/5 text-gray-400 capitalize">
                   {lead.status.replace("_", " ")}
                 </span>
+                <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-eko-blue group-hover:translate-x-0.5 transition-all" />
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

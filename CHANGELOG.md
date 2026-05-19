@@ -1,5 +1,29 @@
 
 
+## [0.7.16] — 2026-05-19
+
+### Dashboard — cards de "Leads Recientes" clickeables completas
+
+Antes el módulo Recent Leads del dashboard tenía cards que mostraban nombre, ubicación, score y status, pero **no eran clickeables** — el usuario tenía que ir a `/leads` y buscar el lead manualmente para ver su detalle.
+
+#### Cambio
+
+`frontend/components/RecentLeads.tsx`: el wrapper de cada card cambió de `<div>` a `<Link href={`/leads/${lead.id}`}>`. Toda la card es ahora un link funcional — click en cualquier parte (nombre, badges, scores, status) navega a `/leads/{id}` que renderiza el perfil completo del lead.
+
+#### UX polish
+
+- Hover state mejorado: bg de `bg-white/[0.02]` a `bg-white/[0.06]`, border de `border-white/5` a `border-white/10`
+- Nombre del business se pinta en `text-eko-blue` al hover (group-hover, indica el target)
+- Icono ArrowRight agregado al final de la card con animación `translate-x-0.5` + cambio de color al hover (afordance visual de "esto navega")
+- `cursor-pointer` explícito en la card
+
+#### Notas
+
+- Único consumidor del componente: `Dashboard.tsx:217`. No hubo otros sitios que tocar.
+- La ruta destino `/leads/[id]/page.tsx` ya existía — solo era cuestión de conectar.
+
+---
+
 ## [0.7.15] — 2026-05-19
 
 ### Email pipeline — circuit breaker para Resend daily_quota_exceeded

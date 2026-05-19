@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.15";
+export const CURRENT_VERSION = "0.7.16";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,16 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.16",
+    date: "2026-05-19",
+    title: "Dashboard — cards de Leads Recientes son clickeables completos",
+    changes: [
+      "Antes: solo el botón 'View Profile' navegaba al detalle del lead — clickear el body de la card no hacía nada",
+      "Ahora: toda la card es un <Link> a /leads/{id} — click en cualquier parte (nombre, scores, badges, iconos) abre el perfil completo del lead",
+      "Hover state mejorado: bg, border, business_name en azul + ArrowRight icon con slide animation",
+    ],
+  },
   {
     version: "0.7.15",
     date: "2026-05-19",
