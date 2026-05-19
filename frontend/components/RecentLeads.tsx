@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Star, MapPin, Mail, Phone, Globe, ArrowRight } from "lucide-react";
 import { leadsApi } from "@/lib/api";
 import Link from "next/link";
+import { useT } from "@/contexts/I18nProvider";
 
 interface Lead {
   id: number;
@@ -25,6 +26,7 @@ interface RecentLeadsProps {
 }
 
 export default function RecentLeads({ refreshTrigger }: RecentLeadsProps) {
+  const { t } = useT();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,19 +67,19 @@ export default function RecentLeads({ refreshTrigger }: RecentLeadsProps) {
   return (
     <div className="rounded-xl border border-white/5 bg-white/[0.02] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold font-display">Leads Recientes</h2>
+        <h2 className="text-lg font-semibold font-display">{t("recent_leads.title")}</h2>
         <Link
           href="/leads"
           className="text-sm text-eko-blue hover:text-eko-blue-dark flex items-center gap-1 transition-colors"
         >
-          Ver todos
+          {t("recent_leads.see_all")}
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
 
       {leads.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          <p>No hay leads aún. Usa el formulario de Discovery para encontrar negocios.</p>
+          <p>{t("recent_leads.empty")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -113,7 +115,7 @@ export default function RecentLeads({ refreshTrigger }: RecentLeadsProps) {
                     <div className={`text-lg font-bold font-display ${getScoreColor(lead.total_score)}`}>
                       {Math.round(lead.total_score)}
                     </div>
-                    <div className="text-xs text-gray-600">score</div>
+                    <div className="text-xs text-gray-600">{t("recent_leads.score")}</div>
                   </div>
                 )}
                 <span className="text-xs px-2 py-1 rounded-full bg-white/5 text-gray-400 capitalize">

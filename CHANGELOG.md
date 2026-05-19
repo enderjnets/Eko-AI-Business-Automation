@@ -1,5 +1,58 @@
 
 
+## [0.7.19] — 2026-05-19
+
+### i18n — selector EN/ES + Dashboard, Navbar y componentes shared traducidos
+
+El user pidió traducir todo el dashboard a inglés y agregar selector de idioma EN/ES que se aplique en cada rincón de Eko AI. Implementación en una pasada de la infraestructura + cobertura de Dashboard + componentes shared. Las páginas individuales quedan listas para traducción incremental (basta importar `useT` + reemplazar strings).
+
+#### Arquitectura i18n
+
+**1. `frontend/contexts/I18nProvider.tsx`** — Context provider + `useT()` hook + auto-detect navigator language:
+- SSR-safe: initial render siempre `"en"`, hydrata desde localStorage / navigator después de mount (evita React hydration mismatch).
+- `lang` state, `setLang(l)` action, `t(key, vars?)` translator.
+- Persist a `localStorage["eko_lang_v1"]`.
+- Pone `<html lang="...">` para accesibilidad.
+- Fallback: missing key en idioma actual → busca en EN → devuelve el key as-is.
+
+**2. `frontend/lib/i18n/translations.ts`** — dictionary `{ en: {...}, es: {...} }` con ~80 keys hoy:
+- Estructura por dominio: `common.*`, `nav.*`, `dashboard.*`, `modules.*`, `recent_leads.*`, `discovery.*`, `pipeline.*`, `lang.*`.
+- TypeScript: `TranslationKey = keyof typeof translations.en` para autocomplete + typo protection.
+- Soporte de interpolación con `{var}` placeholders: `t("dashboard.discovery_success", { count: 42 })`.
+
+**3. `frontend/components/LanguageSelector.tsx`** — dropdown UI:
+- Botón en Navbar con icono `Languages` + bandera 🇺🇸/🇪🇸 + código (EN/ES).
+- Click abre listbox con las 2 opciones, click-outside cierra.
+- Indicador visual `Check` verde junto al idioma activo.
+
+#### Wireup
+
+- `frontend/app/layout.tsx`: wrap `<I18nProvider>` dentro de `<QueryProvider>` (entre AuthProvider).
+- `frontend/components/Navbar.tsx`: `<LanguageSelector />` agregado a la derecha, antes del `VersionButton`.
+
+#### Componentes traducidos en este commit
+
+| Componente | Strings reemplazadas |
+|---|---|
+| Navbar | Todos los nav labels (Dashboard, Leads, Pipeline, Deals, Inbox, Proposals, Voice Agent, Content Studio, Sequences, Campaigns, Calendar, Analytics, Landing Pages, Settings), "Objetos", "Más", "Logout", "System Online" |
+| Dashboard | title, subtitle, 4 StatCards (titles + subtitles), Forecast label, discovery success message |
+| ModulesGrid | Header "Módulos", Editar/Listo, Reset, edit hint, "Agregar (N)" tile, picker título + close, remove tooltips, todos los 14 module labels + subtitles |
+| RecentLeads | Título "Leads Recientes", "Ver todos", empty state, "score" |
+| DiscoveryForm | Title "Discovery", labels (¿Qué tipo de negocio?, Ciudad, Estado, Max resultados, Fuentes), placeholders, búsqueda CTA, success/error messages |
+
+#### Lo que NO se tradujo en este commit (pendiente para próximos)
+
+Páginas individuales bajo `frontend/app/*/page.tsx` siguen con texto hardcoded en español:
+`leads`, `pipeline`, `deals`, `proposals`, `voice-agent`, `content-studio`, `inbox`, `sequences`, `campaigns`, `calendar`, `analytics`, `landing-pages`, `settings`, `billing`.
+
+Para traducir cada una: importar `useT` desde `@/contexts/I18nProvider`, llamar `const { t } = useT()` en el componente, agregar keys al diccionario y reemplazar strings. Estructura ya está consolidada — es trabajo mecánico que se puede hacer página por página en turnos siguientes sin tocar la infraestructura.
+
+#### Cobertura del selector
+
+Cualquier componente que use `useT()` cambia de idioma instantáneamente al click del LanguageSelector — sin recargar la página. El Dashboard + Navbar son lo más visible y cubren ~80% del tiempo del usuario en la app. Las páginas individuales (cuando se traduzcan) se sumarán automáticamente sin tocar el selector ni el provider.
+
+---
+
 ## [0.7.18] — 2026-05-19
 
 ### Dashboard — agregados Landing Pages + Billing, orden lógico por funnel

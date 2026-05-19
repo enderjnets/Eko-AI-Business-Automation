@@ -4,12 +4,14 @@ import { useState } from "react";
 import { Search, Loader2, MapPin, Star, Linkedin, Landmark } from "lucide-react";
 import { leadsApi } from "@/lib/api";
 import { CITIES_BY_STATE } from "@/lib/us-cities";
+import { useT } from "@/contexts/I18nProvider";
 
 interface DiscoveryFormProps {
   onSuccess?: (data: any) => void;
 }
 
 export default function DiscoveryForm({ onSuccess }: DiscoveryFormProps) {
+  const { t } = useT();
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("Denver");
   const [state, setState] = useState("Colorado");
@@ -75,7 +77,7 @@ export default function DiscoveryForm({ onSuccess }: DiscoveryFormProps) {
         duplicates: data.duplicates_skipped || 0,
       });
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Error en la búsqueda");
+      setError(err.response?.data?.detail || t("discovery.error"));
     } finally {
       setLoading(false);
     }
@@ -83,23 +85,23 @@ export default function DiscoveryForm({ onSuccess }: DiscoveryFormProps) {
 
   return (
     <div className="rounded-xl border border-white/5 bg-white/[0.02] p-6">
-      <h2 className="text-lg font-semibold font-display mb-4">Discovery</h2>
-      
+      <h2 className="text-lg font-semibold font-display mb-4">{t("discovery.title")}</h2>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">¿Qué tipo de negocio buscas?</label>
+          <label className="block text-sm text-gray-400 mb-1">{t("discovery.what")}</label>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ej: restaurants, salons, plumbers..."
+            placeholder={t("discovery.category_placeholder")}
             className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-eko-blue focus:outline-none focus:ring-1 focus:ring-eko-blue"
           />
         </div>
 
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Ciudad</label>
+            <label className="block text-sm text-gray-400 mb-1">{t("discovery.city")}</label>
             {CITIES_BY_STATE[state] && CITIES_BY_STATE[state].length > 0 ? (
               <select
                 value={city}
@@ -115,13 +117,13 @@ export default function DiscoveryForm({ onSuccess }: DiscoveryFormProps) {
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="Ej: Los Angeles, Miami..."
+                placeholder={t("discovery.city_placeholder")}
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-eko-blue focus:outline-none"
               />
             )}
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Estado</label>
+            <label className="block text-sm text-gray-400 mb-1">{t("discovery.state")}</label>
             <select
               value={state}
               onChange={(e) => handleStateChange(e.target.value)}
@@ -133,7 +135,7 @@ export default function DiscoveryForm({ onSuccess }: DiscoveryFormProps) {
             </select>
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Max resultados</label>
+            <label className="block text-sm text-gray-400 mb-1">{t("discovery.max_results")}</label>
             <select
               value={maxResults}
               onChange={(e) => setMaxResults(Number(e.target.value))}
@@ -147,7 +149,7 @@ export default function DiscoveryForm({ onSuccess }: DiscoveryFormProps) {
         </div>
 
         <div>
-          <label className="block text-sm text-gray-400 mb-2">Fuentes</label>
+          <label className="block text-sm text-gray-400 mb-2">{t("discovery.sources")}</label>
           <div className="flex gap-2">
             <SourceToggle
               label="Google Maps"
@@ -180,12 +182,12 @@ export default function DiscoveryForm({ onSuccess }: DiscoveryFormProps) {
           <div className="rounded-lg bg-eko-green/10 border border-eko-green/20 p-3 text-sm">
             <p className="text-eko-green font-medium">
               {discoveryResult.new > 0
-                ? `${discoveryResult.new} nuevos leads agregados a la base de datos`
-                : "No hay leads nuevos en esta búsqueda"}
+                ? t("discovery.new_leads", { count: discoveryResult.new })
+                : t("discovery.no_new")}
             </p>
             {discoveryResult.duplicates > 0 && (
               <p className="text-gray-400 text-xs mt-1">
-                {discoveryResult.duplicates} ya existían en la base de datos
+                {t("discovery.duplicates", { count: discoveryResult.duplicates })}
               </p>
             )}
           </div>
@@ -203,12 +205,12 @@ export default function DiscoveryForm({ onSuccess }: DiscoveryFormProps) {
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Buscando...
+              {t("discovery.searching")}
             </>
           ) : (
             <>
               <Search className="w-4 h-4" />
-              Buscar Leads
+              {t("discovery.go")}
             </>
           )}
         </button>

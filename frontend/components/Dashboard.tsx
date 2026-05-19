@@ -29,33 +29,36 @@ import DiscoveryForm from "@/components/DiscoveryForm";
 import RecentLeads from "@/components/RecentLeads";
 import ModulesGrid, { type ModuleDef } from "@/components/ModulesGrid";
 import { analyticsApi, emailsApi, dealsApi } from "@/lib/api";
+import { useT } from "@/contexts/I18nProvider";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
 
 // Default order follows a logical sales funnel: ACQUIRE → ENGAGE → CLOSE → GROW → OPS.
-// The user can reorder/hide via the Editar mode; this is just the seed layout.
+// label + subtitle are translation keys resolved at render time by ModulesGrid.
 const MODULES: ModuleDef[] = [
   // 1. Acquire — leads enter the system
-  { href: "/leads", label: "Leads", subtitle: "Gestión de prospectos", icon: Users, color: "text-eko-blue bg-eko-blue/10 border-eko-blue/20" },
-  { href: "/landing-pages", label: "Landing Pages", subtitle: "Captura web", icon: LayoutTemplate, color: "text-sky-400 bg-sky-500/10 border-sky-500/20" },
+  { href: "/leads", label: "modules.leads.label", subtitle: "modules.leads.subtitle", icon: Users, color: "text-eko-blue bg-eko-blue/10 border-eko-blue/20" },
+  { href: "/landing-pages", label: "modules.landing_pages.label", subtitle: "modules.landing_pages.subtitle", icon: LayoutTemplate, color: "text-sky-400 bg-sky-500/10 border-sky-500/20" },
   // 2. Engage — talk to them
-  { href: "/inbox", label: "Inbox", subtitle: "Replies de leads", icon: Inbox, color: "text-rose bg-rose/10 border-rose/20", badgeKey: "unread" },
-  { href: "/sequences", label: "Secuencias", subtitle: "Automatización", icon: ListOrdered, color: "text-purple-400 bg-purple-500/10 border-purple-500/20" },
-  { href: "/campaigns", label: "Campañas", subtitle: "Email outreach", icon: Mail, color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },
-  { href: "/voice-agent", label: "Voice", subtitle: "VAPI calls", icon: Mic, color: "text-teal-400 bg-teal-500/10 border-teal-500/20" },
-  { href: "/calendar", label: "Calendar", subtitle: "Reuniones", icon: Calendar, color: "text-orange-400 bg-orange-500/10 border-orange-500/20" },
+  { href: "/inbox", label: "modules.inbox.label", subtitle: "modules.inbox.subtitle", icon: Inbox, color: "text-rose bg-rose/10 border-rose/20", badgeKey: "unread" },
+  { href: "/sequences", label: "modules.sequences.label", subtitle: "modules.sequences.subtitle", icon: ListOrdered, color: "text-purple-400 bg-purple-500/10 border-purple-500/20" },
+  { href: "/campaigns", label: "modules.campaigns.label", subtitle: "modules.campaigns.subtitle", icon: Mail, color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },
+  { href: "/voice-agent", label: "modules.voice.label", subtitle: "modules.voice.subtitle", icon: Mic, color: "text-teal-400 bg-teal-500/10 border-teal-500/20" },
+  { href: "/calendar", label: "modules.calendar.label", subtitle: "modules.calendar.subtitle", icon: Calendar, color: "text-orange-400 bg-orange-500/10 border-orange-500/20" },
   // 3. Close — convert
-  { href: "/pipeline", label: "Pipeline", subtitle: "Kanban de ventas", icon: GitBranch, color: "text-eko-green bg-eko-green/10 border-eko-green/20" },
-  { href: "/deals", label: "Deals", subtitle: "Oportunidades", icon: Briefcase, color: "text-gold bg-gold/10 border-gold/20" },
-  { href: "/proposals", label: "Propuestas", subtitle: "AI proposals", icon: FileText, color: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20" },
+  { href: "/pipeline", label: "modules.pipeline.label", subtitle: "modules.pipeline.subtitle", icon: GitBranch, color: "text-eko-green bg-eko-green/10 border-eko-green/20" },
+  { href: "/deals", label: "modules.deals.label", subtitle: "modules.deals.subtitle", icon: Briefcase, color: "text-gold bg-gold/10 border-gold/20" },
+  { href: "/proposals", label: "modules.proposals.label", subtitle: "modules.proposals.subtitle", icon: FileText, color: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20" },
   // 4. Grow — marketing + insights
-  { href: "/content-studio", label: "Content", subtitle: "Videos & redes", icon: Clapperboard, color: "text-pink-400 bg-pink-500/10 border-pink-500/20" },
-  { href: "/analytics", label: "Analytics", subtitle: "Métricas", icon: BarChart3, color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
+  { href: "/content-studio", label: "modules.content.label", subtitle: "modules.content.subtitle", icon: Clapperboard, color: "text-pink-400 bg-pink-500/10 border-pink-500/20" },
+  { href: "/analytics", label: "modules.analytics.label", subtitle: "modules.analytics.subtitle", icon: BarChart3, color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
   // 5. Ops — admin
-  { href: "/billing", label: "Billing", subtitle: "Stripe & plan", icon: CreditCard, color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
-  { href: "/settings", label: "Config", subtitle: "API keys y prefs", icon: Settings, color: "text-gray-300 bg-gray-500/10 border-gray-500/20" },
+  { href: "/billing", label: "modules.billing.label", subtitle: "modules.billing.subtitle", icon: CreditCard, color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
+  { href: "/settings", label: "modules.settings.label", subtitle: "modules.settings.subtitle", icon: Settings, color: "text-gray-300 bg-gray-500/10 border-gray-500/20" },
 ];
 
 export default function Dashboard() {
+  const { t } = useT();
   const [stats, setStats] = useState({
     total_leads: 0,
     contacted: 0,
@@ -111,39 +114,39 @@ export default function Dashboard() {
       <main className="pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold font-display">Dashboard</h1>
+          <h1 className="text-2xl font-bold font-display">{t("dashboard.title")}</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Sistema de Agentes Autónomos para Prospección y Ventas
+            {t("dashboard.subtitle")}
           </p>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatCard
-            title="Total Leads"
+            title={t("dashboard.stats.total_leads")}
             value={stats.total_leads}
-            subtitle="Leads en el sistema"
+            subtitle={t("dashboard.stats.total_leads_sub")}
             icon={Users}
             color="blue"
           />
           <StatCard
-            title="Contactados"
+            title={t("dashboard.stats.contacted")}
             value={stats.contacted}
-            subtitle="Leads con contacto iniciado"
+            subtitle={t("dashboard.stats.contacted_sub")}
             icon={MailOpen}
             color="gold"
           />
           <StatCard
-            title="Conversion Rate"
+            title={t("dashboard.stats.conversion_rate")}
             value={`${stats.conversion_rate}%`}
-            subtitle="Lead → Cliente"
+            subtitle={t("dashboard.stats.conversion_rate_sub")}
             icon={TrendingUp}
             color="green"
           />
           <StatCard
-            title="Avg Score"
+            title={t("dashboard.stats.avg_score")}
             value={Math.round(stats.avg_lead_score)}
-            subtitle="Puntuación promedio"
+            subtitle={t("dashboard.stats.avg_score_sub")}
             icon={Target}
             color="rose"
           />
@@ -154,7 +157,7 @@ export default function Dashboard() {
           {dealsForecast && dealsForecast.total_weighted_value > 0 && (
             <div className="flex justify-end mb-1">
               <span className="text-xs text-gray-500">
-                Forecast: ${dealsForecast.total_weighted_value.toLocaleString("en-US")}
+                {t("dashboard.forecast")}: ${dealsForecast.total_weighted_value.toLocaleString("en-US")}
               </span>
             </div>
           )}
@@ -188,7 +191,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2 text-eko-green">
                   <Zap className="w-4 h-4" />
                   <span className="text-sm font-medium">
-                    {discoveryResult.total} leads descubiertos
+                    {t("dashboard.discovery_success", { count: discoveryResult.total })}
                   </span>
                 </div>
               </div>

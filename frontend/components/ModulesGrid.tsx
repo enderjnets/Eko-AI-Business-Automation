@@ -20,11 +20,15 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowRight, X, Plus, Pencil, Check, GripVertical, LucideIcon } from "lucide-react";
+import { useT } from "@/contexts/I18nProvider";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
 export interface ModuleDef {
   href: string;
-  label: string;
-  subtitle: string;
+  /** Translation key, e.g. "modules.leads.label" */
+  label: TranslationKey;
+  /** Translation key, e.g. "modules.leads.subtitle" */
+  subtitle: TranslationKey;
   icon: LucideIcon;
   color: string;
   badgeKey?: "unread";
@@ -75,6 +79,9 @@ interface SortableModuleProps {
 }
 
 function SortableModule({ mod, badge, editMode, onRemove }: SortableModuleProps) {
+  const { t } = useT();
+  const label = t(mod.label);
+  const subtitle = t(mod.subtitle);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: mod.href,
     disabled: !editMode,
@@ -110,8 +117,8 @@ function SortableModule({ mod, badge, editMode, onRemove }: SortableModuleProps)
             onRemove(mod.href);
           }}
           className="absolute -top-1.5 -left-1.5 z-20 flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white shadow-lg hover:bg-red-600 transition-colors"
-          aria-label={`Remove ${mod.label}`}
-          title={`Quitar ${mod.label}`}
+          aria-label={t("modules.remove_aria", { label })}
+          title={t("modules.remove_title", { label })}
         >
           <X className="w-3 h-3" strokeWidth={3} />
         </button>
@@ -122,8 +129,8 @@ function SortableModule({ mod, badge, editMode, onRemove }: SortableModuleProps)
           <mod.icon className="w-5 h-5" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium">{mod.label}</p>
-          <p className="text-[10px] text-gray-500 mt-0.5">{mod.subtitle}</p>
+          <p className="text-sm font-medium">{label}</p>
+          <p className="text-[10px] text-gray-500 mt-0.5">{subtitle}</p>
         </div>
         {badge !== undefined && badge > 0 && (
           <span className="absolute top-2 right-7 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
@@ -142,9 +149,9 @@ function SortableModule({ mod, badge, editMode, onRemove }: SortableModuleProps)
       </div>
       <div className="text-center">
         <p className="text-sm font-medium group-hover:text-white transition-colors">
-          {mod.label}
+          {label}
         </p>
-        <p className="text-[10px] text-gray-500 mt-0.5">{mod.subtitle}</p>
+        <p className="text-[10px] text-gray-500 mt-0.5">{subtitle}</p>
       </div>
       {badge !== undefined && badge > 0 && (
         <span className="absolute top-2 right-2 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
@@ -157,6 +164,7 @@ function SortableModule({ mod, badge, editMode, onRemove }: SortableModuleProps)
 }
 
 export default function ModulesGrid({ modules, unreadCount }: ModulesGridProps) {
+  const { t } = useT();
   const canonicalHrefs = useMemo(() => modules.map((m) => m.href), [modules]);
   const modulesByHref = useMemo(
     () => Object.fromEntries(modules.map((m) => [m.href, m])),
@@ -245,10 +253,10 @@ export default function ModulesGrid({ modules, unreadCount }: ModulesGridProps) 
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider flex items-center gap-2">
-          Módulos
+          {t("modules.header")}
           {editMode && (
             <span className="text-[10px] font-normal normal-case text-gray-500">
-              · arrastra para reordenar · click ✕ para quitar
+              {t("modules.edit_hint")}
             </span>
           )}
         </h2>
@@ -258,9 +266,9 @@ export default function ModulesGrid({ modules, unreadCount }: ModulesGridProps) 
               type="button"
               onClick={handleResetLayout}
               className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-              title="Restaurar orden y módulos originales"
+              title={t("modules.reset")}
             >
-              Reset
+              {t("modules.reset")}
             </button>
           )}
           <button
@@ -278,12 +286,12 @@ export default function ModulesGrid({ modules, unreadCount }: ModulesGridProps) 
             {editMode ? (
               <>
                 <Check className="w-3.5 h-3.5" />
-                Done
+                {t("modules.done")}
               </>
             ) : (
               <>
                 <Pencil className="w-3.5 h-3.5" />
-                Editar
+                {t("modules.edit")}
               </>
             )}
           </button>
@@ -317,13 +325,13 @@ export default function ModulesGrid({ modules, unreadCount }: ModulesGridProps) 
                 type="button"
                 onClick={() => setShowPicker((v) => !v)}
                 className="group relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/10 bg-white/[0.01] p-4 hover:bg-white/[0.04] hover:border-eko-blue/50 transition-all min-h-[112px]"
-                title={`Agregar módulo (${hiddenList.length} disponible${hiddenList.length === 1 ? "" : "s"})`}
+                title={t("modules.add_title", { count: hiddenList.length, plural: hiddenList.length === 1 ? "" : "s" })}
               >
                 <div className="p-2.5 rounded-lg bg-white/5 text-gray-400 group-hover:text-eko-blue transition-colors">
                   <Plus className="w-5 h-5" />
                 </div>
                 <p className="text-[10px] text-gray-500 group-hover:text-gray-300 transition-colors">
-                  Agregar ({hiddenList.length})
+                  {t("modules.add_count", { count: hiddenList.length })}
                 </p>
               </button>
             )}
@@ -336,13 +344,13 @@ export default function ModulesGrid({ modules, unreadCount }: ModulesGridProps) 
         <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4 animate-fade-in">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-              Módulos disponibles
+              {t("modules.available")}
             </h3>
             <button
               type="button"
               onClick={() => setShowPicker(false)}
               className="text-gray-500 hover:text-white transition-colors"
-              aria-label="Cerrar"
+              aria-label={t("common.close")}
             >
               <X className="w-4 h-4" />
             </button>
@@ -362,8 +370,8 @@ export default function ModulesGrid({ modules, unreadCount }: ModulesGridProps) 
                     <mod.icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-white truncate">{mod.label}</p>
-                    <p className="text-[10px] text-gray-500 truncate">{mod.subtitle}</p>
+                    <p className="text-xs font-medium text-white truncate">{t(mod.label)}</p>
+                    <p className="text-[10px] text-gray-500 truncate">{t(mod.subtitle)}</p>
                   </div>
                   <Plus className="w-3.5 h-3.5 text-gray-500 group-hover:text-eko-blue transition-colors" />
                 </button>

@@ -3,6 +3,7 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
+import { I18nProvider } from "@/contexts/I18nProvider";
 import QueryProvider from "@/components/QueryProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -28,14 +29,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={`${inter.variable} ${plusJakarta.variable}`}>
+    <html lang="en" className={`${inter.variable} ${plusJakarta.variable}`}>
       <body className="bg-eko-graphite text-eko-white font-sans antialiased">
         <QueryProvider>
-          <AuthProvider>
-            <WorkspaceProvider>
-              {children}
-            </WorkspaceProvider>
-          </AuthProvider>
+          <I18nProvider>
+            <AuthProvider>
+              <WorkspaceProvider>
+                {children}
+              </WorkspaceProvider>
+            </AuthProvider>
+          </I18nProvider>
         </QueryProvider>
       </body>
     </html>

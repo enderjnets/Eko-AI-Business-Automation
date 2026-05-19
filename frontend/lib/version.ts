@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.18";
+export const CURRENT_VERSION = "0.7.19";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,18 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.19",
+    date: "2026-05-19",
+    title: "i18n — selector EN/ES + Dashboard, Navbar y componentes shared traducidos",
+    changes: [
+      "Nueva infraestructura i18n: I18nProvider (Context) + useT() hook + diccionarios EN/ES en lib/i18n/translations.ts",
+      "LanguageSelector dropdown agregado al Navbar (icono Languages + bandera + código) — al cambiar idioma, TODO lo que usa useT() se traduce inmediatamente sin recargar",
+      "Persistencia: localStorage key eko_lang_v1; auto-detect navigator.language (es → Spanish, todo lo demás → English por default)",
+      "Traducidos: Navbar (todos los nav links primarios + dropdown Más + Objetos + Logout + System Online), Dashboard (header, subtitle, 4 StatCards, mensaje de discovery), ModulesGrid (header Módulos, Editar/Listo, Reset, hint, picker Agregar), RecentLeads (título, See all, empty state, score), DiscoveryForm (todos los labels + placeholders + búsqueda result messages), 14 cards de módulos (label + subtitle)",
+      "Páginas individuales como /leads, /content-studio, /landing-pages, /pipeline, /settings etc. todavía tienen su texto en Spanish hardcoded — pendientes para próximos turnos pero la infraestructura está lista (basta importar useT y reemplazar strings)",
+    ],
+  },
   {
     version: "0.7.18",
     date: "2026-05-19",

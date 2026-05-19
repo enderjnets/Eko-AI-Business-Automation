@@ -29,30 +29,41 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { emailsApi, metadataApi } from "@/lib/api";
 import VersionButton from "@/components/VersionButton";
+import LanguageSelector from "@/components/LanguageSelector";
+import { useT } from "@/contexts/I18nProvider";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
-const PRIMARY_LINKS = [
-  { href: "/", icon: BarChart3, label: "Dashboard" },
-  { href: "/leads", icon: Users, label: "Leads" },
-  { href: "/pipeline", icon: GitBranch, label: "Pipeline" },
-  { href: "/deals", icon: Briefcase, label: "Deals" },
-  { href: "/inbox", icon: Inbox, label: "Inbox", badgeKey: "unread" as const },
+interface NavLink {
+  href: string;
+  icon: typeof BarChart3;
+  labelKey: TranslationKey;
+  badgeKey?: "unread";
+}
+
+const PRIMARY_LINKS: NavLink[] = [
+  { href: "/", icon: BarChart3, labelKey: "nav.dashboard" },
+  { href: "/leads", icon: Users, labelKey: "nav.leads" },
+  { href: "/pipeline", icon: GitBranch, labelKey: "nav.pipeline" },
+  { href: "/deals", icon: Briefcase, labelKey: "nav.deals" },
+  { href: "/inbox", icon: Inbox, labelKey: "nav.inbox", badgeKey: "unread" },
 ];
 
-const MORE_LINKS = [
-  { href: "/proposals", icon: FileText, label: "Propuestas" },
-  { href: "/voice-agent", icon: Mic, label: "Voice Agent" },
-  { href: "/content-studio", icon: Clapperboard, label: "Content Studio" },
-  { href: "/sequences", icon: ListOrdered, label: "Secuencias" },
-  { href: "/campaigns", icon: Mail, label: "Campañas" },
-  { href: "/calendar", icon: Calendar, label: "Calendar" },
-  { href: "/analytics", icon: TrendingUp, label: "Analytics" },
-  { href: "/landing-pages", icon: LayoutTemplate, label: "Landing Pages" },
-  { href: "/settings", icon: Settings, label: "Config" },
+const MORE_LINKS: NavLink[] = [
+  { href: "/proposals", icon: FileText, labelKey: "nav.proposals" },
+  { href: "/voice-agent", icon: Mic, labelKey: "nav.voice_agent" },
+  { href: "/content-studio", icon: Clapperboard, labelKey: "nav.content_studio" },
+  { href: "/sequences", icon: ListOrdered, labelKey: "nav.sequences" },
+  { href: "/campaigns", icon: Mail, labelKey: "nav.campaigns" },
+  { href: "/calendar", icon: Calendar, labelKey: "nav.calendar" },
+  { href: "/analytics", icon: TrendingUp, labelKey: "nav.analytics" },
+  { href: "/landing-pages", icon: LayoutTemplate, labelKey: "nav.landing_pages" },
+  { href: "/settings", icon: Settings, labelKey: "nav.settings" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { t } = useT();
   const [unreadCount, setUnreadCount] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -137,7 +148,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   icon={<link.icon className="w-4 h-4" />}
-                  label={link.label}
+                  label={t(link.labelKey)}
                   active={isActive(link.href)}
                   badge={link.badgeKey === "unread" && unreadCount > 0 ? unreadCount : undefined}
                 />
@@ -155,7 +166,7 @@ export default function Navbar() {
                     }`}
                   >
                     <Layers className="w-4 h-4" />
-                    <span>Objetos</span>
+                    <span>{t("nav.objects")}</span>
                     <ChevronDown className={`w-3.5 h-3.5 transition-transform ${objectsOpen ? "rotate-180" : ""}`} />
                   </button>
 
@@ -190,7 +201,7 @@ export default function Navbar() {
                       : "text-gray-400 hover:text-white hover:bg-white/5"
                   }`}
                 >
-                  <span>Más</span>
+                  <span>{t("nav.more")}</span>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
                 </button>
 
@@ -207,7 +218,7 @@ export default function Navbar() {
                         }`}
                       >
                         <link.icon className="w-4 h-4" />
-                        <span>{link.label}</span>
+                        <span>{t(link.labelKey)}</span>
                       </Link>
                     ))}
                   </div>
@@ -229,7 +240,7 @@ export default function Navbar() {
                   <button
                     onClick={logout}
                     className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                    title="Logout"
+                    title={t("common.logout")}
                   >
                     <LogOut className="w-4 h-4" />
                   </button>
@@ -237,10 +248,11 @@ export default function Navbar() {
               ) : (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-eko-green animate-pulse" />
-                  <span className="text-xs text-gray-400">System Online</span>
+                  <span className="text-xs text-gray-400">{t("common.system_online")}</span>
                 </div>
               )}
 
+              <LanguageSelector />
               <VersionButton />
 
               {/* Mobile hamburger */}
@@ -272,8 +284,8 @@ export default function Navbar() {
                   }`}
                 >
                   <link.icon className="w-4 h-4" />
-                  <span>{link.label}</span>
-                  {(link as any).badgeKey === "unread" && unreadCount > 0 && (
+                  <span>{t(link.labelKey)}</span>
+                  {link.badgeKey === "unread" && unreadCount > 0 && (
                     <span className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
@@ -283,7 +295,7 @@ export default function Navbar() {
               {dynamicObjects.length > 0 && (
                 <>
                   <div className="px-3 pt-3 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Objetos
+                    {t("nav.objects")}
                   </div>
                   {dynamicObjects.map((obj) => (
                     <Link
