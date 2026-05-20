@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.26";
+export const CURRENT_VERSION = "0.7.27";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,20 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.27",
+    date: "2026-05-20",
+    title: "Landing Pages — fix thumbnails del template picker no mostraban el brand real (Apple aparecía oscuro)",
+    changes: [
+      "Root cause: el iframe del thumbnail estaba a scale(0.15) con width=1304px → ocupaba solo la esquina superior izquierda del card (~195px en un contenedor de ~140-180px). El resto del thumbnail mostraba el background `tpl.accent + \"10\"` (tinte del accent color al 10%) del contenedor parent, no el contenido real del template",
+      "Para Apple (accent #0066cc): tinte azul oscuro translúcido cubría 85% del thumbnail → \"se veía oscuro\" aunque el template real es 100% blanco",
+      "Para Notion (accent #2eaadc): mismo problema, tinte cian translúcido",
+      "Bug secundario: colorScheme:\"dark\" estaba aplicado al iframe del picker — heredado por error del ActivePreview donde sí tiene sentido (scrollbar fix). En el picker forzaba dark mode hint a templates light",
+      "Fix: nuevo componente TemplateThumbnail con ResizeObserver (mismo patrón que ActivePreview) → calcula scale dinámicamente como `containerWidth / 1280` para que el iframe LLENE el thumbnail exactamente",
+      "Removidos: colorScheme:dark, accent-tinted background del container, scale fijo 0.15, dimensiones fijas",
+      "Resultado: cada thumbnail ahora muestra fielmente el template completo en su brand real — Apple 100% blanco, Spotify 100% negro, Stripe gradient mesh, Linear grid pattern, Tesla dark hero, etc.",
+    ],
+  },
   {
     version: "0.7.26",
     date: "2026-05-20",

@@ -128,6 +128,50 @@ function formatApiError(err: any, fallback: string): string {
 }
 
 // Active landing page thumbnail — scales the iframe to fill the card width
+// Picker grid thumbnail — same ResizeObserver trick as ActivePreview so
+// the iframe FILLS the visible thumbnail (instead of sitting in the top-
+// left corner at fixed scale 0.15, which used to leak the parent's tint
+// color across the rest of the card and made light templates like Apple
+// or Notion look dark because of the accent-color overlay around them).
+function TemplateThumbnail({ id }: { id: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.18);
+  const VW = 1280;
+  const VH = 800;
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setScale(el.clientWidth / VW);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="relative w-full overflow-hidden"
+      style={{ aspectRatio: `${VW} / ${VH}` }}
+    >
+      <iframe
+        src={`/api/v1/landing-pages/template-preview/${id}`}
+        className="absolute top-0 left-0 border-0 pointer-events-none"
+        style={{
+          width: `${VW}px`,
+          height: `${VH}px`,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+        }}
+        sandbox="allow-scripts"
+        title={`${id} preview`}
+        loading="lazy"
+      />
+    </div>
+  );
+}
+
 // at a fixed 16:10 aspect ratio. Recomputes scale via ResizeObserver so the
 // preview always fills the available space without leaving a white frame.
 function ActivePreview({ slug }: { slug: string }) {
@@ -840,27 +884,13 @@ export default function LandingPagesPage() {
                               style={{ background: "#0F172A" }}
                               title={`${tpl.name} — ${tpl.tagline}\nBest for: ${tpl.best_for}`}
                             >
-                              {/* Thumbnail iframe — preview of the template with sample copy */}
-                              <div
-                                className="relative w-full overflow-hidden"
-                                style={{ aspectRatio: "16 / 10", background: tpl.accent + "10" }}
-                              >
-                                <iframe
-                                  src={`/api/v1/landing-pages/template-preview/${tpl.id}`}
-                                  className="absolute top-0 left-0 border-0 pointer-events-none"
-                                  style={{
-                                    width: "1304px",
-                                    height: "800px",
-                                    transform: "scale(0.15)",
-                                    transformOrigin: "top left",
-                                    colorScheme: "dark",
-                                  }}
-                                  sandbox="allow-scripts"
-                                  title={`${tpl.name} preview`}
-                                  loading="lazy"
-                                />
+                              {/* Thumbnail — iframe scales to fill the card via ResizeObserver
+                                  so the template's actual brand aesthetic is visible (Apple
+                                  white, Spotify black, Stripe gradient, etc.). */}
+                              <div className="relative w-full">
+                                <TemplateThumbnail id={tpl.id} />
                                 {isSelected && (
-                                  <div className="absolute top-1.5 right-1.5 bg-[#0B4FD8] text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-md">
+                                  <div className="absolute top-1.5 right-1.5 bg-[#0B4FD8] text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-md z-10">
                                     ✓
                                   </div>
                                 )}
