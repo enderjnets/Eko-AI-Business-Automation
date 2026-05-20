@@ -127,50 +127,27 @@ function formatApiError(err: any, fallback: string): string {
   return fallback;
 }
 
-// Active landing page thumbnail — scales the iframe to fill the card width
-// Picker grid thumbnail — same ResizeObserver trick as ActivePreview so
-// the iframe FILLS the visible thumbnail (instead of sitting in the top-
-// left corner at fixed scale 0.15, which used to leak the parent's tint
-// color across the rest of the card and made light templates like Apple
-// or Notion look dark because of the accent-color overlay around them).
-// Cache-bust constant: bumped whenever templates are rewritten so browsers
-// don't serve stale iframe HTML from a previous deploy.
-const TEMPLATE_CACHE_BUST = "v0729";
+// Picker grid thumbnail — uses a PRE-RENDERED PNG screenshot of the template.
+// Bulletproof alternative to live iframes: backend renders the template at
+// 1280x800 once via Patchright (chromium) and caches on disk. The browser
+// just downloads an <img>. No iframe scaling, no parent CSS leak, no
+// cache-bust drama, no rendering uncertainty — what you see is the actual
+// rendered template, full stop.
 
 function TemplateThumbnail({ id }: { id: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.18);
   const VW = 1280;
   const VH = 800;
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const update = () => setScale(el.clientWidth / VW);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
   return (
     <div
-      ref={ref}
-      className="relative w-full overflow-hidden"
+      className="relative w-full overflow-hidden bg-[#0F172A]"
       style={{ aspectRatio: `${VW} / ${VH}` }}
     >
-      <iframe
-        src={`/api/v1/landing-pages/template-preview/${id}?v=${TEMPLATE_CACHE_BUST}`}
-        className="absolute top-0 left-0 border-0 pointer-events-none"
-        style={{
-          width: `${VW}px`,
-          height: `${VH}px`,
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
-        }}
-        sandbox="allow-scripts"
-        title={`${id} preview`}
+      <img
+        src={`/api/v1/landing-pages/template-thumbnail/${id}.png`}
+        alt={`${id} template preview`}
+        className="absolute inset-0 w-full h-full object-cover object-top"
         loading="eager"
+        decoding="async"
       />
     </div>
   );

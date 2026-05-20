@@ -98,6 +98,93 @@ async def preview_lp_template(template_id: str):
     return HTMLResponse(content=render_template_preview(template_id))
 
 
+# Bumped whenever templates are rewritten or rendering parameters change.
+# Causes regeneration of all cached thumbnail PNGs (filename includes this).
+_THUMBNAIL_VERSION = "v3"
+_THUMBNAIL_CACHE_DIR = "/tmp/eko_template_thumbnails"
+_THUMBNAIL_VIEWPORT = (1280, 800)
+
+
+async def _render_template_thumbnail(template_id: str) -> bytes:
+    """Render a template-preview URL with Patchright and return PNG bytes."""
+    from patchright.async_api import async_playwright
+    from app.services.landing_page_template import render_template_preview
+
+    html = render_template_preview(template_id)
+    width, height = _THUMBNAIL_VIEWPORT
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-dev-shm-usage"],
+        )
+        try:
+            ctx = await browser.new_context(
+                viewport={"width": width, "height": height},
+                device_scale_factor=1,
+            )
+            page = await ctx.new_page()
+            await page.set_content(html, wait_until="networkidle", timeout=15000)
+            # Small wait for any CSS animations to settle before screenshot
+            await page.wait_for_timeout(300)
+            png_bytes = await page.screenshot(
+                type="png",
+                full_page=False,
+                clip={"x": 0, "y": 0, "width": width, "height": height},
+            )
+            return png_bytes
+        finally:
+            await browser.close()
+
+
+@router.get("/template-thumbnail/{template_id}.png")
+async def template_thumbnail_png(template_id: str):
+    """Pre-rendered PNG screenshot of a template at 1280x800.
+
+    Used by the picker UI in the Create Landing Page modal. Bulletproof
+    alternative to live-iframe previews — guarantees pixel-accurate
+    rendering of the template's actual brand aesthetic.
+
+    Cached on disk under /tmp/eko_template_thumbnails/<id>-<version>.png
+    so the first request triggers Patchright (~3-5s) and subsequent
+    requests are instant file reads.
+    """
+    import os
+    from app.services.landing_page_template import TEMPLATES
+
+    if template_id not in TEMPLATES:
+        raise HTTPException(status_code=404, detail=f"Template '{template_id}' not found")
+
+    os.makedirs(_THUMBNAIL_CACHE_DIR, exist_ok=True)
+    cache_path = os.path.join(
+        _THUMBNAIL_CACHE_DIR, f"{template_id}-{_THUMBNAIL_VERSION}.png"
+    )
+
+    if os.path.exists(cache_path):
+        with open(cache_path, "rb") as f:
+            png_bytes = f.read()
+    else:
+        logger.info(f"[template-thumbnail] rendering {template_id} (first request)")
+        try:
+            png_bytes = await _render_template_thumbnail(template_id)
+            # Cache to disk
+            with open(cache_path, "wb") as f:
+                f.write(png_bytes)
+            logger.info(f"[template-thumbnail] cached {template_id}: {len(png_bytes)} bytes")
+        except Exception as e:
+            logger.error(f"[template-thumbnail] {template_id} render failed: {e!r}")
+            raise HTTPException(status_code=500, detail=f"Thumbnail render failed: {e}")
+
+    return Response(
+        content=png_bytes,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "X-Thumbnail-Version": _THUMBNAIL_VERSION,
+        },
+    )
+
+
 @router.get("/track")
 async def track_visit(
     request: Request,

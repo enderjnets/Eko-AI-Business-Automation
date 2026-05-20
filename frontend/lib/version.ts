@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.29";
+export const CURRENT_VERSION = "0.7.30";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,20 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.30",
+    date: "2026-05-20",
+    title: "Template thumbnails — switch a PNG screenshots pre-renderizados (fix definitivo)",
+    changes: [
+      "Después de 5 fixes fallidos del iframe rendering (v0.7.21/22/27/28/29), switch a una arquitectura definitiva: backend renderiza un PNG screenshot de cada template UNA VEZ con Patchright (Chromium headless), lo cachea en disco, y el frontend lo muestra como <img>",
+      "Eliminados los problemas inherentes al iframe: cache del browser, scaling artifacts, parent CSS leak, color-scheme inheritance, sandbox restrictions. El user ahora ve EXACTAMENTE lo que se renderiza en el screenshot — cero rendering uncertainty",
+      "Nuevo endpoint backend /api/v1/landing-pages/template-thumbnail/{id}.png: primera request renderiza con Patchright (~1.7s) + cachea a /tmp/eko_template_thumbnails/{id}-v3.png. Subsequent requests = file read inmediato",
+      "Pre-renderizados los 10 templates al deploy: total ~14s warmup, sizes 64KB-523KB. Cache headers public+immutable+max-age=1year",
+      "Frontend TemplateThumbnail: cambio de <iframe> + ResizeObserver + scale calc → simple <img> con object-cover. Componente bajó de 30 líneas a 12, sin useState/useEffect/useRef necesarios",
+      "Verified visually: Apple thumbnail muestra 100% blanco con Apple link blue, Spotify pitch black con 3 rotated album cards, HubSpot white con orange + 6-logo trust wall — EXACTLY como los sitios originales",
+      "Cache invalidation: bumpando _THUMBNAIL_VERSION constant en backend (v3 actualmente) regenera todos los PNGs automáticamente (filename incluye version)",
+    ],
+  },
   {
     version: "0.7.29",
     date: "2026-05-20",
