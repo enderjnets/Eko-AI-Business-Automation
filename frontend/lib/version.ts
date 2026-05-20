@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.31";
+export const CURRENT_VERSION = "0.7.32";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,19 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.32",
+    date: "2026-05-20",
+    title: "Landing Pages — fix THE ROOT CAUSE: Next.js cacheaba el HTML por 1 año (los usuarios cargaban chunks antiguos)",
+    changes: [
+      "Investigando por qué el user reportó 6 veces que Apple template seguía oscuro a pesar de 6 deploys correctos, encontré el verdadero culpable: las respuestas HTML de /landing-pages tenían `Cache-Control: s-maxage=31536000, stale-while-revalidate` + `x-nextjs-cache: HIT` — Next.js cacheaba el HTML estático por UN AÑO, así que el browser del user cargaba HTML viejo con referencias a JS chunks viejos sin importar cuántas veces deployara",
+      "Esto explicaba por qué cada uno de los 5 fixes previos (v0.7.21, .22, .27, .28, .29, .30, .31) era correcto del lado servidor pero invisible al user — el browser nunca cargó el nuevo chunk",
+      "Fix: split /landing-pages en server component (page.tsx) que exporta `dynamic = 'force-dynamic'`, `revalidate = 0`, `fetchCache = 'force-no-store'` + client component separado (LandingPagesClient.tsx) — el server component fuerza render dinámico, NO statically cached",
+      "Frontend middleware.ts adicional: agrega `Cache-Control: no-store, must-revalidate` + `Pragma: no-cache` a TODAS las HTML responses como cinturón-y-tirantes",
+      "Headers verificados post-deploy: `cache-control: no-store, must-revalidate` + `pragma: no-cache`, ZERO referencias a s-maxage o x-nextjs-cache HIT",
+      "Browser ahora SIEMPRE recibe el HTML más nuevo con references al chunk actual — los template thumbnails se renderizarán correctos en cualquier browser sin requerir hard-refresh ni incognito",
+    ],
+  },
   {
     version: "0.7.31",
     date: "2026-05-20",
