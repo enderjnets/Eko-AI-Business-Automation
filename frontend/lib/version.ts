@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.23";
+export const CURRENT_VERSION = "0.7.24";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,20 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.24",
+    date: "2026-05-20",
+    title: "Scrapling Phase 2 — StealthyFetcher browser fallback + Redis circuit breaker",
+    changes: [
+      "Tier 4 agregada al _fetch_html chain: StealthyFetcher (browser-rendered con Patchright + Chromium headless) cuando HTTP tier devuelve 4xx/5xx o body 'thin' (<1500 chars de texto en <body> tras strip de tags/scripts — signature de sitios Wix/Squarespace/Shopify JS-rendered)",
+      "Circuit breaker en Redis con 2 caps: 10 browser fetches/minuto (TTL 60s) + 200/día (TTL hasta UTC midnight). Pattern lifted del Resend quota guard de v0.7.15",
+      "Dockerfile: agregadas 14 runtime libs de Debian para Chromium (libnspr4, libnss3, libatk-bridge2.0-0, etc.) + comando `patchright install chromium` durante build (~150MB pero cacheado como Docker layer)",
+      "Deps: `scrapling[fetchers]==0.4.8` (en vez de pinning manual) — pip resuelve la cadena correcta: playwright 1.59.0, patchright 1.59.1, msgspec 0.21+, curl_cffi 0.15+, browserforge, camoufox",
+      "Audit: icapellis.com (Wix) en Phase 1 → fetcher=httpx 1.8s, body=705k chars (shell pre-hidratado). En Phase 2 → escala automática a stealth, fetcher=stealth 4.5s, body=711k chars (HTML rendered con contenido real visible para AI downstream)",
+      "Circuit breaker verified: 10 attempts OK, 11+ blocked correctly. Reseteo manual con DEL en redis",
+      "Feature flags USE_STEALTH (default true), STEALTH_PER_MIN_CAP (default 10), STEALTH_DAILY_CAP (default 200), STEALTH_THIN_THRESHOLD (default 1500)",
+    ],
+  },
   {
     version: "0.7.23",
     date: "2026-05-20",

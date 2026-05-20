@@ -1,6 +1,7 @@
 import os
 import re
 import time
+from datetime import datetime, timezone
 from typing import Optional, Dict, Tuple
 
 import httpx
@@ -18,6 +19,15 @@ logger = logging.getLogger(__name__)
 # Toggle with USE_SCRAPLING=true env var. Default ON so we A/B in prod.
 _USE_SCRAPLING = os.environ.get("USE_SCRAPLING", "true").lower() in ("1", "true", "yes", "on")
 
+# Phase 2: also try a browser-rendered fetch (StealthyFetcher) when the
+# HTTP path returns very thin content (JS-rendered page) or hard 4xx/5xx.
+# Toggle with USE_STEALTH=true. Default ON because chromium ships in Docker.
+_USE_STEALTH = os.environ.get("USE_STEALTH", "true").lower() in ("1", "true", "yes", "on")
+
+# Threshold below which we suspect a JS-rendered page (raw HTML body is
+# mostly empty <div>s before hydration). Tuned at 1500 chars of <body> text.
+_THIN_BODY_THRESHOLD = int(os.environ.get("STEALTH_THIN_THRESHOLD", "1500"))
+
 try:
     from scrapling.fetchers import AsyncFetcher as _ScraplingAsyncFetcher
     _SCRAPLING_AVAILABLE = True
@@ -28,6 +38,97 @@ except Exception as _e:  # pragma: no cover
     _ScraplingAsyncFetcher = None
     _SCRAPLING_AVAILABLE = False
     logger.warning(f"Scrapling unavailable, falling back to httpx-only: {_e}")
+
+try:
+    from scrapling.fetchers import StealthyFetcher as _ScraplingStealthy
+    _STEALTH_AVAILABLE = True
+except Exception as _e:  # pragma: no cover
+    _ScraplingStealthy = None
+    _STEALTH_AVAILABLE = False
+    logger.warning(f"StealthyFetcher unavailable (will skip browser tier): {_e}")
+
+
+# ── Phase 2 circuit breaker ────────────────────────────────────────────
+# Browser-rendered fetches are slow (~10-30s each) and memory-hungry
+# (~200MB per chrome instance). We MUST cap usage so a flood of bad URLs
+# can't pin the worker. Pattern lifted from v0.7.15 Resend quota breaker.
+#
+# Two limits:
+#   1. Per-minute cap (rolling counter in Redis): max 10 browser fetches/min
+#   2. Daily cap: max 200 browser fetches/day (resets at UTC midnight)
+# If either trips, browser tier short-circuits; httpx-only path is used.
+
+_BROWSER_PER_MIN_KEY = "scraping:stealth:per_minute"
+_BROWSER_DAILY_KEY = "scraping:stealth:daily"
+_BROWSER_PER_MIN_CAP = int(os.environ.get("STEALTH_PER_MIN_CAP", "10"))
+_BROWSER_DAILY_CAP = int(os.environ.get("STEALTH_DAILY_CAP", "200"))
+
+
+def _redis_client():
+    try:
+        import redis as _redis
+        url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
+        return _redis.from_url(url, socket_timeout=2, socket_connect_timeout=2)
+    except Exception:
+        return None
+
+
+def _stealth_quota_available() -> bool:
+    """Return True if we can fire another browser fetch right now."""
+    r = _redis_client()
+    if r is None:
+        return True  # fail-open if redis is down — better to attempt than block
+    try:
+        per_min = int(r.get(_BROWSER_PER_MIN_KEY) or 0)
+        daily = int(r.get(_BROWSER_DAILY_KEY) or 0)
+        if per_min >= _BROWSER_PER_MIN_CAP:
+            logger.info(f"[stealth] per-minute cap {per_min}/{_BROWSER_PER_MIN_CAP} reached")
+            return False
+        if daily >= _BROWSER_DAILY_CAP:
+            logger.warning(f"[stealth] daily cap {daily}/{_BROWSER_DAILY_CAP} reached")
+            return False
+        return True
+    except Exception:
+        return True
+
+
+def _stealth_quota_inc() -> None:
+    """Increment per-minute (TTL 60s) and daily (TTL until UTC midnight) counters."""
+    r = _redis_client()
+    if r is None:
+        return
+    try:
+        # per-minute: simple key with TTL 60
+        pipe = r.pipeline()
+        pipe.incr(_BROWSER_PER_MIN_KEY)
+        pipe.expire(_BROWSER_PER_MIN_KEY, 60, nx=True)  # set TTL only if missing
+        # daily: TTL = seconds until next UTC midnight
+        now = datetime.now(timezone.utc)
+        from datetime import timedelta as _td
+        next_midnight = (now + _td(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        ttl = max(60, int((next_midnight - now).total_seconds()))
+        pipe.incr(_BROWSER_DAILY_KEY)
+        pipe.expire(_BROWSER_DAILY_KEY, ttl, nx=True)
+        pipe.execute()
+    except Exception as e:
+        logger.warning(f"[stealth] failed to increment quota: {e}")
+
+
+def _looks_thin(text: str) -> bool:
+    """Detect a JS-rendered page by counting visible text in <body>."""
+    if not text:
+        return True
+    # Quick & cheap: count <p>+<h*>+<li> blocks. <500 chars of <body> after
+    # stripping tags is the usual signature of a Wix/Squarespace shell.
+    body_match = re.search(r"<body[^>]*>(.*?)</body>", text, re.DOTALL | re.IGNORECASE)
+    if not body_match:
+        return True
+    body_html = body_match.group(1)
+    # strip tags + scripts/styles
+    body_text = re.sub(r"<(script|style|noscript)[^>]*>.*?</\1>", "", body_html, flags=re.DOTALL | re.IGNORECASE)
+    body_text = re.sub(r"<[^>]+>", " ", body_text)
+    body_text = re.sub(r"\s+", " ", body_text).strip()
+    return len(body_text) < _THIN_BODY_THRESHOLD
 
 
 class WebsiteAnalyzer:
@@ -51,14 +152,20 @@ class WebsiteAnalyzer:
     async def _fetch_html(self, url: str, timeout: float = 15.0) -> Tuple[str, int]:
         """Fetch HTML returning (text, status_code).
 
-        Prefers Scrapling AsyncFetcher when available (TLS impersonation +
-        stealth headers handle most anti-bot cases on the first try).
-        Falls back to httpx, and on 403 to httpx without UA — preserving
-        the prior 3-step fallback chain.
+        Layered chain (each tier tries only if the previous fails):
+          1. Scrapling AsyncFetcher (TLS impersonation, stealth headers) — fast HTTP
+          2. httpx with browser UA — historic default
+          3. httpx without UA — legacy 403 fallback
+          4. Scrapling StealthyFetcher (Phase 2) — browser-rendered, anti-bot,
+             only invoked when prior tiers returned 4xx or a "thin" body
+             (suggests JS-rendered page). Gated by Redis circuit breaker.
         """
         t0 = time.monotonic()
+        text = ""
+        status = 0
+        http_failed = False
 
-        # Step 1: Scrapling (default)
+        # Step 1: Scrapling HTTP fetcher
         if _USE_SCRAPLING and _SCRAPLING_AVAILABLE:
             try:
                 page = await _ScraplingAsyncFetcher.get(
@@ -68,39 +175,89 @@ class WebsiteAnalyzer:
                     impersonate="chrome",
                     follow_redirects=True,
                 )
-                # Scrapling Response: .body (bytes), .status (int), .url
                 status = getattr(page, "status", 0) or 0
-                text = getattr(page, "body", b"")
-                if isinstance(text, bytes):
-                    text = text.decode("utf-8", errors="replace")
+                body = getattr(page, "body", b"")
+                if isinstance(body, bytes):
+                    text = body.decode("utf-8", errors="replace")
+                else:
+                    text = body
                 if status and status < 400:
                     self._last_fetcher = "scrapling"
                     logger.debug(
                         f"[scrapling] {url} status={status} bytes={len(text)} t={time.monotonic()-t0:.2f}s"
                     )
-                    return text, status
-                # 4xx/5xx — fall through to httpx path
-                logger.info(f"[scrapling] {url} returned {status}, falling back to httpx")
+                    # Phase 2 escalation: even on 200, if body is thin (JS-rendered),
+                    # try browser to get real content. Otherwise return as-is.
+                    if not (_USE_STEALTH and _STEALTH_AVAILABLE and _looks_thin(text)):
+                        return text, status
+                    logger.info(f"[scrapling] {url} thin body ({len(text)} chars), trying stealth")
+                else:
+                    logger.info(f"[scrapling] {url} returned {status}, falling back to httpx")
             except Exception as e:
                 logger.info(f"[scrapling] {url} failed ({e!r}), falling back to httpx")
+                http_failed = True
 
-        # Step 2: httpx with browser UA (the old default)
-        try:
-            resp = await self.client.get(url, timeout=timeout)
-            if resp.status_code == 403:
-                # Step 3: some sites block browser UAs but allow empty UA
-                logger.info(f"[httpx] {url} got 403, retrying without User-Agent")
-                async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as temp:
-                    resp = await temp.get(url)
-            self._last_fetcher = "httpx"
-            logger.debug(
-                f"[httpx] {url} status={resp.status_code} bytes={len(resp.text)} t={time.monotonic()-t0:.2f}s"
+        # Step 2 + 3: httpx with browser UA, then without UA
+        if status == 0 or status >= 400 or http_failed:
+            try:
+                resp = await self.client.get(url, timeout=timeout)
+                if resp.status_code == 403:
+                    logger.info(f"[httpx] {url} got 403, retrying without User-Agent")
+                    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as temp:
+                        resp = await temp.get(url)
+                self._last_fetcher = "httpx"
+                text = resp.text
+                status = resp.status_code
+                logger.debug(
+                    f"[httpx] {url} status={status} bytes={len(text)} t={time.monotonic()-t0:.2f}s"
+                )
+            except Exception as e:
+                self._last_fetcher = "error"
+                http_failed = True
+                logger.warning(f"[httpx-fail] {url}: {e!r}")
+                # don't raise yet — give stealth a chance below
+
+        # Step 4: Scrapling StealthyFetcher (browser-rendered, anti-bot).
+        # Only when prior tiers returned 4xx OR a thin body.
+        should_try_stealth = (
+            _USE_STEALTH and _STEALTH_AVAILABLE and (
+                http_failed
+                or status >= 400
+                or _looks_thin(text)
             )
-            return resp.text, resp.status_code
-        except Exception as e:
-            self._last_fetcher = "error"
-            logger.warning(f"[fetch-fail] {url}: {e!r}")
-            raise
+        )
+        if should_try_stealth:
+            if not _stealth_quota_available():
+                logger.info(f"[stealth] {url} skipped (quota exhausted)")
+            else:
+                _stealth_quota_inc()
+                try:
+                    t1 = time.monotonic()
+                    page = await _ScraplingStealthy.async_fetch(
+                        url,
+                        headless=True,
+                        network_idle=True,
+                    )
+                    s_status = getattr(page, "status", 0) or 0
+                    s_body = getattr(page, "body", b"")
+                    if isinstance(s_body, bytes):
+                        s_text = s_body.decode("utf-8", errors="replace")
+                    else:
+                        s_text = s_body
+                    logger.info(
+                        f"[stealth] {url} status={s_status} bytes={len(s_text)} "
+                        f"t={time.monotonic()-t1:.1f}s (total={time.monotonic()-t0:.1f}s)"
+                    )
+                    if s_status and s_status < 400 and len(s_text) > len(text):
+                        self._last_fetcher = "stealth"
+                        return s_text, s_status
+                except Exception as e:
+                    logger.warning(f"[stealth-fail] {url}: {e!r}")
+
+        if http_failed and not text:
+            raise RuntimeError(f"all fetch tiers failed for {url}")
+
+        return text, status
 
     def _clean_text_for_matching(self, html_text: str) -> str:
         """Strip <style>, <script>, inline styles, and HTML comments to avoid false positives."""
