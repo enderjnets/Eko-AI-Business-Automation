@@ -357,6 +357,7 @@ export default function LandingPagesClient() {
     }
 
     setIsGenerating(true);
+    setError("");  // clear any stale error banner before the attempt
     try {
       await landingPagesApi.generate(targetId, { prompt: formPrompt, template_id: formTemplateId } as any);
       const res = await landingPagesApi.get(targetId);
@@ -460,8 +461,16 @@ export default function LandingPagesClient() {
         </div>
 
         {error && (
-          <div className="mb-4 bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-sm">
-            {error}
+          <div className="mb-4 bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-sm flex items-start justify-between gap-3">
+            <span className="flex-1">{error}</span>
+            <button
+              type="button"
+              onClick={() => setError("")}
+              className="text-red-400 hover:text-red-300 text-lg leading-none font-bold"
+              aria-label="Dismiss error"
+            >
+              ×
+            </button>
           </div>
         )}
 

@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.33";
+export const CURRENT_VERSION = "0.7.34";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,17 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.34",
+    date: "2026-05-20",
+    title: "Landing Pages — error banner dismissible + auto-clear en handleGenerate",
+    changes: [
+      "User reportó 'Generation failed (500)' aún después de v0.7.33. Reproduce directo del endpoint mostró HTTP 200 — el banner mostraba un error STALE de un intento anterior, no del intento actual",
+      "Fix: handleGenerate() ahora hace setError('') ANTES del API call (no solo al success), así cualquier banner viejo se limpia automáticamente al apretar Generate",
+      "Banner ahora tiene botón × dismiss visible para que el user lo cierre manualmente si lo prefiere",
+      "Reproducción confirmada: POST /landing-pages/22/generate con prompt spa+stripe-gradient template devuelve HTTP 200 en 19.5s con HTML válido",
+    ],
+  },
   {
     version: "0.7.33",
     date: "2026-05-20",
