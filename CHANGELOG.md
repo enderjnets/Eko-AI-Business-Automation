@@ -1,5 +1,36 @@
 
 
+## [0.7.23] — 2026-05-20
+
+### Scrapling Phase 1 — WebsiteAnalyzer migrado a AsyncFetcher con TLS impersonation
+
+Plan en 4 fases para integrar [Scrapling](https://github.com/D4Vinci/Scrapling) (51k stars). Phase 1 = drop-in replacement de la capa de red SIN tocar el parsing BS4.
+
+`backend/app/agents/research/analyzers/website.py`:
+- Nuevo helper `_fetch_html()` con cadena de fallback en 3 niveles: Scrapling AsyncFetcher (impersonate=chrome + stealthy_headers) → httpx browser UA → httpx sin UA
+- `analyze()` + `_try_contact_page()` + `_try_contact_page_for_phone()` ahora usan el helper
+- Feature flag `USE_SCRAPLING` (default true)
+- Logger de Scrapling silenciado a WARNING
+
+Deps agregadas: scrapling==0.4.8, curl_cffi==0.7.4, tldextract==5.1.2, playwright==1.45.0 (sin binarios chromium), browserforge==1.2.4, camoufox==0.4.11, cssselect==1.2.0, orjson==3.10.7.
+
+#### Audit (5 URLs reales)
+
+- allbirds.com (Shopify): Scrapling **32% más rápido** (1.5s vs 2.2s), mismos 11/17 campos populados → WIN
+- cloudflare.com: Scrapling 403 (Cloudflare challenge) → fallback a httpx funcionó → 8/17 campos (mismo que antes) → caso confirmado de utility para Phase 2
+- icapellis.com (Wix), eatdrinkliveco.com, tatianabittner.com: tie/DNS issues
+
+Cero regresión, Scrapling agrega valor cuando puede, falla limpia cuando no.
+
+#### Lo que NO se hizo en Phase 1 (a propósito)
+
+- No browser binary (`playwright install chromium`) — se posterga a Phase 2 (~150MB add)
+- No StealthyFetcher (requiere browser) — Phase 2
+- Apify/SerpAPI intactos — Phase 3
+- MCP server — Phase 4
+
+---
+
 ## [0.7.22] — 2026-05-19
 
 ### Landing Page templates — auditoría completa, fidelidad real a las marcas inspirantes

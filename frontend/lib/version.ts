@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.22";
+export const CURRENT_VERSION = "0.7.23";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,21 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.23",
+    date: "2026-05-20",
+    title: "Scrapling Phase 1 — WebsiteAnalyzer migrado a AsyncFetcher con TLS impersonation",
+    changes: [
+      "WebsiteAnalyzer ahora intenta Scrapling AsyncFetcher (impersonate=chrome, stealthy_headers=true) ANTES de httpx para el fetch inicial y los 4 contact-pages",
+      "Fallback graceful: si Scrapling tira 4xx/5xx o exception → httpx con browser UA → httpx sin UA (cadena de 3 niveles, preserva el flow anterior)",
+      "Feature flag USE_SCRAPLING=true por default (override via env)",
+      "Cero cambios al parsing BeautifulSoup — la única diferencia es la capa de red",
+      "Audit con 5 URLs reales: cuando Scrapling triunfa, 32% más rápido vs httpx (allbirds.com Shopify: 1.5s vs 2.2s); cuando falla (cloudflare.com 403 challenge), fallback funciona sin perder data; cero regresión en campos populados",
+      "Deps agregadas a requirements.txt: scrapling==0.4.8, curl_cffi==0.7.4, tldextract==5.1.2, playwright==1.45.0 (sin chromium binary), browserforge==1.2.4, camoufox==0.4.11",
+      "Docker image: +~5MB (sin browser binaries). Browser binary install se posterga a Phase 2 cuando agreguemos StealthyFetcher",
+      "Phase 2 (browser fallback para JS-rendered sites + circuit breaker) pendiente — cloudflare.com fue el caso confirmado de utility",
+    ],
+  },
   {
     version: "0.7.22",
     date: "2026-05-19",

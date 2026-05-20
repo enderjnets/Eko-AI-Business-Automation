@@ -1,5 +1,7 @@
+import os
 import re
-from typing import Optional, Dict
+import time
+from typing import Optional, Dict, Tuple
 
 import httpx
 from bs4 import BeautifulSoup
@@ -8,6 +10,24 @@ from langdetect import detect
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+# Phase 1 of Scrapling integration: AsyncFetcher with TLS impersonation
+# replaces raw httpx for the network layer. Parsing stays on BeautifulSoup
+# so this is a drop-in change with zero behavior diff on the parsing side.
+# Toggle with USE_SCRAPLING=true env var. Default ON so we A/B in prod.
+_USE_SCRAPLING = os.environ.get("USE_SCRAPLING", "true").lower() in ("1", "true", "yes", "on")
+
+try:
+    from scrapling.fetchers import AsyncFetcher as _ScraplingAsyncFetcher
+    _SCRAPLING_AVAILABLE = True
+    # Silence Scrapling's chatty per-request INFO logs in production paths
+    # (we already log at our own debug level inside _fetch_html).
+    logging.getLogger("scrapling").setLevel(logging.WARNING)
+except Exception as _e:  # pragma: no cover
+    _ScraplingAsyncFetcher = None
+    _SCRAPLING_AVAILABLE = False
+    logger.warning(f"Scrapling unavailable, falling back to httpx-only: {_e}")
 
 
 class WebsiteAnalyzer:
@@ -25,6 +45,62 @@ class WebsiteAnalyzer:
                 )
             },
         )
+        # Track which fetcher served each request — used in audit logs.
+        self._last_fetcher = "init"
+
+    async def _fetch_html(self, url: str, timeout: float = 15.0) -> Tuple[str, int]:
+        """Fetch HTML returning (text, status_code).
+
+        Prefers Scrapling AsyncFetcher when available (TLS impersonation +
+        stealth headers handle most anti-bot cases on the first try).
+        Falls back to httpx, and on 403 to httpx without UA — preserving
+        the prior 3-step fallback chain.
+        """
+        t0 = time.monotonic()
+
+        # Step 1: Scrapling (default)
+        if _USE_SCRAPLING and _SCRAPLING_AVAILABLE:
+            try:
+                page = await _ScraplingAsyncFetcher.get(
+                    url,
+                    timeout=timeout,
+                    stealthy_headers=True,
+                    impersonate="chrome",
+                    follow_redirects=True,
+                )
+                # Scrapling Response: .body (bytes), .status (int), .url
+                status = getattr(page, "status", 0) or 0
+                text = getattr(page, "body", b"")
+                if isinstance(text, bytes):
+                    text = text.decode("utf-8", errors="replace")
+                if status and status < 400:
+                    self._last_fetcher = "scrapling"
+                    logger.debug(
+                        f"[scrapling] {url} status={status} bytes={len(text)} t={time.monotonic()-t0:.2f}s"
+                    )
+                    return text, status
+                # 4xx/5xx — fall through to httpx path
+                logger.info(f"[scrapling] {url} returned {status}, falling back to httpx")
+            except Exception as e:
+                logger.info(f"[scrapling] {url} failed ({e!r}), falling back to httpx")
+
+        # Step 2: httpx with browser UA (the old default)
+        try:
+            resp = await self.client.get(url, timeout=timeout)
+            if resp.status_code == 403:
+                # Step 3: some sites block browser UAs but allow empty UA
+                logger.info(f"[httpx] {url} got 403, retrying without User-Agent")
+                async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as temp:
+                    resp = await temp.get(url)
+            self._last_fetcher = "httpx"
+            logger.debug(
+                f"[httpx] {url} status={resp.status_code} bytes={len(resp.text)} t={time.monotonic()-t0:.2f}s"
+            )
+            return resp.text, resp.status_code
+        except Exception as e:
+            self._last_fetcher = "error"
+            logger.warning(f"[fetch-fail] {url}: {e!r}")
+            raise
 
     def _clean_text_for_matching(self, html_text: str) -> str:
         """Strip <style>, <script>, inline styles, and HTML comments to avoid false positives."""
@@ -72,20 +148,16 @@ class WebsiteAnalyzer:
             return {"error": "Government websites are not supported", "url": url}
 
         try:
-            response = await self.client.get(url)
-            if response.status_code == 403:
-                # Some sites block browser UAs but allow empty UA
-                logger.info(f"Got 403 for {url}, retrying without User-Agent")
-                temp_client = httpx.AsyncClient(timeout=15.0, follow_redirects=True)
-                response = await temp_client.get(url)
-                await temp_client.aclose()
-            response.raise_for_status()
+            response_text, status_code = await self._fetch_html(url)
+            if status_code and status_code >= 400:
+                logger.warning(f"Failed to fetch {url}: HTTP {status_code}")
+                return {"error": f"HTTP {status_code}", "url": url}
         except Exception as e:
             logger.warning(f"Failed to fetch {url}: {e}")
             return {"error": str(e), "url": url}
 
-        soup = BeautifulSoup(response.text, "html.parser")
-        html_text = response.text.lower()
+        soup = BeautifulSoup(response_text, "html.parser")
+        html_text = response_text.lower()
         clean_text = self._clean_text_for_matching(html_text)
 
         # Extract basic info
@@ -186,14 +258,14 @@ class WebsiteAnalyzer:
                     social_links[platform] = a["href"]
 
         # Try to find email on page
-        email_found = self._extract_emails(response.text, soup)
+        email_found = self._extract_emails(response_text, soup)
 
         # If no email found, try contact page
         if not email_found:
             email_found = await self._try_contact_page(url)
 
         # Try to find phone on page
-        phone_found = self._extract_phone(response.text, soup)
+        phone_found = self._extract_phone(response_text, soup)
 
         # If no phone found, try contact page
         if not phone_found:
@@ -338,10 +410,10 @@ class WebsiteAnalyzer:
         for path in ["/contact", "/contact-us", "/about", "/about-us"]:
             try:
                 url = base_url.rstrip("/") + path
-                resp = await self.client.get(url, timeout=10.0)
-                if resp.status_code == 200:
-                    soup = BeautifulSoup(resp.text, "html.parser")
-                    email = self._extract_emails(resp.text, soup)
+                text, status = await self._fetch_html(url, timeout=10.0)
+                if status == 200:
+                    soup = BeautifulSoup(text, "html.parser")
+                    email = self._extract_emails(text, soup)
                     if email:
                         return email
             except Exception:
@@ -401,10 +473,10 @@ class WebsiteAnalyzer:
         for path in contact_paths:
             try:
                 url = urljoin(base_url, path)
-                resp = await self.client.get(url)
-                if resp.status_code == 200:
-                    soup = BeautifulSoup(resp.text, "html.parser")
-                    phone = self._extract_phone(resp.text, soup)
+                text, status = await self._fetch_html(url, timeout=10.0)
+                if status == 200:
+                    soup = BeautifulSoup(text, "html.parser")
+                    phone = self._extract_phone(text, soup)
                     if phone:
                         return phone
             except Exception:
