@@ -36,42 +36,66 @@ class YelpSource:
         radius_miles: int = 25,
         max_results: int = 50,
     ) -> List[Dict]:
-        """Search for businesses on Yelp."""
+        """Search for businesses on Yelp.
+
+        Primary path: Yelp Fusion API (500 free req/day).
+        Fallback (Phase 3): Scrapling-based browser scraping when:
+          - API key missing
+          - API returns error (rate limit, server error, etc.)
+          - API returns zero results
+
+        Fallback is opt-in via SCRAPLING_DISCOVERY_FALLBACK=true env var
+        so paid users keep the canonical API path by default.
+        """
+        location = f"{city}, {state}" if state else city
+
+        leads: List[Dict] = []
+        api_failed = False
+
         if not self.api_key:
-            logger.warning("Yelp Fusion API key not configured. Get one free at https://www.yelp.com/developers/v3/manage_app")
-            return []
+            logger.warning("Yelp Fusion API key not configured (Scrapling fallback will run if enabled).")
+            api_failed = True
+        else:
+            radius_meters = min(int(radius_miles * 1609.34), 40000)
+            limit = min(max_results, 50)
+            logger.info(f"Yelp Fusion search: '{query}' in {location}")
+            try:
+                resp = await self.client.get(
+                    "/businesses/search",
+                    params={
+                        "term": query,
+                        "location": location,
+                        "radius": radius_meters,
+                        "limit": limit,
+                        "sort_by": "best_match",
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                businesses = data.get("businesses", [])
+                for biz in businesses:
+                    lead = self._normalize_business(biz)
+                    if lead:
+                        leads.append(lead)
+                logger.info(f"Yelp Fusion returned {len(leads)} leads")
+            except Exception as e:
+                logger.error(f"Yelp Fusion API error: {e}")
+                api_failed = True
 
-        location = f"{city}, {state}"
-        radius_meters = min(int(radius_miles * 1609.34), 40000)  # Max 40km
-        limit = min(max_results, 50)  # Yelp max per request
+        # Phase 3 fallback: try Scrapling-based browser scraping when API failed
+        # or returned nothing. Opt-in via SCRAPLING_DISCOVERY_FALLBACK env.
+        if (api_failed or not leads):
+            try:
+                from app.services.scrapling_scraper import scrape_yelp_listings, DISCOVERY_FALLBACK_ENABLED
+                if DISCOVERY_FALLBACK_ENABLED:
+                    logger.info(f"Yelp fallback to Scrapling browser scraper for '{query}' in {location}")
+                    scraped = await scrape_yelp_listings(query, location, max_results=max_results)
+                    if scraped:
+                        leads.extend(scraped)
+                        logger.info(f"Yelp Scrapling fallback added {len(scraped)} leads")
+            except Exception as e:
+                logger.warning(f"Yelp Scrapling fallback failed: {e!r}")
 
-        logger.info(f"Yelp Fusion search: '{query}' in {location}")
-
-        try:
-            resp = await self.client.get(
-                "/businesses/search",
-                params={
-                    "term": query,
-                    "location": location,
-                    "radius": radius_meters,
-                    "limit": limit,
-                    "sort_by": "best_match",
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            businesses = data.get("businesses", [])
-        except Exception as e:
-            logger.error(f"Yelp Fusion API error: {e}")
-            return []
-
-        leads = []
-        for biz in businesses:
-            lead = self._normalize_business(biz)
-            if lead:
-                leads.append(lead)
-
-        logger.info(f"Yelp Fusion returned {len(leads)} leads")
         return leads
 
     def _normalize_business(self, biz: Dict) -> Optional[Dict]:

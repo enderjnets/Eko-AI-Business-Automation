@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.24";
+export const CURRENT_VERSION = "0.7.25";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,21 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.25",
+    date: "2026-05-20",
+    title: "Scrapling Phase 3 — shared scraping helper + opt-in Yelp browser fallback",
+    changes: [
+      "Nuevo módulo backend/app/services/scrapling_scraper.py: helper compartido para usar Scrapling fuera del WebsiteAnalyzer (Discovery sources, futuro: MCP)",
+      "fetch_page(url, use_browser, timeout): wrapper sobre AsyncFetcher/StealthyFetcher reutilizando el circuit breaker Redis de Phase 2",
+      "scrape_yelp_listings(category, location, max_results): scraper específico para Yelp SERP que devuelve dicts shapeados al Lead format",
+      "Yelp source ahora tiene fallback opt-in (SCRAPLING_DISCOVERY_FALLBACK=true env): si API key falta O API tira error O API devuelve 0 → intenta scraping browser",
+      "Test real con yelp.com/search?find_desc=nail+salon&find_loc=Denver: Yelp devolvió 403 incluso con StealthyFetcher (anti-bot fuerte). Infraestructura funciona correctamente — log+breaker+graceful zero-return — Yelp específico requiere proxy rotator residencial para success rate alto",
+      "Colorado SOS YA usa API gratuita (data.colorado.gov) como primary, Apify solo fallback — no necesita Scrapling work",
+      "Google Maps (Outscraper API) intencionalmente NO migrado a Scrapling: Google tiene anti-bot brutal + área legal gris. Scrapling fallback documentado como futuro requiriendo proxies pagados",
+      "Net efecto Phase 3: framework listo para cuando se agreguen proxies/fallbacks, Yelp wired (no funciona standalone hoy pero ya no requiere code changes), default behavior idéntica (paid APIs primarios)",
+    ],
+  },
   {
     version: "0.7.24",
     date: "2026-05-20",
