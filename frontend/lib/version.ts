@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.34";
+export const CURRENT_VERSION = "0.7.35";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,18 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.35",
+    date: "2026-05-20",
+    title: "Landing — fix crash de hooks + fetch automático de active LP cuando no hay ?lp=",
+    changes: [
+      "BUG CRÍTICO: /landing crashea con Application error: 12 useState + 1 useEffect estaban DESPUÉS de 2 returns condicionales — violación de Rules of Hooks (cuenta de hooks cambia entre renders → React tira exception)",
+      "Refactor mecánico en frontend/app/landing/page.tsx: TODOS los hooks (14 useState/useEffect + useScrollAnimation) movidos al tope del componente, antes de cualquier return. Conditional rendering ahora ocurre después",
+      "Restaurada lógica pre-commit-7ebdeeb: cuando no hay ?lp= param, fetch /api/v1/landing-pages/public/active (que ya existía en backend) en vez de mostrar hardcoded JSX. Hardcoded solo se renderiza si /active falla",
+      "Resultado: www.ekoaiautomation.com (→ Tailscale Funnel /landing) ahora muestra la LP marcada como Active en el dashboard. Cambio dinámico instantáneo (no restart necesario)",
+      "Backup pre-fix en frontend/app/landing/page.tsx.bak.pre_active_lp_fix",
+    ],
+  },
   {
     version: "0.7.34",
     date: "2026-05-20",

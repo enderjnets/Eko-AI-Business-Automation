@@ -201,51 +201,9 @@ function SuccessModal({ open, onClose, name }: { open: boolean; onClose: () => v
 
 /* ═══════════════════════─ MAIN PAGE ═══════════════════════*/
 export default function LandingPage() {
+  // ── ALL HOOKS AT TOP — never conditional (React Rules of Hooks) ─
   const [dynamicHtml, setDynamicHtml] = useState<string | null>(null);
   const [dynamicLoading, setDynamicLoading] = useState(true);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const slug = params.get("lp");
-    if (!slug) {
-      // Default: show hardcoded landing page
-      setDynamicLoading(false);
-      return;
-    }
-
-    fetch(`/api/v1/landing-pages/public/${slug}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("No landing page");
-        return r.text();
-      })
-      .then((html) => {
-        setDynamicHtml(html);
-      })
-      .catch(() => {
-        setDynamicHtml(null);
-      })
-      .finally(() => {
-        setDynamicLoading(false);
-      });
-  }, []);
-
-  if (dynamicLoading) {
-    return (
-      <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#0B4FD8] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (dynamicHtml) {
-    return (
-      <div
-        className="min-h-screen"
-        dangerouslySetInnerHTML={{ __html: dynamicHtml }}
-      />
-    );
-  }
-
   const [form, setForm] = useState({ first_name: "", last_name: "", email: "", phone: "", website: "" });
   const [heroForm, setHeroForm] = useState({ first_name: "", last_name: "", email: "", phone: "", website: "" });
   const [submitted, setSubmitted] = useState(false);
@@ -262,9 +220,49 @@ export default function LandingPage() {
   const statsRef = useScrollAnimation(0.3);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get("lp");
+    const url = slug
+      ? `/api/v1/landing-pages/public/${slug}`
+      : `/api/v1/landing-pages/public/active`;
+    fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error("No landing page");
+        return r.text();
+      })
+      .then((html) => {
+        setDynamicHtml(html);
+      })
+      .catch(() => {
+        setDynamicHtml(null);
+      })
+      .finally(() => {
+        setDynamicLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
     const timer = setTimeout(() => setHeroLoaded(true), 100);
     return () => clearTimeout(timer);
   }, []);
+
+  // ── CONDITIONAL RENDERING (after all hooks) ─────────────────────
+  if (dynamicLoading) {
+    return (
+      <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#0B4FD8] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (dynamicHtml) {
+    return (
+      <div
+        className="min-h-screen"
+        dangerouslySetInnerHTML={{ __html: dynamicHtml }}
+      />
+    );
+  }
 
   const handleHeroSubmit = async (e: FormEvent) => {
     e.preventDefault();
