@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.25";
+export const CURRENT_VERSION = "0.7.26";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,19 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.26",
+    date: "2026-05-20",
+    title: "Scrapling Phase 4 — research helper pre-AI: LP generator inyecta data fresca del business site al prompt",
+    changes: [
+      "Nuevo backend/app/services/research_helper.py: fetch_business_summary() + build_landing_page_context() — pre-fetcheea el sitio del lead via Scrapling antes de invocar al AI generator, devuelve plain text strippeado listo para inyectar en prompt (cap 3000 chars default)",
+      "landing_page_generator.generate() acepta nuevo parámetro target_website. Si presente AND SCRAPLING_RESEARCH_HELPER=true (default) → fetchea + escala a browser tier si body thin → inyecta '## Research context (fresh fetch via Scrapling)\\n### Business site: ...\\n<plain text>' al final del custom_prompt",
+      "Smoke test con allbirds.com: 3091 chars de research context, AI ahora ve nav links, product categories, footer copy en vivo en vez de tener que adivinar",
+      "metadata['research_context_used'] tracked → audit cuántas LPs benefiician del context",
+      "Approach pragmatic en vez de MCP server completo: kimi-cli + REST clients de Eko AI no hablan MCP nativo; reescribir eso era out-of-scope. Pre-fetch + prompt injection da el MISMO end-user benefit (AI grounded en data fresca) sin refactor",
+      "MCP server proper queda documentado como v0.8: requeriría `pip install scrapling[ai]` + kimi-cli --mcp flag setup + tool-use protocol en ai_client.py",
+    ],
+  },
   {
     version: "0.7.25",
     date: "2026-05-20",

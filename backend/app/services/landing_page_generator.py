@@ -27,8 +27,16 @@ class LandingPageGenerator:
         model: Optional[str] = None,
         cal_com_link: Optional[str] = None,
         template_id: Optional[str] = None,
+        target_website: Optional[str] = None,
     ) -> dict:
         """Generate a landing page from a user prompt.
+
+        Args:
+            target_website: optional URL of the lead's existing site —
+                if provided AND SCRAPLING_RESEARCH_HELPER is on (default),
+                we pre-fetch it via Scrapling and inject a research-context
+                block into the user prompt so the AI grounds its copy in
+                real, fresh data about the business.
 
         Returns:
             dict with keys: html_content, css_content, js_content, metadata
@@ -37,6 +45,21 @@ class LandingPageGenerator:
 
         system_prompt = SYSTEM_PROMPT_TEMPLATE
         user_prompt = custom_prompt
+
+        # Phase 4: optional research-context injection via Scrapling.
+        research_used = False
+        if target_website:
+            try:
+                from app.services.research_helper import build_landing_page_context
+                ctx = await build_landing_page_context(target_website)
+                if ctx:
+                    user_prompt = f"{custom_prompt}\n\n{ctx}"
+                    research_used = True
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(
+                    f"Research helper failed for {target_website}: {e!r}"
+                )
 
         # Generate copy from AI
         raw_response = await self._generate_copy(system_prompt, user_prompt, provider)
@@ -54,6 +77,7 @@ class LandingPageGenerator:
             "has_form": "<form" in html.lower(),
             "has_tracking_pixel": "landing-pages/track" in html,
             "template_id": template_id or "eko-classic",
+            "research_context_used": research_used,
         }
 
         return {

@@ -1,5 +1,134 @@
 
 
+## [0.7.26] — 2026-05-20
+
+### Scrapling Phase 4 — research helper pre-AI: LP generator inyecta data fresca del business site al prompt
+
+Phase 4 (de 4) de integración Scrapling. Da a los AI generators (landing page, futuro: proposal, sales brief) la capacidad de **pre-fetchar data fresca de la web ANTES de invocar el AI**, inyectándola como contexto al prompt. End-user benefit ≈ MCP server sin requerir refactor del AI client layer.
+
+#### Cambios
+
+`backend/app/services/research_helper.py` (nuevo, 130 líneas):
+- `fetch_business_summary(url, max_chars, timeout)`: usa Scrapling para fetchear el site, strippea HTML→plain text, escala a browser tier si el body inicial es thin (<100 chars), devuelve None safely si todo falla
+- `build_landing_page_context(website, extra_urls)`: orquesta fetch del business site + hasta 2 competitor URLs, devuelve un bloque markdown formateado: `## Research context (fresh fetch via Scrapling)\n### Business site: ...\n<plain text>\n### Reference: ...\n...`
+- Cap de 3000 chars por default (env `SCRAPLING_RESEARCH_MAX_CHARS`), toggle global `SCRAPLING_RESEARCH_HELPER` (default true)
+
+`backend/app/services/landing_page_generator.py`:
+- `generate()` acepta nuevo parámetro `target_website: Optional[str]`
+- Si presente AND helper habilitado → fetch context → append al `custom_prompt` → AI ahora ve la realidad del business site en vez de adivinar
+- `metadata["research_context_used"]: bool` para audit
+
+#### Smoke test real
+
+```
+build_landing_page_context("https://allbirds.com/")
+→ 3091 chars de plain text con nav, product categories, footer copy en vivo
+```
+
+#### Por qué pre-fetch en vez de MCP server completo
+
+Eko AI's AI client layer es `kimi-cli subprocess + REST calls a OpenAI/Anthropic`. Reescribir eso a hablar Model Context Protocol nativo era out-of-scope. Pre-fetch + prompt injection da el MISMO end-user benefit (AI grounded en data fresca) sin refactor del client layer.
+
+#### MCP server completo queda como v0.8
+
+Roadmap futuro: `pip install scrapling[ai]` provee un MCP server estilo Anthropic. Para integrarlo:
+1. Levantar el MCP server como subprocess en el container
+2. Configurar `kimi-cli --mcp` con su endpoint
+3. Modificar `app/utils/ai_client.py` para advertise tools al AI
+4. Modificar SYSTEM_PROMPTs para que el AI sepa cuándo invocar el tool
+
+Eso es ~1 día de trabajo con riesgo medio (cambios al client layer afectan TODOS los AI calls). El pre-fetch approach de Phase 4 entrega el 80% del valor sin ese riesgo.
+
+---
+
+## [0.7.25] — 2026-05-20
+
+### Scrapling Phase 3 — shared scraping helper + opt-in Yelp browser fallback
+
+Phase 3 (de 4) de integración Scrapling. Construye infraestructura de scraping reutilizable y wireup del primer Discovery source fallback (Yelp).
+
+`backend/app/services/scrapling_scraper.py` (nuevo, 117 líneas):
+- `fetch_page(url, use_browser, timeout)`: wrapper sobre AsyncFetcher/StealthyFetcher devolviendo un Scrapling Selector. Reutiliza el circuit breaker de Phase 2 (no duplica)
+- `scrape_yelp_listings(category, location, max_results)`: scraper específico para Yelp SERP que parsea cards `[data-testid="serp-ia-card"]`
+- `DISCOVERY_FALLBACK_ENABLED` env flag (default false)
+
+`backend/app/agents/discovery/sources/yelp.py`:
+- `search()` ahora tiene dual path: API Fusion primary (unchanged) + Scrapling browser fallback opt-in cuando (API key missing O API error O API returns 0) AND flag habilitado
+
+#### Smoke test
+
+```
+SCRAPLING_DISCOVERY_FALLBACK=true python -c "scrape_yelp_listings('nail salon', 'Denver, CO')"
+[scrapling-yelp] scraping https://www.yelp.com/search?...
+[stealth-discovery] yelp.com status=403
+=== got 0 leads ===
+```
+
+Yelp devolvió 403 incluso vía StealthyFetcher (anti-bot Yelp brutal, esperado). **La infraestructura funcionó**: log, circuit breaker incrementado, return 0 graceful. Para production-grade Yelp scraping necesita residential proxy rotator (~$300/mes).
+
+#### NO migrados (justificado)
+
+- **Google Maps (Outscraper)**: viola Google ToS scrapear, Outscraper API ya autorizada, ROI negativo
+- **Colorado SOS**: ya usa Socrata API gratuita como primary, Apify solo fallback existente
+
+---
+
+## [0.7.24] — 2026-05-20
+
+### Scrapling Phase 2 — StealthyFetcher browser fallback con Redis circuit breaker
+
+Phase 2 (de 4) de integración Scrapling. Agrega un 4to tier al `_fetch_html` chain: **StealthyFetcher** (browser-rendered con Patchright + Chromium headless undetectable) que se dispara solo cuando los 3 tiers HTTP devuelven 4xx/5xx O un body "thin" (<1500 chars de texto en `<body>` tras strip de tags/scripts — signature de sitios Wix/Squarespace/Shopify JS-rendered).
+
+#### Cambios al chain
+
+```
+_fetch_html(url):
+    tier 1: Scrapling AsyncFetcher (TLS impersonation chrome)
+    tier 2: httpx con browser UA
+    tier 3: httpx sin UA (legacy 403 fallback)
+    tier 4: Scrapling StealthyFetcher (browser, anti-bot)
+            ⤷ se invoca SOLO si: status >= 400 OR _looks_thin(text)
+            ⤷ gated por Redis circuit breaker
+            ⤷ return SOLO si: status < 400 AND len(stealth) > len(http)
+```
+
+#### Circuit breaker (lifted del Resend quota guard v0.7.15)
+
+- `scraping:stealth:per_minute` TTL 60s — max 10 browser fetches/minuto
+- `scraping:stealth:daily` TTL hasta UTC midnight — max 200 browser fetches/día
+- Fail-open si Redis está caído (mejor degradar que bloquear)
+
+#### Dockerfile
+
+Agregadas 14 runtime libs Debian Trixie para Chromium (libnspr4, libnss3, libatk-bridge2.0-0, libcups2, libxkbcommon0, libxcomposite1, libxdamage1, libxrandr2, libgbm1, libpango-1.0-0, libcairo2, libasound2, libatspi2.0-0, libxshmfence1, libxfixes3, fonts-liberation, fonts-noto-color-emoji) + `patchright install chromium` durante build (~150MB cacheado como Docker layer).
+
+#### Deps
+
+Cambio de pinning manual a `scrapling[fetchers]==0.4.8` (extra notation) — pip resuelve la cadena correcta: playwright 1.59.0, patchright 1.59.1, msgspec 0.21+, curl_cffi 0.15+, browserforge, camoufox.
+
+#### Audit (icapellis.com / Wix)
+
+```
+phase1  fetcher=httpx     1.8s   body=705,550  (shell pre-hidratado)
+phase2  fetcher=stealth   4.5s   body=711,838  (HTML rendered con contenido visible)
+```
+
+Body grows ~6KB en bytes, pero el contenido NEW visible (texto real de servicios/horarios que antes estaban en divs vacíos) ahora está disponible para el AI downstream. La diferencia "real" se ve en proposals AI ya no diciendo "missing services, pricing, hours".
+
+Circuit breaker verified: 10 attempts in a row succeed, attempts 11-12 blocked correctly.
+
+#### Feature flags
+
+| Flag | Default | Effect |
+|---|---|---|
+| `USE_SCRAPLING` | `true` | enable tier 1 (Scrapling HTTP) |
+| `USE_STEALTH` | `true` | enable tier 4 (StealthyFetcher browser) |
+| `STEALTH_THIN_THRESHOLD` | `1500` | char count below which body is "thin" |
+| `STEALTH_PER_MIN_CAP` | `10` | max browser fetches per minute |
+| `STEALTH_DAILY_CAP` | `200` | max browser fetches per day |
+
+---
+
 ## [0.7.23] — 2026-05-20
 
 ### Scrapling Phase 1 — WebsiteAnalyzer migrado a AsyncFetcher con TLS impersonation
