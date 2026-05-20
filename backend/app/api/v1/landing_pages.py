@@ -646,6 +646,11 @@ async def generate_landing_page(
 
     generator = LandingPageGenerator()
 
+    # Resilient generation: try AI first, on any failure fall back to the
+    # template's default copy. The user always gets a valid page back —
+    # never a 500 — and can simply re-click Generate to retry the AI path.
+    ai_fallback = False
+    ai_error: Optional[str] = None
     try:
         generated = await generator.generate(
             custom_prompt=prompt,
@@ -656,14 +661,50 @@ async def generate_landing_page(
             template_id=template_id,
         )
     except Exception as e:
-        logger.error(f"Generation failed for landing page {landing_page_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"AI generation failed: {e}")
+        logger.error(
+            f"AI generation failed for landing page {landing_page_id}: {e!r} — "
+            f"falling back to template default copy"
+        )
+        ai_fallback = True
+        ai_error = str(e)[:200]
+        try:
+            from app.services.landing_page_template import render_template_preview
+            from datetime import datetime as _dt
+            html = render_template_preview(template_id)
+            generated = {
+                "html_content": html,
+                "css_content": None,
+                "js_content": None,
+                "metadata": {
+                    "template_id": template_id,
+                    "ai_fallback": True,
+                    "ai_error": ai_error,
+                    "generated_at": _dt.utcnow().isoformat(),
+                },
+            }
+        except Exception as render_err:
+            # Only 500 if BOTH the AI AND the template render fail (very rare)
+            logger.error(f"Template render also failed: {render_err}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"AI generation and template fallback both failed: {ai_error}",
+            )
 
-    lp.html_content = generated["html_content"]
-    lp.css_content = generated.get("css_content")
-    lp.js_content = generated.get("js_content")
+    # Sanitize all stored text fields: strip NULL bytes (0x00) and other
+    # forbidden control chars that Postgres TEXT columns reject. Kimi/MiniMax
+    # occasionally embed these in their output and cause CharacterNotInRepertoireError
+    # on commit. This guard is cheap and idempotent.
+    def _sanitize(s):
+        if not isinstance(s, str):
+            return s
+        # Drop NULL byte; keep \n \r \t which are valid
+        return s.replace("\x00", "").replace("", "")
+
+    lp.html_content = _sanitize(generated["html_content"])
+    lp.css_content = _sanitize(generated.get("css_content"))
+    lp.js_content = _sanitize(generated.get("js_content"))
     lp.generation_metadata = generated["metadata"]
-    lp.prompt = prompt
+    lp.prompt = _sanitize(prompt)
     lp.updated_at = datetime.utcnow()
 
     await db.commit()

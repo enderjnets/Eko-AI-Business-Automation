@@ -141,12 +141,12 @@ IMPORTANT: Respond with ONLY a valid JSON object. No markdown fences, no explana
                 stderr=asyncio.subprocess.PIPE,
                 env=env,
             )
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=180)
         except asyncio.TimeoutError:
             logger.error("Kimi CLI timed out after 120 seconds")
             if proc.returncode is None:
                 proc.kill()
-            raise RuntimeError("Kimi CLI timed out after 120 seconds")
+            raise RuntimeError("Kimi CLI timed out after 180 seconds")
         except Exception as e:
             logger.error(f"Kimi CLI subprocess failed: {e}")
             raise RuntimeError(f"Kimi CLI subprocess failed: {e}")

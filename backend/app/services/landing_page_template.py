@@ -3302,6 +3302,3984 @@ __FORM_SUBMIT_JS__
 # TEMPLATE REGISTRY — single source of truth for template metadata.
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# ─── Vercel Modern ─────────────────────────────────────────────────────────────
+_TPL_VERCEL_MODERN = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{TITLE}}</title><style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#000;
+  --bg-1:#0a0a0a;
+  --bg-2:#111;
+  --text:#fff;
+  --muted:#a1a1aa;
+  --muted-2:#71717a;
+  --border:rgba(255,255,255,.1);
+  --border-2:#1f1f1f;
+  --pink:#ff0080;
+  --purple:#7928ca;
+  --blue:#0070f3;
+  --cyan:#00dfd8;
+  --green:#0cce6b;
+}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh;-webkit-text-size-adjust:100%}
+body{font-family:'Geist Sans','Inter',-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;font-weight:400;letter-spacing:-.01em;min-height:100vh}
+a{color:var(--text);text-decoration:none;transition:color .15s}
+a:hover{color:#fff}
+.mono{font-family:'Geist Mono','SF Mono','JetBrains Mono',Menlo,monospace;font-feature-settings:"ss01","ss02"}
+
+/* GRADIENT TEXT — Vercel signature */
+.gradient-text{background:linear-gradient(90deg,#fff 0%,#888 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.gradient-rainbow{background:linear-gradient(90deg,#ff0080 0%,#7928ca 35%,#0070f3 70%,#00dfd8 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* NAV — sticky black w/ blur, full Vercel menu */
+.nav{position:sticky;top:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1280px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:32px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px;letter-spacing:-.02em;color:#fff}
+.brand .tri{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center}
+.brand .tri svg{width:22px;height:22px;display:block;fill:#fff}
+.nav-links{display:flex;list-style:none;gap:0;flex:1;margin:0;padding:0}
+.nav-links li{padding:0 12px}
+.nav-links a{color:var(--muted);font-size:14px;font-weight:400;letter-spacing:-.005em;display:inline-flex;align-items:center;gap:4px;transition:color .15s}
+.nav-links a:hover{color:#fff}
+.nav-links a .caret{font-size:9px;opacity:.6;transform:translateY(1px)}
+.nav-utility{display:flex;gap:8px;align-items:center}
+.nav-utility .log{color:var(--muted);font-size:14px;padding:7px 12px;transition:color .15s}
+.nav-utility .log:hover{color:#fff}
+.pill-white{background:#fff;color:#000;padding:7px 14px;border-radius:9999px;font-size:14px;font-weight:500;border:1px solid #fff;display:inline-flex;align-items:center;gap:4px;transition:background .15s,opacity .15s;cursor:pointer;font-family:inherit;text-decoration:none}
+.pill-white:hover{background:#e5e5e5;color:#000;text-decoration:none}
+.pill-outline{background:transparent;color:#fff;padding:7px 14px;border-radius:9999px;font-size:14px;font-weight:500;border:1px solid #333;display:inline-flex;align-items:center;gap:4px;transition:border-color .15s,background .15s;cursor:pointer;font-family:inherit;text-decoration:none}
+.pill-outline:hover{border-color:#666;background:rgba(255,255,255,.04);color:#fff;text-decoration:none}
+.nav-hamburger{display:none;background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:6px}
+
+/* HERO — Vercel huge gradient headline */
+.hero{position:relative;padding:96px 24px 40px;text-align:center;max-width:1200px;margin:0 auto;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse 50% 60% at 50% 30%,rgba(121,40,202,.18) 0%,rgba(0,112,243,.10) 30%,transparent 70%);pointer-events:none;z-index:0}
+.hero-inner{position:relative;z-index:1}
+.eyebrow-mono{display:inline-block;font-family:'Geist Mono',monospace;font-size:13px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:22px}
+.hero h1{font-size:clamp(48px,8vw,108px);font-weight:700;line-height:.98;letter-spacing:-.05em;margin-bottom:24px;max-width:900px;margin-left:auto;margin-right:auto}
+.hero h1 .gradient-text{display:inline}
+.hero-sub{font-size:clamp(18px,2.2vw,22px);color:var(--muted);line-height:1.45;max-width:620px;margin:0 auto 36px;font-weight:400}
+.hero-cta-row{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:64px}
+
+/* DEPLOYMENT CARD — Vercel signature deploy mockup */
+.deploy-card{max-width:880px;margin:0 auto;background:linear-gradient(180deg,#0a0a0a 0%,#000 100%);border:1px solid var(--border-2);border-radius:14px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.02),0 40px 80px -20px rgba(121,40,202,.18),0 20px 40px -10px rgba(0,0,0,.6);position:relative;text-align:left}
+.deploy-card::before{content:'';position:absolute;inset:-1px;border-radius:14px;padding:1px;background:linear-gradient(135deg,rgba(255,0,128,.4),rgba(0,223,216,.2) 50%,transparent 80%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.deploy-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.02)}
+.dot-pulse{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(12,206,107,.6);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(12,206,107,.5)}70%{box-shadow:0 0 0 10px rgba(12,206,107,0)}100%{box-shadow:0 0 0 0 rgba(12,206,107,0)}}
+.deploy-branch{font-family:'Geist Mono',monospace;font-size:13px;color:#fff;letter-spacing:-.01em}
+.deploy-branch .sha{color:var(--muted-2);margin-left:6px}
+.deploy-status{margin-left:auto;font-family:'Geist Mono',monospace;font-size:12px;color:var(--green);background:rgba(12,206,107,.08);padding:3px 10px;border-radius:9999px;border:1px solid rgba(12,206,107,.18)}
+.deploy-body{padding:8px 0}
+.deploy-row{display:grid;grid-template-columns:14px 1fr auto auto auto;gap:14px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--border);font-size:13px;transition:background .15s}
+.deploy-row:hover{background:rgba(255,255,255,.02)}
+.deploy-row:last-child{border-bottom:none}
+.deploy-row .stat-dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.deploy-row.warn .stat-dot{background:#f5a623}
+.deploy-row .msg{color:#fff;font-family:'Geist Mono',monospace;font-size:12.5px;letter-spacing:-.005em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.deploy-row .env{font-size:11px;background:rgba(255,255,255,.06);color:var(--muted);padding:2px 8px;border-radius:9999px;font-family:'Geist Mono',monospace;letter-spacing:.02em}
+.deploy-row .env.prod{background:rgba(0,112,243,.12);color:#79bfff;border:1px solid rgba(0,112,243,.2)}
+.deploy-row .author{font-family:'Geist Mono',monospace;font-size:12px;color:var(--muted-2)}
+.deploy-row .time{font-family:'Geist Mono',monospace;font-size:12px;color:var(--muted-2)}
+
+/* LOGO STRIP */
+.trust-strip{padding:64px 24px 32px;text-align:center;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg-1)}
+.trust-label{font-size:13px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:28px;font-family:'Geist Mono',monospace}
+.trust-logos{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;align-items:center;max-width:1080px;margin:0 auto;opacity:.55}
+.trust-logos span{font-size:18px;font-weight:600;color:#fff;letter-spacing:-.02em}
+
+/* STATS */
+.stats-band{padding:80px 24px;background:var(--bg)}
+.stats-inner{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:48px;text-align:center}
+.stat-num{font-size:clamp(40px,5.5vw,72px);font-weight:700;letter-spacing:-.04em;color:#fff;line-height:1;margin-bottom:8px;background:linear-gradient(90deg,#fff 0%,#999 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:14px;color:var(--muted);letter-spacing:-.005em}
+
+/* SECTION */
+.section{padding:120px 24px;position:relative}
+.section.alt{background:var(--bg-1);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.section-inner{max-width:1080px;margin:0 auto}
+.section-head{max-width:680px;margin:0 auto 64px;text-align:center}
+.section-eyebrow{display:inline-block;font-size:13px;color:var(--muted);font-family:'Geist Mono',monospace;letter-spacing:.04em;text-transform:uppercase;margin-bottom:16px}
+.section-head h2{font-size:clamp(36px,5vw,60px);font-weight:600;letter-spacing:-.04em;line-height:1.05;color:#fff;margin-bottom:18px}
+.section-head h2 .gradient-text{display:inline}
+.section-head p{font-size:18px;color:var(--muted);line-height:1.5;font-weight:400}
+
+/* BENEFITS — 2x2 grid, dark cards w/ gradient border on hover */
+.benefits-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.benefit-card{background:var(--bg-1);border:1px solid var(--border-2);border-radius:12px;padding:36px 32px;position:relative;transition:background .2s,border-color .2s;overflow:hidden}
+.benefit-card::before{content:'';position:absolute;inset:-1px;border-radius:12px;padding:1px;background:linear-gradient(135deg,var(--pink),var(--cyan));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:0;transition:opacity .25s;pointer-events:none}
+.benefit-card:hover::before{opacity:1}
+.benefit-card:hover{background:#0d0d0d}
+.benefit-icon{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--border-2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:24px}
+.benefit-card h3{font-size:20px;font-weight:600;letter-spacing:-.02em;margin-bottom:8px;color:#fff;line-height:1.25}
+.benefit-card p{font-size:15px;color:var(--muted);line-height:1.55;letter-spacing:-.005em}
+
+/* CODE BLOCK — Vercel "Deploy in seconds" pattern */
+.code-block{max-width:760px;margin:48px auto 0;background:var(--bg-1);border:1px solid var(--border-2);border-radius:12px;overflow:hidden;text-align:left;box-shadow:0 20px 40px -20px rgba(0,0,0,.6)}
+.code-head{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.02)}
+.code-dot{width:11px;height:11px;border-radius:50%;background:#333}
+.code-title{font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted-2);margin-left:auto;letter-spacing:-.005em}
+.code-body{padding:20px 22px;font-family:'Geist Mono',monospace;font-size:13.5px;line-height:1.7;color:#e4e4e7;overflow-x:auto}
+.code-body .kw{color:var(--pink)}
+.code-body .str{color:var(--green)}
+.code-body .fn{color:#79bfff}
+.code-body .com{color:var(--muted-2)}
+.code-body .num{color:var(--cyan)}
+
+/* HOW — numbered steps, sparse */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.step{padding:32px 28px;background:var(--bg-1);border:1px solid var(--border-2);border-radius:12px;position:relative}
+.step-num{font-family:'Geist Mono',monospace;font-size:13px;color:var(--cyan);letter-spacing:.04em;margin-bottom:20px;text-transform:uppercase}
+.step h3{font-size:19px;font-weight:600;letter-spacing:-.02em;margin-bottom:8px;color:#fff;line-height:1.3}
+.step p{font-size:15px;color:var(--muted);line-height:1.55}
+
+/* REVIEWS */
+.reviews-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.review{padding:36px 32px;background:var(--bg-1);border:1px solid var(--border-2);border-radius:12px}
+.review-quote{font-size:18px;color:#fff;line-height:1.5;font-weight:400;margin-bottom:24px;letter-spacing:-.012em}
+.review-author{display:flex;align-items:center;gap:12px}
+.review-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--purple),var(--blue));color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.review-name{font-size:14px;font-weight:500;color:#fff;letter-spacing:-.005em}
+.review-role{font-size:13px;color:var(--muted);letter-spacing:-.005em}
+
+/* FAQ */
+.faq{max-width:760px;margin:0 auto;border-top:1px solid var(--border)}
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-q{width:100%;text-align:left;background:none;border:none;padding:24px 0;font-size:17px;font-weight:500;letter-spacing:-.015em;color:#fff;cursor:pointer;font-family:inherit;display:flex;justify-content:space-between;align-items:center;line-height:1.4;gap:24px;transition:color .15s}
+.faq-q:hover{color:#a1a1aa}
+.faq-q::after{content:'+';font-size:22px;color:var(--muted);transition:transform .25s;flex-shrink:0;font-weight:400}
+.faq-item.active .faq-q::after{transform:rotate(45deg);color:var(--cyan)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease,padding .25s;font-size:15px;color:var(--muted);line-height:1.65;letter-spacing:-.005em}
+.faq-item.active .faq-a{max-height:600px;padding:0 0 24px}
+
+/* CTA */
+.cta-block{padding:120px 24px;text-align:center;position:relative;overflow:hidden;border-top:1px solid var(--border)}
+.cta-block::before{content:'';position:absolute;top:50%;left:50%;width:800px;height:800px;background:radial-gradient(circle,rgba(121,40,202,.15) 0%,rgba(0,112,243,.08) 30%,transparent 70%);transform:translate(-50%,-50%);pointer-events:none}
+.cta-inner{max-width:560px;margin:0 auto;position:relative;z-index:1}
+.cta-inner h2{font-size:clamp(36px,5.5vw,60px);font-weight:600;letter-spacing:-.04em;line-height:1.05;margin-bottom:18px;color:#fff}
+.cta-inner p{font-size:18px;color:var(--muted);line-height:1.5;margin-bottom:36px;letter-spacing:-.005em}
+.cta-form{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:480px;margin:0 auto}
+.cta-form input{padding:12px 14px;border-radius:8px;border:1px solid var(--border-2);background:rgba(255,255,255,.03);color:#fff;font-size:14px;font-family:inherit;outline:none;letter-spacing:-.005em;transition:border-color .15s,background .15s}
+.cta-form input::placeholder{color:var(--muted-2)}
+.cta-form input:focus{border-color:#fff;background:rgba(255,255,255,.05)}
+.cta-form input[type=email],.cta-form input[type=url]{grid-column:1/-1}
+.cta-form button{grid-column:1/-1;padding:13px 24px;border-radius:9999px;border:none;background:#fff;color:#000;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;letter-spacing:-.005em;transition:background .15s,transform .15s;margin-top:8px}
+.cta-form button:hover{background:#e5e5e5;transform:translateY(-1px)}
+
+/* FOOTER */
+.footer{padding:80px 24px 40px;border-top:1px solid var(--border);background:#000}
+.footer-inner{max-width:1280px;margin:0 auto}
+.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:48px;padding-bottom:48px;border-bottom:1px solid var(--border)}
+.footer-brand-block{max-width:280px}
+.footer-brand-block .brand{font-size:15px;margin-bottom:14px}
+.footer-tag{font-size:13px;color:var(--muted);line-height:1.55;letter-spacing:-.005em}
+.footer-col h4{font-size:13px;font-weight:500;color:#fff;margin-bottom:14px;letter-spacing:-.005em}
+.footer-col ul{list-style:none}
+.footer-col li{margin-bottom:10px}
+.footer-col a{color:var(--muted);font-size:13px;letter-spacing:-.005em;transition:color .15s}
+.footer-col a:hover{color:#fff;text-decoration:none}
+.footer-bot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;padding-top:32px;font-size:12px;color:var(--muted)}
+.footer-bot a{color:var(--muted)}
+.footer-bot a:hover{color:#fff;text-decoration:none}
+.footer-made{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.footer-made svg{width:11px;height:11px;fill:#fff;opacity:.8}
+
+@media(max-width:900px){
+.benefits-grid{grid-template-columns:1fr}
+.reviews-grid{grid-template-columns:1fr}
+.steps{grid-template-columns:1fr}
+.stats-inner{grid-template-columns:1fr;gap:36px}
+.footer-top{grid-template-columns:1fr 1fr;gap:32px}
+.trust-logos{gap:24px}
+.deploy-row{grid-template-columns:14px 1fr auto;gap:10px}
+.deploy-row .env,.deploy-row .author{display:none}
+}
+@media(max-width:640px){
+.nav-links,.nav-utility{display:none}
+.nav-hamburger{display:block;margin-left:auto}
+.nav-inner{padding:0 18px;gap:0;height:56px}
+.hero{padding:60px 18px 32px}
+.hero h1{font-size:42px;letter-spacing:-.03em}
+.hero-sub{font-size:16px}
+.hero-cta-row{gap:8px;margin-bottom:40px}
+.deploy-card{margin:0 -4px;border-radius:10px}
+.deploy-head{padding:10px 14px}
+.deploy-row{padding:10px 14px}
+.cta-form{grid-template-columns:1fr}
+.cta-form input[type=email],.cta-form input[type=url]{grid-column:auto}
+.section{padding:72px 18px}
+.cta-block{padding:72px 18px}
+.benefit-card{padding:28px 22px}
+.footer{padding:48px 18px 32px}
+.footer-top{grid-template-columns:1fr 1fr;gap:24px}
+.code-body{font-size:12px}
+}
+</style></head>
+<body>__TRACKING_PIXEL__
+
+<nav class="nav"><div class="nav-inner">
+<a href="#" class="brand"><span class="tri"><svg viewBox="0 0 76 65" xmlns="http://www.w3.org/2000/svg"><path d="M37.5274 0L75.0548 65H0L37.5274 0Z"/></svg></span>Vercel</a>
+<ul class="nav-links">
+<li><a href="#">Products<span class="caret">&#9662;</span></a></li>
+<li><a href="#">Solutions<span class="caret">&#9662;</span></a></li>
+<li><a href="#">Resources<span class="caret">&#9662;</span></a></li>
+<li><a href="#">Enterprise</a></li>
+<li><a href="#">Docs</a></li>
+<li><a href="#">Pricing</a></li>
+</ul>
+<div class="nav-utility">
+<a href="#" class="log">Log In</a>
+<a href="#form" class="pill-white">Sign Up</a>
+<a href="#" class="pill-outline">Contact</a>
+</div>
+<button class="nav-hamburger" aria-label="Menu">&#9776;</button>
+</div></nav>
+
+<!-- HERO -->
+<section class="hero" id="hero"><div class="hero-inner">
+<span class="eyebrow-mono">{{BADGE}}</span>
+<h1><span class="gradient-text">{{HERO_TITLE}}</span></h1>
+<p class="hero-sub">{{HERO_SUBTITLE}}</p>
+<div class="hero-cta-row">
+<a href="#form" class="pill-white">{{CTA_BUTTON}} &rarr;</a>
+<a href="#benefits" class="pill-outline">Get a Demo</a>
+</div>
+
+<!-- DEPLOYMENT CARD MOCKUP -->
+<div class="deploy-card">
+<div class="deploy-head">
+<span class="dot-pulse"></span>
+<span class="deploy-branch">main <span class="sha">&middot; 7a3f9b2</span></span>
+<span class="deploy-status">&#10003; Ready</span>
+</div>
+<div class="deploy-body">
+<div class="deploy-row"><span class="stat-dot"></span><span class="msg">feat: ship landing page generator v2</span><span class="env prod">Production</span><span class="author">@enderj</span><span class="time">12s ago</span></div>
+<div class="deploy-row"><span class="stat-dot"></span><span class="msg">chore: bump dependencies to latest</span><span class="env">Preview</span><span class="author">@team</span><span class="time">4m ago</span></div>
+<div class="deploy-row"><span class="stat-dot"></span><span class="msg">fix: resolve hydration mismatch on hero</span><span class="env">Preview</span><span class="author">@enderj</span><span class="time">28m ago</span></div>
+<div class="deploy-row warn"><span class="stat-dot"></span><span class="msg">refactor: simplify analytics tracker</span><span class="env">Preview</span><span class="author">@bot</span><span class="time">2h ago</span></div>
+</div>
+</div>
+</div></section>
+
+<!-- TRUST STRIP -->
+<div class="trust-strip">
+<div class="trust-label">Trusted by the best front-end teams</div>
+<div class="trust-logos">
+<span>WASHINGTON POST</span><span>HASHICORP</span><span>NOTION</span><span>SUPABASE</span><span>RUNWAY</span><span>NETFLIX</span><span>STRIPE</span>
+</div>
+</div>
+
+<!-- STATS -->
+<section class="stats-band"><div class="stats-inner">
+<div><div class="stat-num">{{STAT_1_NUM}}</div><div class="stat-label">{{STAT_1_LABEL}}</div></div>
+<div><div class="stat-num">{{STAT_2_NUM}}</div><div class="stat-label">{{STAT_2_LABEL}}</div></div>
+<div><div class="stat-num">{{STAT_3_NUM}}</div><div class="stat-label">{{STAT_3_LABEL}}</div></div>
+</div></section>
+
+<!-- BENEFITS -->
+<section class="section alt" id="benefits"><div class="section-inner">
+<div class="section-head">
+<div class="section-eyebrow">Platform</div>
+<h2><span class="gradient-text">{{BENEFITS_HEADLINE}}</span></h2>
+<p>{{BENEFITS_SUBHEADLINE}}</p>
+</div>
+<div class="benefits-grid">
+<div class="benefit-card"><div class="benefit-icon">{{BENEFIT_1_ICON}}</div><h3>{{BENEFIT_1_TITLE}}</h3><p>{{BENEFIT_1_DESC}}</p></div>
+<div class="benefit-card"><div class="benefit-icon">{{BENEFIT_2_ICON}}</div><h3>{{BENEFIT_2_TITLE}}</h3><p>{{BENEFIT_2_DESC}}</p></div>
+<div class="benefit-card"><div class="benefit-icon">{{BENEFIT_3_ICON}}</div><h3>{{BENEFIT_3_TITLE}}</h3><p>{{BENEFIT_3_DESC}}</p></div>
+<div class="benefit-card"><div class="benefit-icon">{{BENEFIT_4_ICON}}</div><h3>{{BENEFIT_4_TITLE}}</h3><p>{{BENEFIT_4_DESC}}</p></div>
+</div>
+
+<!-- CODE BLOCK -->
+<div class="code-block">
+<div class="code-head"><span class="code-dot"></span><span class="code-dot"></span><span class="code-dot"></span><span class="code-title">~/project &middot; npm i</span></div>
+<div class="code-body"><span class="com">// 1. Install &mdash; 2. Deploy &mdash; 3. Done.</span><br>
+<span class="kw">npm</span> <span class="fn">install</span> <span class="str">"@eko/landing"</span><br>
+<span class="kw">import</span> { <span class="fn">deploy</span> } <span class="kw">from</span> <span class="str">"@eko/landing"</span>;<br>
+<span class="kw">await</span> <span class="fn">deploy</span>({ region: <span class="str">"global"</span>, instant: <span class="num">true</span> });<br>
+<span class="com">// &rarr; https://your-app.eko.app</span></div>
+</div>
+</div></section>
+
+<!-- HOW -->
+<section class="section" id="how"><div class="section-inner">
+<div class="section-head">
+<div class="section-eyebrow">Workflow</div>
+<h2><span class="gradient-text">{{HOW_HEADLINE}}</span></h2>
+<p>{{HOW_SUBHEADLINE}}</p>
+</div>
+<div class="steps">
+<div class="step"><div class="step-num">01 &middot; PUSH</div><h3>{{STEP_1_TITLE}}</h3><p>{{STEP_1_DESC}}</p></div>
+<div class="step"><div class="step-num">02 &middot; PREVIEW</div><h3>{{STEP_2_TITLE}}</h3><p>{{STEP_2_DESC}}</p></div>
+<div class="step"><div class="step-num">03 &middot; SHIP</div><h3>{{STEP_3_TITLE}}</h3><p>{{STEP_3_DESC}}</p></div>
+</div>
+</div></section>
+
+<!-- REVIEWS -->
+<section class="section alt" id="reviews"><div class="section-inner">
+<div class="section-head">
+<div class="section-eyebrow">Customers</div>
+<h2><span class="gradient-text">{{REVIEWS_HEADLINE}}</span></h2>
+<p>{{REVIEWS_SUBHEADLINE}}</p>
+</div>
+<div class="reviews-grid">
+<div class="review"><div class="review-quote">&ldquo;{{REVIEW_1_QUOTE}}&rdquo;</div><div class="review-author"><div class="review-avatar">{{REVIEW_1_INITIALS}}</div><div><div class="review-name">{{REVIEW_1_NAME}}</div><div class="review-role">{{REVIEW_1_ROLE}}</div></div></div></div>
+<div class="review"><div class="review-quote">&ldquo;{{REVIEW_2_QUOTE}}&rdquo;</div><div class="review-author"><div class="review-avatar">{{REVIEW_2_INITIALS}}</div><div><div class="review-name">{{REVIEW_2_NAME}}</div><div class="review-role">{{REVIEW_2_ROLE}}</div></div></div></div>
+</div>
+</div></section>
+
+<!-- FAQ -->
+<section class="section" id="faq"><div class="section-inner">
+<div class="section-head">
+<div class="section-eyebrow">FAQ</div>
+<h2><span class="gradient-text">{{FAQ_HEADLINE}}</span></h2>
+<p>{{FAQ_SUBHEADLINE}}</p>
+</div>
+<div class="faq">
+<div class="faq-item active"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_1_Q}}</button><div class="faq-a">{{FAQ_1_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_2_Q}}</button><div class="faq-a">{{FAQ_2_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_3_Q}}</button><div class="faq-a">{{FAQ_3_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_4_Q}}</button><div class="faq-a">{{FAQ_4_A}}</div></div>
+</div>
+</div></section>
+
+<!-- CTA -->
+<section class="cta-block" id="form"><div class="cta-inner">
+<h2><span class="gradient-text">{{FOOTER_HEADLINE}}</span></h2>
+<p>{{FOOTER_SUBHEADLINE}}</p>
+<form class="cta-form" action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST">
+<input type="text" name="first_name" placeholder="First name" required>
+<input type="text" name="last_name" placeholder="Last name" required>
+<input type="email" name="email" placeholder="Email" required>
+<input type="tel" name="phone" placeholder="Phone" required>
+<input type="url" name="website" placeholder="Website" required>
+<button type="submit">{{FOOTER_CTA}} &rarr;</button>
+</form>
+</div></section>
+
+<!-- FOOTER -->
+<footer class="footer"><div class="footer-inner">
+<div class="footer-top">
+<div class="footer-brand-block">
+<a href="#" class="brand"><span class="tri"><svg viewBox="0 0 76 65" xmlns="http://www.w3.org/2000/svg"><path d="M37.5274 0L75.0548 65H0L37.5274 0Z"/></svg></span>Vercel</a>
+<p class="footer-tag" style="margin-top:14px">The complete platform to build, scale, and secure a faster, more personalized web.</p>
+</div>
+<div class="footer-col"><h4>Products</h4><ul><li><a href="#">AI</a></li><li><a href="#">Enterprise</a></li><li><a href="#">Fluid Compute</a></li><li><a href="#">Next.js</a></li><li><a href="#">Observability</a></li></ul></div>
+<div class="footer-col"><h4>Resources</h4><ul><li><a href="#">Customers</a></li><li><a href="#">Docs</a></li><li><a href="#">Blog</a></li><li><a href="#">Templates</a></li><li><a href="#">Guides</a></li></ul></div>
+<div class="footer-col"><h4>Company</h4><ul><li><a href="#">About</a></li><li><a href="#">Careers</a></li><li><a href="#">Changelog</a></li><li><a href="#">Press</a></li><li><a href="#">Partners</a></li></ul></div>
+<div class="footer-col"><h4>Legal</h4><ul><li><a href="#">Privacy Policy</a></li><li><a href="#">Terms</a></li><li><a href="#">DPA</a></li><li><a href="#">Cookie Policy</a></li></ul></div>
+<div class="footer-col"><h4>Support</h4><ul><li><a href="#">Help</a></li><li><a href="#">Contact</a></li><li><a href="#">Status</a></li><li><a href="#">Security</a></li></ul></div>
+</div>
+<div class="footer-bot">
+<div class="footer-made">Made with <svg viewBox="0 0 76 65" xmlns="http://www.w3.org/2000/svg"><path d="M37.5274 0L75.0548 65H0L37.5274 0Z"/></svg> Vercel &middot; &copy; {{YEAR}} Eko AI Inc.</div>
+<div><a href="#">Twitter</a> &nbsp;&middot;&nbsp; <a href="#">GitHub</a> &nbsp;&middot;&nbsp; <a href="#">YouTube</a></div>
+</div>
+</div></footer>
+__FORM_SUBMIT_JS__
+</body></html>
+"""
+
+# ─── GitHub Dark ─────────────────────────────────────────────────────────────
+_TPL_GITHUB_DARK = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{TITLE}}</title><style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d1117;
+  --bg-1:#010409;
+  --bg-2:#161b22;
+  --bg-card:#0d1117;
+  --text:#c9d1d9;
+  --text-bright:#f0f6fc;
+  --muted:#8b949e;
+  --muted-2:#6e7681;
+  --border:#30363d;
+  --border-soft:#21262d;
+  --green:#238636;
+  --green-h:#2ea043;
+  --green-soft:rgba(35,134,54,.15);
+  --blue:#1f6feb;
+  --blue-soft:rgba(31,111,235,.15);
+  --add:#3fb950;
+  --del:#f85149;
+}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh;-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif,'Apple Color Emoji','Segoe UI Emoji';background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;font-weight:400;min-height:100vh}
+a{color:var(--blue);text-decoration:none;transition:color .15s}
+a:hover{color:#58a6ff;text-decoration:underline}
+.mono{font-family:'SFMono-Regular','Consolas','Liberation Mono','Menlo',monospace}
+
+/* NAV — GitHub signature dark header */
+.nav{position:sticky;top:0;z-index:9999;background:rgba(13,17,23,.95);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1280px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:16px}
+.brand{display:flex;align-items:center;gap:0;color:var(--text-bright);font-weight:600;font-size:16px;flex-shrink:0}
+.brand .octo{width:32px;height:32px;display:inline-block}
+.brand .octo svg{width:32px;height:32px;display:block;fill:#fff}
+.nav-search{display:flex;align-items:center;background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:5px 12px;height:30px;gap:8px;width:280px;font-size:14px;color:var(--muted)}
+.nav-search input{background:none;border:none;outline:none;color:var(--text);font-family:inherit;font-size:14px;flex:1;width:100%}
+.nav-search input::placeholder{color:var(--muted)}
+.nav-search .kbd{font-family:'SFMono-Regular',monospace;font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:3px;padding:1px 6px}
+.nav-links{display:flex;list-style:none;gap:0;flex:1;margin:0;padding:0}
+.nav-links li{padding:0 8px}
+.nav-links a{color:var(--text-bright);font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:4px;letter-spacing:-.005em}
+.nav-links a:hover{color:var(--text);text-decoration:none}
+.nav-links .caret{font-size:9px;opacity:.7;margin-left:2px}
+.nav-utility{display:flex;gap:14px;align-items:center}
+.nav-utility .signin{color:var(--text-bright);font-size:14px;font-weight:400}
+.nav-utility .signin:hover{color:var(--blue);text-decoration:none}
+.btn-green{background:var(--green);color:#fff;padding:5px 16px;border-radius:6px;font-size:14px;font-weight:500;border:1px solid rgba(240,246,252,.1);display:inline-flex;align-items:center;gap:6px;transition:background .15s;cursor:pointer;font-family:inherit;text-decoration:none}
+.btn-green:hover{background:var(--green-h);color:#fff;text-decoration:none}
+.btn-outline{background:var(--bg-2);color:var(--text-bright);padding:5px 16px;border-radius:6px;font-size:14px;font-weight:500;border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s}
+.btn-outline:hover{background:#21262d;color:var(--text-bright);text-decoration:none;border-color:#8b949e}
+.nav-hamburger{display:none;background:none;border:none;color:var(--text-bright);font-size:22px;cursor:pointer;padding:6px;margin-left:auto}
+
+/* HERO */
+.hero{position:relative;padding:96px 24px 72px;text-align:center;max-width:1080px;margin:0 auto;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-300px;left:50%;transform:translateX(-50%);width:1200px;height:700px;background:radial-gradient(ellipse 50% 60% at 50% 40%,rgba(35,134,54,.10) 0%,rgba(31,111,235,.06) 40%,transparent 70%);pointer-events:none;z-index:0}
+.hero-inner{position:relative;z-index:1}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(35,134,54,.08);border:1px solid rgba(35,134,54,.2);color:#7ee787;padding:6px 14px;border-radius:9999px;font-size:13px;font-weight:500;letter-spacing:.005em;margin-bottom:24px}
+.hero-eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--add);box-shadow:0 0 6px rgba(63,185,80,.6)}
+.hero h1{font-size:clamp(40px,6vw,72px);font-weight:700;line-height:1.05;letter-spacing:-.04em;color:var(--text-bright);margin-bottom:24px;max-width:900px;margin-left:auto;margin-right:auto}
+.hero-sub{font-size:clamp(17px,1.8vw,21px);color:var(--muted);line-height:1.5;max-width:580px;margin:0 auto 36px;font-weight:400}
+
+/* HERO SIGNUP — GitHub's email + green pill pattern */
+.hero-signup{display:flex;gap:8px;justify-content:center;max-width:520px;margin:0 auto 64px;flex-wrap:wrap}
+.hero-signup input{padding:10px 14px;border:1px solid var(--border);border-radius:6px;background:var(--bg-1);color:var(--text);font-size:14px;font-family:inherit;outline:none;min-width:260px;flex:1;transition:border-color .15s,box-shadow .15s}
+.hero-signup input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(31,111,235,.3)}
+.hero-signup input::placeholder{color:var(--muted)}
+.hero-signup .btn-green{padding:10px 18px;font-size:14px}
+
+/* REPO CARD MOCKUP — GitHub signature */
+.repo-card{max-width:920px;margin:0 auto;background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden;text-align:left;box-shadow:0 16px 40px -20px rgba(0,0,0,.8)}
+.repo-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg)}
+.repo-name{font-size:18px;font-weight:400;display:flex;align-items:center;gap:4px;color:var(--text-bright)}
+.repo-name .ic{color:var(--muted);font-size:14px}
+.repo-name .owner{color:var(--blue);font-weight:400}
+.repo-name .slash{color:var(--muted);margin:0 4px}
+.repo-name .name{color:var(--blue);font-weight:600}
+.repo-pill{font-size:12px;background:transparent;color:var(--muted);padding:0 7px;border-radius:9999px;border:1px solid var(--border);height:20px;line-height:18px}
+.repo-actions{margin-left:auto;display:flex;gap:6px}
+.repo-action-btn{display:inline-flex;align-items:center;gap:6px;background:var(--bg-2);color:var(--text-bright);padding:3px 12px;border-radius:6px;border:1px solid var(--border);font-size:12px;font-weight:500}
+.repo-action-btn .count{background:var(--bg-1);border:1px solid var(--border);padding:0 6px;border-radius:9999px;font-size:11px;color:var(--text);margin-left:4px}
+.repo-body{display:grid;grid-template-columns:1fr 280px;min-height:300px}
+.repo-files{border-right:1px solid var(--border)}
+.repo-file-head{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--bg-2);font-size:13px;color:var(--text)}
+.repo-branch-pill{background:transparent;border:1px solid var(--border);color:var(--text);padding:3px 10px;border-radius:6px;font-size:12px;display:inline-flex;align-items:center;gap:4px}
+.repo-commit-info{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;margin-left:auto}
+.repo-commit-info .sha{font-family:'SFMono-Regular',monospace;color:var(--muted)}
+.repo-file-row{display:grid;grid-template-columns:18px 1fr auto auto;gap:14px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--border-soft);font-size:13px;transition:background .15s}
+.repo-file-row:hover{background:var(--bg-2)}
+.repo-file-row:last-child{border-bottom:none}
+.repo-file-row .ic{color:var(--muted);font-size:14px;line-height:1}
+.repo-file-row .ic.dir{color:#79c0ff}
+.repo-file-row .fname{color:var(--blue);font-size:13.5px}
+.repo-file-row .fmsg{color:var(--muted);font-size:12px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px}
+.repo-file-row .ftime{color:var(--muted);font-size:12px;font-family:'SFMono-Regular',monospace;flex-shrink:0}
+.repo-side{background:var(--bg);padding:16px 18px;font-size:12px}
+.repo-side h4{font-size:13px;font-weight:600;color:var(--text-bright);margin-bottom:8px}
+.repo-side p{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:16px}
+.repo-side .commit{margin-top:18px;padding-top:14px;border-top:1px solid var(--border-soft);font-family:'SFMono-Regular',monospace;font-size:11.5px;line-height:1.65}
+.repo-side .commit .add{color:var(--add)}
+.repo-side .commit .del{color:var(--del)}
+.repo-side .commit .line{display:flex;align-items:center;gap:6px;color:var(--muted-2)}
+
+/* STATS — big green numbers */
+.stats-band{padding:80px 24px;background:var(--bg-2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.stats-inner{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:48px;text-align:center}
+.stat-num{font-size:clamp(40px,5.5vw,72px);font-weight:700;letter-spacing:-.04em;color:var(--add);line-height:1;margin-bottom:8px}
+.stat-label{font-size:15px;color:var(--muted);letter-spacing:-.005em}
+
+/* SECTION */
+.section{padding:96px 24px;position:relative}
+.section.alt{background:var(--bg-2)}
+.section-inner{max-width:1080px;margin:0 auto}
+.section-head{max-width:680px;margin:0 auto 56px;text-align:center}
+.section-eyebrow{display:inline-block;font-size:13px;color:#7ee787;font-family:'SFMono-Regular',monospace;letter-spacing:.04em;text-transform:uppercase;margin-bottom:14px}
+.section-head h2{font-size:clamp(32px,4.5vw,52px);font-weight:700;letter-spacing:-.035em;line-height:1.1;color:var(--text-bright);margin-bottom:16px}
+.section-head p{font-size:18px;color:var(--muted);line-height:1.5;font-weight:400}
+
+/* BENEFITS — 2x2 grid */
+.benefits-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.benefit-card{background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:32px 28px;transition:border-color .15s,background .15s}
+.benefit-card:hover{border-color:#8b949e}
+.benefit-icon{width:44px;height:44px;border-radius:8px;background:var(--green-soft);border:1px solid rgba(35,134,54,.3);color:#7ee787;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:20px}
+.benefit-card h3{font-size:20px;font-weight:600;letter-spacing:-.015em;margin-bottom:8px;color:var(--text-bright);line-height:1.3}
+.benefit-card p{font-size:15px;color:var(--muted);line-height:1.55}
+
+/* HOW — 3 steps */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--bg-card)}
+.step{padding:32px 28px;border-left:1px solid var(--border)}
+.step:first-child{border-left:none}
+.step-num{font-family:'SFMono-Regular',monospace;font-size:13px;color:#7ee787;letter-spacing:.04em;margin-bottom:18px;display:inline-flex;align-items:center;gap:6px}
+.step-num::before{content:'$';color:var(--muted-2)}
+.step h3{font-size:18px;font-weight:600;letter-spacing:-.012em;margin-bottom:8px;color:var(--text-bright);line-height:1.3}
+.step p{font-size:15px;color:var(--muted);line-height:1.55}
+
+/* REVIEWS */
+.reviews-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.review{padding:32px 30px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px}
+.review-quote{font-size:17px;color:var(--text);line-height:1.55;font-weight:400;margin-bottom:22px;letter-spacing:-.005em}
+.review-author{display:flex;align-items:center;gap:12px}
+.review-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#3fb950,#1f6feb);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;border:1px solid var(--border)}
+.review-name{font-size:14px;font-weight:600;color:var(--text-bright);letter-spacing:-.005em}
+.review-role{font-size:13px;color:var(--muted);letter-spacing:-.005em}
+
+/* FAQ */
+.faq{max-width:760px;margin:0 auto;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--bg-card)}
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-item:last-child{border-bottom:none}
+.faq-q{width:100%;text-align:left;background:none;border:none;padding:20px 24px;font-size:16px;font-weight:600;letter-spacing:-.005em;color:var(--text-bright);cursor:pointer;font-family:inherit;display:flex;justify-content:space-between;align-items:center;line-height:1.4;gap:24px;transition:background .15s}
+.faq-q:hover{background:var(--bg-2)}
+.faq-q::after{content:'+';font-size:20px;color:var(--muted);transition:transform .25s;flex-shrink:0;font-weight:400}
+.faq-item.active .faq-q::after{transform:rotate(45deg);color:var(--add)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease,padding .25s;font-size:15px;color:var(--muted);line-height:1.65}
+.faq-item.active .faq-a{max-height:600px;padding:0 24px 22px}
+
+/* CTA */
+.cta-block{padding:96px 24px;text-align:center;position:relative;background:var(--bg-2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.cta-inner{max-width:560px;margin:0 auto}
+.cta-inner h2{font-size:clamp(32px,5vw,48px);font-weight:700;letter-spacing:-.035em;line-height:1.1;margin-bottom:16px;color:var(--text-bright)}
+.cta-inner p{font-size:17px;color:var(--muted);line-height:1.5;margin-bottom:32px}
+.cta-form{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:480px;margin:0 auto}
+.cta-form input{padding:10px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg-1);color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s}
+.cta-form input::placeholder{color:var(--muted)}
+.cta-form input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(31,111,235,.3)}
+.cta-form input[type=email],.cta-form input[type=url]{grid-column:1/-1}
+.cta-form button{grid-column:1/-1;padding:12px 24px;border-radius:6px;border:1px solid rgba(240,246,252,.1);background:var(--green);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .15s;margin-top:6px}
+.cta-form button:hover{background:var(--green-h)}
+
+/* FOOTER */
+.footer{padding:64px 24px 32px;background:var(--bg);border-top:1px solid var(--border)}
+.footer-inner{max-width:1280px;margin:0 auto}
+.footer-top{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;gap:48px;padding-bottom:48px;border-bottom:1px solid var(--border)}
+.footer-brand-block{max-width:280px}
+.footer-tag{font-size:12px;color:var(--muted);line-height:1.55;margin-top:12px}
+.footer-col h4{font-size:14px;font-weight:600;color:var(--text-bright);margin-bottom:14px}
+.footer-col ul{list-style:none}
+.footer-col li{margin-bottom:8px}
+.footer-col a{color:var(--muted);font-size:13px}
+.footer-col a:hover{color:var(--blue);text-decoration:none}
+.footer-bot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;padding-top:24px;font-size:12px;color:var(--muted);align-items:center}
+.footer-bot .octo-bot{width:24px;height:24px}
+.footer-bot .octo-bot svg{width:24px;height:24px;fill:var(--muted)}
+
+@media(max-width:900px){
+.nav-search{display:none}
+.nav-links{display:none}
+.benefits-grid,.reviews-grid{grid-template-columns:1fr}
+.steps{grid-template-columns:1fr}
+.step{border-left:none;border-top:1px solid var(--border)}
+.step:first-child{border-top:none}
+.stats-inner{grid-template-columns:1fr;gap:36px}
+.footer-top{grid-template-columns:1fr 1fr;gap:32px}
+.repo-body{grid-template-columns:1fr}
+.repo-side{border-top:1px solid var(--border);border-right:none}
+}
+@media(max-width:640px){
+.nav-utility .signin,.nav-utility .btn-outline{display:none}
+.nav-hamburger{display:block}
+.nav-inner{padding:0 16px;gap:10px;height:56px}
+.hero{padding:48px 18px 48px}
+.hero h1{font-size:36px;letter-spacing:-.03em}
+.hero-sub{font-size:16px}
+.hero-signup{flex-direction:column}
+.hero-signup input{min-width:0}
+.hero-signup .btn-green{width:100%;justify-content:center}
+.section{padding:64px 18px}
+.cta-block{padding:64px 18px}
+.cta-form{grid-template-columns:1fr}
+.cta-form input[type=email],.cta-form input[type=url]{grid-column:auto}
+.footer{padding:48px 18px 32px}
+.footer-top{grid-template-columns:1fr 1fr;gap:24px}
+.repo-file-row{grid-template-columns:18px 1fr auto;gap:10px}
+.repo-file-row .ftime{display:none}
+.repo-actions{display:none}
+.benefit-card{padding:24px 22px}
+}
+</style></head>
+<body>__TRACKING_PIXEL__
+
+<nav class="nav"><div class="nav-inner">
+<a href="#" class="brand"><span class="octo"><svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg></span></a>
+<div class="nav-search"><span>&#128269;</span><input type="text" placeholder="Search or jump to..." aria-label="Search"><span class="kbd">/</span></div>
+<ul class="nav-links">
+<li><a href="#">Product<span class="caret">&#9662;</span></a></li>
+<li><a href="#">Solutions<span class="caret">&#9662;</span></a></li>
+<li><a href="#">Resources<span class="caret">&#9662;</span></a></li>
+<li><a href="#">Open Source<span class="caret">&#9662;</span></a></li>
+<li><a href="#">Enterprise</a></li>
+<li><a href="#">Pricing</a></li>
+</ul>
+<div class="nav-utility">
+<a href="#" class="signin">Sign in</a>
+<a href="#form" class="btn-green">Sign up</a>
+<a href="#" class="btn-outline">Contact Sales</a>
+</div>
+<button class="nav-hamburger" aria-label="Menu">&#9776;</button>
+</div></nav>
+
+<!-- HERO -->
+<section class="hero" id="hero"><div class="hero-inner">
+<div class="hero-eyebrow"><span class="dot"></span>{{BADGE}}</div>
+<h1>{{HERO_TITLE}}</h1>
+<p class="hero-sub">{{HERO_SUBTITLE}}</p>
+
+<form class="hero-signup" action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST" onsubmit="event.preventDefault();document.querySelector('#form').scrollIntoView({behavior:'smooth'});return false;">
+<input type="email" placeholder="Email address" aria-label="Email">
+<button type="button" class="btn-green" onclick="document.querySelector('#form').scrollIntoView({behavior:'smooth'})">{{CTA_BUTTON}}</button>
+</form>
+
+<!-- REPO CARD MOCKUP -->
+<div class="repo-card">
+<div class="repo-head">
+<div class="repo-name"><span class="ic">&#128193;</span><span class="owner">eko-ai</span><span class="slash">/</span><span class="name">landing-platform</span><span class="repo-pill">Public</span></div>
+<div class="repo-actions">
+<span class="repo-action-btn">&#128065; Watch<span class="count">1.2k</span></span>
+<span class="repo-action-btn">&#9741; Fork<span class="count">340</span></span>
+<span class="repo-action-btn">&#9733; Star<span class="count">42.8k</span></span>
+</div>
+</div>
+<div class="repo-body">
+<div class="repo-files">
+<div class="repo-file-head">
+<span class="repo-branch-pill">&#11138; main</span>
+<span class="repo-commit-info"><span class="sha">7a3f9b2</span> &middot; 2 hours ago &middot; 1,847 commits</span>
+</div>
+<div class="repo-file-row"><span class="ic dir">&#128193;</span><span class="fname">src</span><span class="fmsg">feat: add landing page generator</span><span class="ftime">2h ago</span></div>
+<div class="repo-file-row"><span class="ic dir">&#128193;</span><span class="fname">templates</span><span class="fmsg">ship 4 new brand templates</span><span class="ftime">2h ago</span></div>
+<div class="repo-file-row"><span class="ic dir">&#128193;</span><span class="fname">tests</span><span class="fmsg">cover regression for placeholders</span><span class="ftime">5h ago</span></div>
+<div class="repo-file-row"><span class="ic">&#128196;</span><span class="fname">.gitignore</span><span class="fmsg">chore: ignore .env</span><span class="ftime">4d ago</span></div>
+<div class="repo-file-row"><span class="ic">&#128196;</span><span class="fname">README.md</span><span class="fmsg">docs: update quick start</span><span class="ftime">1d ago</span></div>
+<div class="repo-file-row"><span class="ic">&#128196;</span><span class="fname">package.json</span><span class="fmsg">chore: bump deps to latest</span><span class="ftime">2d ago</span></div>
+<div class="repo-file-row"><span class="ic">&#128196;</span><span class="fname">LICENSE</span><span class="fmsg">initial commit</span><span class="ftime">1y ago</span></div>
+</div>
+<div class="repo-side">
+<h4>About</h4>
+<p>Production-grade landing page generator. Brand templates, placeholder schema, instant deploy.</p>
+<h4 style="margin-top:16px">Languages</h4>
+<div style="display:flex;height:8px;border-radius:3px;overflow:hidden;background:var(--border-soft);margin-bottom:8px">
+<div style="width:48%;background:#3178c6"></div><div style="width:32%;background:#f7df1e"></div><div style="width:20%;background:#7ee787"></div>
+</div>
+<p style="font-size:11px;margin:0"><span style="color:#79c0ff">&#9679; TypeScript</span> 48% &middot; <span style="color:#f7df1e">&#9679; JS</span> 32% &middot; <span style="color:#7ee787">&#9679; Python</span> 20%</p>
+<div class="commit">
+<div class="line"><span class="add">+ 248</span> <span class="del">- 32</span> &nbsp; landing.tsx</div>
+<div class="line"><span class="add">+ 96</span> <span class="del">- 4</span> &nbsp; placeholders.ts</div>
+<div class="line"><span class="add">+ 184</span> <span class="del">- 0</span> &nbsp; brands/vercel.ts</div>
+</div>
+</div>
+</div>
+</div>
+</div></section>
+
+<!-- STATS -->
+<section class="stats-band"><div class="stats-inner">
+<div><div class="stat-num">{{STAT_1_NUM}}</div><div class="stat-label">{{STAT_1_LABEL}}</div></div>
+<div><div class="stat-num">{{STAT_2_NUM}}</div><div class="stat-label">{{STAT_2_LABEL}}</div></div>
+<div><div class="stat-num">{{STAT_3_NUM}}</div><div class="stat-label">{{STAT_3_LABEL}}</div></div>
+</div></section>
+
+<!-- BENEFITS -->
+<section class="section" id="benefits"><div class="section-inner">
+<div class="section-head">
+<div class="section-eyebrow"># BUILT FOR DEVELOPERS</div>
+<h2>{{BENEFITS_HEADLINE}}</h2>
+<p>{{BENEFITS_SUBHEADLINE}}</p>
+</div>
+<div class="benefits-grid">
+<div class="benefit-card"><div class="benefit-icon">{{BENEFIT_1_ICON}}</div><h3>{{BENEFIT_1_TITLE}}</h3><p>{{BENEFIT_1_DESC}}</p></div>
+<div class="benefit-card"><div class="benefit-icon">{{BENEFIT_2_ICON}}</div><h3>{{BENEFIT_2_TITLE}}</h3><p>{{BENEFIT_2_DESC}}</p></div>
+<div class="benefit-card"><div class="benefit-icon">{{BENEFIT_3_ICON}}</div><h3>{{BENEFIT_3_TITLE}}</h3><p>{{BENEFIT_3_DESC}}</p></div>
+<div class="benefit-card"><div class="benefit-icon">{{BENEFIT_4_ICON}}</div><h3>{{BENEFIT_4_TITLE}}</h3><p>{{BENEFIT_4_DESC}}</p></div>
+</div>
+</div></section>
+
+<!-- HOW -->
+<section class="section alt" id="how"><div class="section-inner">
+<div class="section-head">
+<div class="section-eyebrow"># WORKFLOW</div>
+<h2>{{HOW_HEADLINE}}</h2>
+<p>{{HOW_SUBHEADLINE}}</p>
+</div>
+<div class="steps">
+<div class="step"><div class="step-num"> clone</div><h3>{{STEP_1_TITLE}}</h3><p>{{STEP_1_DESC}}</p></div>
+<div class="step"><div class="step-num"> commit</div><h3>{{STEP_2_TITLE}}</h3><p>{{STEP_2_DESC}}</p></div>
+<div class="step"><div class="step-num"> push</div><h3>{{STEP_3_TITLE}}</h3><p>{{STEP_3_DESC}}</p></div>
+</div>
+</div></section>
+
+<!-- REVIEWS -->
+<section class="section" id="reviews"><div class="section-inner">
+<div class="section-head">
+<div class="section-eyebrow"># LOVED BY DEVELOPERS</div>
+<h2>{{REVIEWS_HEADLINE}}</h2>
+<p>{{REVIEWS_SUBHEADLINE}}</p>
+</div>
+<div class="reviews-grid">
+<div class="review"><div class="review-quote">&ldquo;{{REVIEW_1_QUOTE}}&rdquo;</div><div class="review-author"><div class="review-avatar">{{REVIEW_1_INITIALS}}</div><div><div class="review-name">{{REVIEW_1_NAME}}</div><div class="review-role">{{REVIEW_1_ROLE}}</div></div></div></div>
+<div class="review"><div class="review-quote">&ldquo;{{REVIEW_2_QUOTE}}&rdquo;</div><div class="review-author"><div class="review-avatar">{{REVIEW_2_INITIALS}}</div><div><div class="review-name">{{REVIEW_2_NAME}}</div><div class="review-role">{{REVIEW_2_ROLE}}</div></div></div></div>
+</div>
+</div></section>
+
+<!-- FAQ -->
+<section class="section alt" id="faq"><div class="section-inner">
+<div class="section-head">
+<div class="section-eyebrow"># FAQ</div>
+<h2>{{FAQ_HEADLINE}}</h2>
+<p>{{FAQ_SUBHEADLINE}}</p>
+</div>
+<div class="faq">
+<div class="faq-item active"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_1_Q}}</button><div class="faq-a">{{FAQ_1_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_2_Q}}</button><div class="faq-a">{{FAQ_2_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_3_Q}}</button><div class="faq-a">{{FAQ_3_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_4_Q}}</button><div class="faq-a">{{FAQ_4_A}}</div></div>
+</div>
+</div></section>
+
+<!-- CTA -->
+<section class="cta-block" id="form"><div class="cta-inner">
+<h2>{{FOOTER_HEADLINE}}</h2>
+<p>{{FOOTER_SUBHEADLINE}}</p>
+<form class="cta-form" action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST">
+<input type="text" name="first_name" placeholder="First name" required>
+<input type="text" name="last_name" placeholder="Last name" required>
+<input type="email" name="email" placeholder="Email" required>
+<input type="tel" name="phone" placeholder="Phone" required>
+<input type="url" name="website" placeholder="Website" required>
+<button type="submit">{{FOOTER_CTA}}</button>
+</form>
+</div></section>
+
+<!-- FOOTER -->
+<footer class="footer"><div class="footer-inner">
+<div class="footer-top">
+<div class="footer-brand-block">
+<a href="#" class="brand"><span class="octo"><svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path fill="#8b949e" d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg></span></a>
+<p class="footer-tag">Subscribe to our developer newsletter. Get tips, technical guides, and best practices.</p>
+</div>
+<div class="footer-col"><h4>Product</h4><ul><li><a href="#">Features</a></li><li><a href="#">Enterprise</a></li><li><a href="#">Copilot</a></li><li><a href="#">Security</a></li><li><a href="#">Actions</a></li></ul></div>
+<div class="footer-col"><h4>Platform</h4><ul><li><a href="#">Developer API</a></li><li><a href="#">Partners</a></li><li><a href="#">Atom</a></li><li><a href="#">Electron</a></li><li><a href="#">GitHub Desktop</a></li></ul></div>
+<div class="footer-col"><h4>Resources</h4><ul><li><a href="#">Docs</a></li><li><a href="#">Roadmap</a></li><li><a href="#">Status</a></li><li><a href="#">Skills</a></li><li><a href="#">Blog</a></li></ul></div>
+<div class="footer-col"><h4>Company</h4><ul><li><a href="#">About</a></li><li><a href="#">Customer stories</a></li><li><a href="#">Newsroom</a></li><li><a href="#">Careers</a></li><li><a href="#">Diversity</a></li></ul></div>
+</div>
+<div class="footer-bot">
+<div>&copy; {{YEAR}} Eko AI Inc. &nbsp;&middot;&nbsp; <a href="#" style="color:var(--muted)">Terms</a> &nbsp;&middot;&nbsp; <a href="#" style="color:var(--muted)">Privacy</a> &nbsp;&middot;&nbsp; <a href="#" style="color:var(--muted)">Sitemap</a> &nbsp;&middot;&nbsp; <a href="#" style="color:var(--muted)">Status</a></div>
+<div class="octo-bot"><svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg></div>
+</div>
+</div></footer>
+__FORM_SUBMIT_JS__
+</body></html>
+"""
+
+# ─── Discord Vibrant ─────────────────────────────────────────────────────────────
+_TPL_DISCORD_VIBRANT = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{TITLE}}</title><style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#5865F2;
+  --blurple:#5865F2;
+  --blurple-light:#7983F5;
+  --blurple-dark:#4752C4;
+  --blurple-pale:#EEF0FE;
+  --dark:#23272a;
+  --dark-2:#2c2f33;
+  --white:#fff;
+  --text:#23272a;
+  --text-on-blurple:#fff;
+  --muted-on-blurple:#dbdee1;
+  --muted:#4f5660;
+  --green:#43b581;
+  --red:#f04747;
+  --yellow:#faa61a;
+}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh;-webkit-text-size-adjust:100%}
+body{font-family:'gg sans','Noto Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;font-weight:400;min-height:100vh}
+a{color:inherit;text-decoration:none;transition:color .15s,opacity .15s}
+
+/* NAV — Blurple bg, white wordmark + nav links + white pill */
+.nav{position:sticky;top:0;z-index:9999;background:var(--blurple);padding:16px 0}
+.nav-inner{max-width:1260px;margin:0 auto;padding:0 40px;display:flex;align-items:center;gap:32px;height:48px}
+.brand{display:flex;align-items:center;gap:8px;color:#fff;font-weight:800;font-size:22px;letter-spacing:-.01em;flex-shrink:0}
+.brand .mascot{width:36px;height:28px;display:inline-flex;align-items:center;justify-content:center}
+.brand .mascot svg{width:36px;height:28px;display:block;fill:#fff}
+.nav-links{display:flex;list-style:none;gap:0;flex:1;justify-content:center;margin:0;padding:0}
+.nav-links li{padding:0 14px}
+.nav-links a{color:#fff;font-size:15px;font-weight:500;letter-spacing:.005em;transition:color .15s}
+.nav-links a:hover{color:var(--blurple-pale);text-decoration:underline}
+.nav-utility{display:flex;gap:14px;align-items:center}
+.nav-utility .open-browser{color:#fff;font-size:14px;font-weight:500;text-decoration:underline}
+.nav-utility .open-browser:hover{opacity:.85}
+.pill-white{background:#fff;color:var(--blurple);padding:8px 18px;border-radius:9999px;font-size:14px;font-weight:600;border:none;display:inline-flex;align-items:center;gap:6px;transition:background .15s,color .15s,transform .15s;cursor:pointer;font-family:inherit;text-decoration:none;box-shadow:0 1px 0 rgba(0,0,0,.1)}
+.pill-white:hover{background:#f6f6f6;color:var(--blurple);transform:translateY(-1px)}
+.nav-hamburger{display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:6px;margin-left:auto}
+
+/* HERO — massive Blurple section with white text + dual CTAs (white + black) */
+.hero{background:var(--blurple);color:#fff;padding:80px 24px 100px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(255,255,255,.12) 0%,transparent 60%);pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:-100px;left:-100px;width:500px;height:500px;background:radial-gradient(circle,rgba(120,135,240,.4) 0%,transparent 60%);pointer-events:none}
+.hero-inner{max-width:1080px;margin:0 auto;position:relative;z-index:1}
+.hero h1{font-size:clamp(40px,7vw,96px);font-weight:800;line-height:1.05;letter-spacing:-.025em;margin-bottom:24px;color:#fff;max-width:1000px;margin-left:auto;margin-right:auto}
+.hero-sub{font-size:clamp(17px,1.6vw,20px);color:#fff;line-height:1.5;max-width:680px;margin:0 auto 36px;opacity:.96;font-weight:400}
+.hero-cta-row{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-bottom:60px}
+.cta-pill{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:9999px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;border:none;transition:background .15s,color .15s,transform .15s,box-shadow .15s}
+.cta-pill.white{background:#fff;color:var(--text)}
+.cta-pill.white:hover{background:#f6f6f6;color:var(--text);transform:translateY(-2px);box-shadow:0 8px 16px rgba(0,0,0,.16)}
+.cta-pill.black{background:#23272a;color:#fff}
+.cta-pill.black:hover{background:#1e2124;color:#fff;transform:translateY(-2px);box-shadow:0 8px 16px rgba(0,0,0,.24)}
+.cta-pill.blurple{background:var(--blurple);color:#fff}
+.cta-pill.blurple:hover{background:var(--blurple-dark);color:#fff;transform:translateY(-2px)}
+
+/* HERO ILLUSTRATION — playful Discord scene */
+.hero-art{max-width:780px;margin:24px auto 0;position:relative;height:300px;display:flex;justify-content:center;align-items:center;gap:32px;flex-wrap:wrap}
+.hero-blob{background:#fff;border-radius:32px;padding:24px 28px;color:var(--text);box-shadow:0 24px 60px -20px rgba(0,0,0,.3);display:flex;align-items:center;gap:14px;max-width:340px;text-align:left;transform:rotate(-3deg)}
+.hero-blob:nth-child(2){transform:rotate(2deg);background:#FEE75C;color:#000;max-width:280px}
+.hero-blob:nth-child(3){transform:rotate(-1deg);background:var(--green);color:#fff;max-width:300px}
+.hero-blob .avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#EB459E,#FEE75C);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px}
+.hero-blob:nth-child(2) .avatar{background:linear-gradient(135deg,#5865F2,#EB459E)}
+.hero-blob:nth-child(3) .avatar{background:linear-gradient(135deg,#FEE75C,#FF73FA)}
+.hero-blob-body .name{font-size:14px;font-weight:700;margin-bottom:2px;letter-spacing:-.005em}
+.hero-blob-body .msg{font-size:14px;line-height:1.35;letter-spacing:-.005em}
+
+/* WHITE SECTION (Discord alternates Blurple → White) */
+.section-white{background:#fff;color:var(--text);padding:96px 24px;position:relative}
+.section-white-inner{max-width:1180px;margin:0 auto}
+.section-white .head{max-width:760px;margin:0 auto 64px;text-align:center}
+.section-white .head h2{font-size:clamp(34px,5vw,56px);font-weight:800;letter-spacing:-.025em;line-height:1.1;color:var(--text);margin-bottom:18px}
+.section-white .head p{font-size:18px;color:var(--muted);line-height:1.55}
+
+/* BENEFITS — large illustrated icons, alternating layout, Discord uses split rows */
+.benefit-row{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;margin-bottom:80px}
+.benefit-row:last-child{margin-bottom:0}
+.benefit-row:nth-child(even) .benefit-art{order:2}
+.benefit-row:nth-child(even) .benefit-text{order:1}
+.benefit-art{background:linear-gradient(135deg,#EEF0FE 0%,#F8F9FB 100%);border-radius:24px;padding:48px 32px;display:flex;align-items:center;justify-content:center;min-height:260px;font-size:140px;line-height:1;text-align:center;position:relative}
+.benefit-row:nth-child(2) .benefit-art{background:linear-gradient(135deg,#FFF4E5 0%,#FFE5F5 100%)}
+.benefit-row:nth-child(3) .benefit-art{background:linear-gradient(135deg,#E5FFF1 0%,#E5F5FF 100%)}
+.benefit-row:nth-child(4) .benefit-art{background:linear-gradient(135deg,#FFE5E5 0%,#FFF4E5 100%)}
+.benefit-text h3{font-size:clamp(26px,3vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1.15;color:var(--text);margin-bottom:14px}
+.benefit-text p{font-size:17px;color:var(--muted);line-height:1.55;margin-bottom:20px}
+.benefit-text .ic{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:14px;background:var(--blurple);color:#fff;font-size:22px;margin-bottom:18px}
+
+/* STATS — Discord "Reliable tech for staying close" strip */
+.stats-band{background:var(--dark);color:#fff;padding:80px 24px}
+.stats-inner{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:48px;text-align:center}
+.stat-num{font-size:clamp(40px,5.5vw,72px);font-weight:800;letter-spacing:-.02em;color:#fff;line-height:1;margin-bottom:8px}
+.stat-label{font-size:15px;color:var(--muted-on-blurple);letter-spacing:-.005em;line-height:1.4}
+
+/* HOW — dark gray section, 3 step cards Discord-style */
+.section-dark{background:var(--dark);color:#fff;padding:96px 24px}
+.section-dark-inner{max-width:1180px;margin:0 auto}
+.section-dark .head{max-width:760px;margin:0 auto 64px;text-align:center}
+.section-dark .head h2{font-size:clamp(34px,5vw,56px);font-weight:800;letter-spacing:-.025em;line-height:1.1;color:#fff;margin-bottom:18px}
+.section-dark .head p{font-size:18px;color:var(--muted-on-blurple);line-height:1.55}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.step{background:var(--dark-2);border-radius:20px;padding:36px 32px;position:relative;transition:transform .2s,background .2s}
+.step:hover{background:#34373c;transform:translateY(-4px)}
+.step-num{width:48px;height:48px;border-radius:50%;background:var(--blurple);color:#fff;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;margin-bottom:22px}
+.step h3{font-size:22px;font-weight:700;letter-spacing:-.012em;margin-bottom:10px;color:#fff;line-height:1.25}
+.step p{font-size:16px;color:var(--muted-on-blurple);line-height:1.55}
+
+/* REVIEWS — white bg, colorful cards */
+.reviews-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.review{padding:36px 32px;background:var(--blurple-pale);border-radius:20px;position:relative}
+.review:nth-child(2){background:#FFF4E5}
+.review-quote{font-size:19px;color:var(--text);line-height:1.5;font-weight:500;margin-bottom:24px;letter-spacing:-.005em}
+.review-quote::before{content:'\201C';font-size:64px;line-height:.5;color:var(--blurple);position:absolute;top:32px;right:32px;opacity:.2;font-family:Georgia,serif}
+.review-author{display:flex;align-items:center;gap:14px}
+.review-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#5865F2,#EB459E);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0}
+.review:nth-child(2) .review-avatar{background:linear-gradient(135deg,#FEE75C,#FF73FA);color:#23272a}
+.review-name{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.005em}
+.review-role{font-size:13px;color:var(--muted);letter-spacing:-.005em}
+
+/* FAQ — white bg, Blurple toggle */
+.faq{max-width:760px;margin:0 auto}
+.faq-item{background:#F2F3F5;border-radius:12px;margin-bottom:8px;overflow:hidden;transition:background .15s}
+.faq-item:hover{background:#EBEDEF}
+.faq-item.active{background:var(--blurple-pale)}
+.faq-q{width:100%;text-align:left;background:none;border:none;padding:22px 24px;font-size:17px;font-weight:700;letter-spacing:-.005em;color:var(--text);cursor:pointer;font-family:inherit;display:flex;justify-content:space-between;align-items:center;line-height:1.4;gap:24px}
+.faq-q::after{content:'+';font-size:24px;color:var(--blurple);transition:transform .25s;flex-shrink:0;font-weight:700}
+.faq-item.active .faq-q::after{transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease,padding .25s;font-size:15px;color:var(--muted);line-height:1.65}
+.faq-item.active .faq-a{max-height:600px;padding:0 24px 22px}
+
+/* CTA — Blurple again */
+.cta-block{background:var(--blurple);color:#fff;padding:96px 24px;text-align:center;position:relative;overflow:hidden}
+.cta-block::before{content:'';position:absolute;top:50%;left:50%;width:800px;height:800px;background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 60%);transform:translate(-50%,-50%);pointer-events:none}
+.cta-inner{max-width:560px;margin:0 auto;position:relative;z-index:1}
+.cta-inner h2{font-size:clamp(34px,5vw,56px);font-weight:800;letter-spacing:-.025em;line-height:1.1;margin-bottom:18px;color:#fff}
+.cta-inner p{font-size:18px;color:#fff;opacity:.95;line-height:1.5;margin-bottom:36px}
+.cta-form{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:480px;margin:0 auto}
+.cta-form input{padding:14px 18px;border-radius:12px;border:none;background:rgba(255,255,255,.95);color:var(--text);font-size:15px;font-family:inherit;outline:none;font-weight:500;transition:box-shadow .15s,background .15s}
+.cta-form input::placeholder{color:var(--muted)}
+.cta-form input:focus{background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.3)}
+.cta-form input[type=email],.cta-form input[type=url]{grid-column:1/-1}
+.cta-form button{grid-column:1/-1;padding:14px 28px;border-radius:9999px;border:none;background:#fff;color:var(--blurple);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s,transform .15s;margin-top:8px}
+.cta-form button:hover{background:#f6f6f6;transform:translateY(-2px)}
+
+/* FOOTER — dark gray Discord style w/ Blurple wordmark */
+.footer{background:var(--dark);color:#fff;padding:80px 24px 40px}
+.footer-inner{max-width:1280px;margin:0 auto}
+.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:48px;padding-bottom:48px;border-bottom:1px solid rgba(255,255,255,.1)}
+.footer-brand-block{max-width:280px}
+.footer-brand-block .brand{font-size:24px;color:var(--blurple)}
+.footer-brand-block .brand .mascot svg{fill:var(--blurple)}
+.footer-soc{display:flex;gap:12px;margin-top:24px}
+.footer-soc a{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;transition:background .15s}
+.footer-soc a:hover{background:var(--blurple)}
+.footer-tag{font-size:13px;color:var(--muted-on-blurple);line-height:1.55;margin-top:12px}
+.footer-col h4{font-size:14px;font-weight:700;color:var(--blurple-light);margin-bottom:14px;letter-spacing:0}
+.footer-col ul{list-style:none}
+.footer-col li{margin-bottom:10px}
+.footer-col a{color:#fff;font-size:14px;font-weight:500}
+.footer-col a:hover{color:var(--blurple-light);text-decoration:none}
+.footer-bot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;padding-top:32px;font-size:13px;color:var(--muted-on-blurple);align-items:center}
+.footer-bot .lang{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);padding:6px 12px;border-radius:8px;font-size:13px;color:#fff}
+
+@media(max-width:900px){
+.benefit-row{grid-template-columns:1fr;gap:32px;margin-bottom:56px}
+.benefit-row:nth-child(even) .benefit-art{order:0}
+.benefit-row:nth-child(even) .benefit-text{order:0}
+.benefit-art{min-height:200px;font-size:100px}
+.steps{grid-template-columns:1fr}
+.reviews-grid{grid-template-columns:1fr}
+.stats-inner{grid-template-columns:1fr;gap:36px}
+.footer-top{grid-template-columns:1fr 1fr;gap:32px}
+.hero-art{height:auto;flex-direction:column;gap:20px}
+.hero-blob{max-width:none;transform:none !important;width:100%}
+}
+@media(max-width:640px){
+.nav-links{display:none}
+.nav-utility .open-browser{display:none}
+.nav-hamburger{display:block}
+.nav-inner{padding:0 18px;gap:0;height:40px}
+.hero{padding:48px 18px 56px}
+.hero h1{font-size:36px;letter-spacing:-.015em}
+.hero-sub{font-size:16px}
+.section-white,.section-dark,.cta-block{padding:64px 18px}
+.footer{padding:48px 18px 32px}
+.footer-top{grid-template-columns:1fr 1fr;gap:24px}
+.cta-form{grid-template-columns:1fr}
+.cta-form input[type=email],.cta-form input[type=url]{grid-column:auto}
+.benefit-text h3{font-size:26px}
+}
+</style></head>
+<body>__TRACKING_PIXEL__
+
+<nav class="nav"><div class="nav-inner">
+<a href="#" class="brand"><span class="mascot"><svg viewBox="0 0 71 55" xmlns="http://www.w3.org/2000/svg"><path d="M60.105 4.898A58.55 58.55 0 0 0 45.653.415a.22.22 0 0 0-.233.11 40.784 40.784 0 0 0-1.8 3.697c-5.456-.817-10.886-.817-16.23 0-.485-1.164-1.201-2.587-1.828-3.697a.228.228 0 0 0-.233-.11 58.386 58.386 0 0 0-14.451 4.483.207.207 0 0 0-.095.082C1.578 18.73-.944 32.144.293 45.39a.244.244 0 0 0 .093.167c6.073 4.46 11.955 7.167 17.729 8.962a.23.23 0 0 0 .249-.082 42.08 42.08 0 0 0 3.627-5.9.225.225 0 0 0-.123-.312 38.772 38.772 0 0 1-5.539-2.64.228.228 0 0 1-.022-.378c.372-.279.744-.569 1.1-.862a.22.22 0 0 1 .229-.031c11.619 5.305 24.198 5.305 35.68 0a.219.219 0 0 1 .233.028c.356.293.728.586 1.103.865a.228.228 0 0 1-.02.378 36.384 36.384 0 0 1-5.54 2.637.227.227 0 0 0-.121.315 47.249 47.249 0 0 0 3.624 5.897.225.225 0 0 0 .249.084c5.801-1.794 11.684-4.502 17.757-8.962a.228.228 0 0 0 .092-.164c1.48-15.315-2.479-28.618-10.493-40.412a.18.18 0 0 0-.093-.084Zm-36.38 32.426c-3.497 0-6.38-3.211-6.38-7.156 0-3.944 2.827-7.156 6.38-7.156 3.583 0 6.438 3.24 6.382 7.156 0 3.945-2.827 7.156-6.382 7.156Zm23.593 0c-3.498 0-6.38-3.211-6.38-7.156 0-3.944 2.826-7.156 6.38-7.156 3.582 0 6.437 3.24 6.38 7.156 0 3.945-2.798 7.156-6.38 7.156Z"/></svg></span>Discord</a>
+<ul class="nav-links">
+<li><a href="#">Download</a></li>
+<li><a href="#">Nitro</a></li>
+<li><a href="#benefits">Discover</a></li>
+<li><a href="#how">Safety</a></li>
+<li><a href="#faq">Support</a></li>
+<li><a href="#">Blog</a></li>
+<li><a href="#">Careers</a></li>
+</ul>
+<div class="nav-utility">
+<a href="#" class="open-browser">Open Discord</a>
+<a href="#form" class="pill-white">Login</a>
+</div>
+<button class="nav-hamburger" aria-label="Menu">&#9776;</button>
+</div></nav>
+
+<!-- HERO -->
+<section class="hero" id="hero"><div class="hero-inner">
+<h1>{{HERO_TITLE}}</h1>
+<p class="hero-sub">{{HERO_SUBTITLE}}</p>
+<div class="hero-cta-row">
+<a href="#form" class="cta-pill white"><span style="font-size:18px">&#8615;</span> {{CTA_BUTTON}}</a>
+<a href="#benefits" class="cta-pill black">Open Discord in your browser</a>
+</div>
+
+<!-- Playful chat-bubble hero illustration -->
+<div class="hero-art">
+<div class="hero-blob"><div class="avatar">&#127918;</div><div class="hero-blob-body"><div class="name">gamerguy_42</div><div class="msg">Friday night raid?! anyone up for it?</div></div></div>
+<div class="hero-blob"><div class="avatar">&#129305;</div><div class="hero-blob-body"><div class="name">study-buddy</div><div class="msg">study room is OPEN come work with us :)</div></div></div>
+<div class="hero-blob"><div class="avatar">&#127908;</div><div class="hero-blob-body"><div class="name">music_lover</div><div class="msg">listening party in 5! drop your faves</div></div></div>
+</div>
+</div></section>
+
+<!-- BENEFITS — white bg, illustrated rows alternating -->
+<section class="section-white" id="benefits"><div class="section-white-inner">
+<div class="head">
+<h2>{{BENEFITS_HEADLINE}}</h2>
+<p>{{BENEFITS_SUBHEADLINE}}</p>
+</div>
+
+<div class="benefit-row">
+<div class="benefit-art">{{BENEFIT_1_ICON}}</div>
+<div class="benefit-text"><div class="ic">&#128172;</div><h3>{{BENEFIT_1_TITLE}}</h3><p>{{BENEFIT_1_DESC}}</p><a href="#form" class="cta-pill blurple">{{CTA_BUTTON}}</a></div>
+</div>
+
+<div class="benefit-row">
+<div class="benefit-art">{{BENEFIT_2_ICON}}</div>
+<div class="benefit-text"><div class="ic" style="background:#EB459E">&#127908;</div><h3>{{BENEFIT_2_TITLE}}</h3><p>{{BENEFIT_2_DESC}}</p><a href="#form" class="cta-pill blurple">{{CTA_BUTTON}}</a></div>
+</div>
+
+<div class="benefit-row">
+<div class="benefit-art">{{BENEFIT_3_ICON}}</div>
+<div class="benefit-text"><div class="ic" style="background:#43b581">&#128242;</div><h3>{{BENEFIT_3_TITLE}}</h3><p>{{BENEFIT_3_DESC}}</p><a href="#form" class="cta-pill blurple">{{CTA_BUTTON}}</a></div>
+</div>
+
+<div class="benefit-row">
+<div class="benefit-art">{{BENEFIT_4_ICON}}</div>
+<div class="benefit-text"><div class="ic" style="background:#faa61a">&#127919;</div><h3>{{BENEFIT_4_TITLE}}</h3><p>{{BENEFIT_4_DESC}}</p><a href="#form" class="cta-pill blurple">{{CTA_BUTTON}}</a></div>
+</div>
+</div></section>
+
+<!-- STATS — "Reliable tech for staying close" strip -->
+<section class="stats-band"><div class="stats-inner">
+<div><div class="stat-num">{{STAT_1_NUM}}</div><div class="stat-label">{{STAT_1_LABEL}}</div></div>
+<div><div class="stat-num">{{STAT_2_NUM}}</div><div class="stat-label">{{STAT_2_LABEL}}</div></div>
+<div><div class="stat-num">{{STAT_3_NUM}}</div><div class="stat-label">{{STAT_3_LABEL}}</div></div>
+</div></section>
+
+<!-- HOW — dark gray with 3 step cards -->
+<section class="section-dark" id="how"><div class="section-dark-inner">
+<div class="head">
+<h2>{{HOW_HEADLINE}}</h2>
+<p>{{HOW_SUBHEADLINE}}</p>
+</div>
+<div class="steps">
+<div class="step"><div class="step-num">1</div><h3>{{STEP_1_TITLE}}</h3><p>{{STEP_1_DESC}}</p></div>
+<div class="step"><div class="step-num">2</div><h3>{{STEP_2_TITLE}}</h3><p>{{STEP_2_DESC}}</p></div>
+<div class="step"><div class="step-num">3</div><h3>{{STEP_3_TITLE}}</h3><p>{{STEP_3_DESC}}</p></div>
+</div>
+</div></section>
+
+<!-- REVIEWS — white bg -->
+<section class="section-white" id="reviews"><div class="section-white-inner">
+<div class="head">
+<h2>{{REVIEWS_HEADLINE}}</h2>
+<p>{{REVIEWS_SUBHEADLINE}}</p>
+</div>
+<div class="reviews-grid">
+<div class="review"><div class="review-quote">{{REVIEW_1_QUOTE}}</div><div class="review-author"><div class="review-avatar">{{REVIEW_1_INITIALS}}</div><div><div class="review-name">{{REVIEW_1_NAME}}</div><div class="review-role">{{REVIEW_1_ROLE}}</div></div></div></div>
+<div class="review"><div class="review-quote">{{REVIEW_2_QUOTE}}</div><div class="review-author"><div class="review-avatar">{{REVIEW_2_INITIALS}}</div><div><div class="review-name">{{REVIEW_2_NAME}}</div><div class="review-role">{{REVIEW_2_ROLE}}</div></div></div></div>
+</div>
+</div></section>
+
+<!-- FAQ — white bg -->
+<section class="section-white" id="faq"><div class="section-white-inner">
+<div class="head">
+<h2>{{FAQ_HEADLINE}}</h2>
+<p>{{FAQ_SUBHEADLINE}}</p>
+</div>
+<div class="faq">
+<div class="faq-item active"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_1_Q}}</button><div class="faq-a">{{FAQ_1_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_2_Q}}</button><div class="faq-a">{{FAQ_2_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_3_Q}}</button><div class="faq-a">{{FAQ_3_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_4_Q}}</button><div class="faq-a">{{FAQ_4_A}}</div></div>
+</div>
+</div></section>
+
+<!-- CTA — Blurple again -->
+<section class="cta-block" id="form"><div class="cta-inner">
+<h2>{{FOOTER_HEADLINE}}</h2>
+<p>{{FOOTER_SUBHEADLINE}}</p>
+<form class="cta-form" action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST">
+<input type="text" name="first_name" placeholder="First name" required>
+<input type="text" name="last_name" placeholder="Last name" required>
+<input type="email" name="email" placeholder="Email" required>
+<input type="tel" name="phone" placeholder="Phone" required>
+<input type="url" name="website" placeholder="Website" required>
+<button type="submit">{{FOOTER_CTA}}</button>
+</form>
+</div></section>
+
+<!-- FOOTER -->
+<footer class="footer"><div class="footer-inner">
+<div class="footer-top">
+<div class="footer-brand-block">
+<a href="#" class="brand"><span class="mascot"><svg viewBox="0 0 71 55" xmlns="http://www.w3.org/2000/svg"><path fill="#5865F2" d="M60.105 4.898A58.55 58.55 0 0 0 45.653.415a.22.22 0 0 0-.233.11 40.784 40.784 0 0 0-1.8 3.697c-5.456-.817-10.886-.817-16.23 0-.485-1.164-1.201-2.587-1.828-3.697a.228.228 0 0 0-.233-.11 58.386 58.386 0 0 0-14.451 4.483.207.207 0 0 0-.095.082C1.578 18.73-.944 32.144.293 45.39a.244.244 0 0 0 .093.167c6.073 4.46 11.955 7.167 17.729 8.962a.23.23 0 0 0 .249-.082 42.08 42.08 0 0 0 3.627-5.9.225.225 0 0 0-.123-.312 38.772 38.772 0 0 1-5.539-2.64.228.228 0 0 1-.022-.378c.372-.279.744-.569 1.1-.862a.22.22 0 0 1 .229-.031c11.619 5.305 24.198 5.305 35.68 0a.219.219 0 0 1 .233.028c.356.293.728.586 1.103.865a.228.228 0 0 1-.02.378 36.384 36.384 0 0 1-5.54 2.637.227.227 0 0 0-.121.315 47.249 47.249 0 0 0 3.624 5.897.225.225 0 0 0 .249.084c5.801-1.794 11.684-4.502 17.757-8.962a.228.228 0 0 0 .092-.164c1.48-15.315-2.479-28.618-10.493-40.412a.18.18 0 0 0-.093-.084Zm-36.38 32.426c-3.497 0-6.38-3.211-6.38-7.156 0-3.944 2.827-7.156 6.38-7.156 3.583 0 6.438 3.24 6.382 7.156 0 3.945-2.827 7.156-6.382 7.156Zm23.593 0c-3.498 0-6.38-3.211-6.38-7.156 0-3.944 2.826-7.156 6.38-7.156 3.582 0 6.437 3.24 6.38 7.156 0 3.945-2.798 7.156-6.38 7.156Z"/></svg></span>Discord</a>
+<p class="footer-tag">Imagine a place where you can belong to a school club, a gaming group, or a worldwide art community.</p>
+<div class="footer-soc"><a href="#">Tw</a><a href="#">Ig</a><a href="#">Fb</a><a href="#">Yt</a><a href="#">Tk</a></div>
+</div>
+<div class="footer-col"><h4>Product</h4><ul><li><a href="#">Download</a></li><li><a href="#">Nitro</a></li><li><a href="#">Status</a></li><li><a href="#">Mod Program</a></li></ul></div>
+<div class="footer-col"><h4>Company</h4><ul><li><a href="#">About</a></li><li><a href="#">Jobs</a></li><li><a href="#">Branding</a></li><li><a href="#">Newsroom</a></li></ul></div>
+<div class="footer-col"><h4>Resources</h4><ul><li><a href="#">College</a></li><li><a href="#">Support</a></li><li><a href="#">Safety</a></li><li><a href="#">Blog</a></li><li><a href="#">Feedback</a></li></ul></div>
+<div class="footer-col"><h4>Policies</h4><ul><li><a href="#">Terms</a></li><li><a href="#">Privacy</a></li><li><a href="#">Cookies</a></li><li><a href="#">Guidelines</a></li><li><a href="#">Licenses</a></li></ul></div>
+</div>
+<div class="footer-bot">
+<div>&copy; {{YEAR}} Eko AI Inc. &middot; All rights reserved.</div>
+<div class="lang">&#127760; English, USA</div>
+</div>
+</div></footer>
+__FORM_SUBMIT_JS__
+</body></html>
+"""
+
+# ─── Mailchimp Whimsical ─────────────────────────────────────────────────────────────
+_TPL_MAILCHIMP_WHIMSICAL = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{TITLE}}</title><style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#fff;
+  --yellow:#FFE01B;
+  --yellow-2:#FFF066;
+  --dark:#241c15;
+  --dark-soft:#3a312a;
+  --muted:#7c7269;
+  --peach:#FF66BC;
+  --teal:#0EAEDB;
+  --cream:#FFF6E5;
+  --hairline:#E6DEC8;
+}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh;-webkit-text-size-adjust:100%}
+body{font-family:'Helvetica Neue','Helvetica',Arial,sans-serif;background:var(--bg);color:var(--dark);line-height:1.55;-webkit-font-smoothing:antialiased;font-weight:400;min-height:100vh}
+a{color:var(--dark);text-decoration:none;transition:color .15s,opacity .15s}
+a:hover{color:var(--dark);text-decoration:underline}
+.serif{font-family:'Cooper','Caecilia',Georgia,'Times New Roman',serif;font-weight:900;letter-spacing:-.015em}
+
+/* NAV — Yellow background, brown text, Freddie monkey mascot */
+.nav{position:sticky;top:0;z-index:9999;background:var(--yellow);border-bottom:3px solid var(--dark)}
+.nav-inner{max-width:1260px;margin:0 auto;padding:0 32px;display:flex;align-items:center;gap:32px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--dark);font-weight:900;font-size:22px;letter-spacing:-.02em;flex-shrink:0;font-family:'Cooper','Caecilia',Georgia,serif}
+.brand .mascot{width:38px;height:38px;background:var(--dark);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:22px;color:var(--yellow)}
+.nav-links{display:flex;list-style:none;gap:0;flex:1;margin:0;padding:0}
+.nav-links li{padding:0 14px}
+.nav-links a{color:var(--dark);font-size:15px;font-weight:600;letter-spacing:-.005em}
+.nav-links a:hover{color:var(--dark);text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+.nav-utility{display:flex;gap:14px;align-items:center}
+.nav-utility .login{color:var(--dark);font-size:15px;font-weight:600;padding:8px 0}
+.nav-utility .login:hover{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+.pill-dark{background:var(--dark);color:var(--yellow);padding:10px 22px;border-radius:9999px;font-size:15px;font-weight:700;border:2px solid var(--dark);display:inline-flex;align-items:center;gap:6px;transition:background .15s,color .15s,transform .15s;cursor:pointer;font-family:inherit;text-decoration:none}
+.pill-dark:hover{background:var(--yellow);color:var(--dark);text-decoration:none;transform:translateY(-2px)}
+.pill-ghost{background:transparent;color:var(--dark);padding:10px 22px;border-radius:9999px;font-size:15px;font-weight:700;border:2px solid var(--dark);display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;text-decoration:none;transition:background .15s,transform .15s}
+.pill-ghost:hover{background:var(--dark);color:var(--yellow);text-decoration:none;transform:translateY(-2px)}
+.nav-hamburger{display:none;background:none;border:none;color:var(--dark);font-size:24px;cursor:pointer;padding:6px;margin-left:auto}
+
+/* HERO — yellow bg, huge serif headline, Freddie illustration */
+.hero{background:var(--yellow);color:var(--dark);padding:80px 32px 100px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:60px;right:80px;width:120px;height:120px;background:var(--peach);border-radius:50%;opacity:.7;pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:80px;left:60px;width:80px;height:80px;background:var(--teal);border-radius:50%;opacity:.7;pointer-events:none}
+.hero-inner{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1.2fr 1fr;gap:48px;align-items:center;position:relative;z-index:1}
+.hero-text .eyebrow{display:inline-block;background:var(--dark);color:var(--yellow);padding:6px 14px;border-radius:9999px;font-size:13px;font-weight:700;letter-spacing:.03em;margin-bottom:24px;text-transform:uppercase}
+.hero-text h1{font-size:clamp(44px,7vw,96px);font-weight:900;line-height:1;letter-spacing:-.025em;color:var(--dark);margin-bottom:24px;font-family:'Cooper','Caecilia',Georgia,'Times New Roman',serif}
+.hero-text .sub{font-size:clamp(18px,1.6vw,22px);color:var(--dark);line-height:1.45;max-width:540px;margin-bottom:36px;font-weight:500}
+.hero-cta-row{display:flex;gap:14px;flex-wrap:wrap}
+
+/* Freddie hero illustration block */
+.freddie{width:100%;max-width:440px;aspect-ratio:1/1;background:var(--peach);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:200px;line-height:1;margin:0 auto;position:relative;box-shadow:24px 24px 0 var(--dark);border:4px solid var(--dark)}
+.freddie::before{content:'';position:absolute;top:-20px;right:30px;width:60px;height:60px;background:var(--yellow);border-radius:50%;border:3px solid var(--dark);transform:rotate(15deg)}
+.freddie::after{content:'';position:absolute;bottom:30px;left:-20px;width:50px;height:50px;background:var(--teal);border-radius:50%;border:3px solid var(--dark)}
+
+/* ZIGZAG STRIP — Mailchimp's signature divider */
+.zigzag{background:var(--yellow);height:32px;background-image:linear-gradient(135deg,var(--yellow) 25%,transparent 25%),linear-gradient(225deg,var(--yellow) 25%,transparent 25%);background-position:0 100%;background-repeat:repeat-x;background-size:32px 32px;position:relative;border-bottom:3px solid var(--dark)}
+
+/* STATS — Yellow strip with big serif numbers */
+.stats-band{background:var(--cream);color:var(--dark);padding:72px 32px;border-bottom:3px solid var(--dark)}
+.stats-inner{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:48px;text-align:center}
+.stat-num{font-family:'Cooper','Caecilia',Georgia,serif;font-size:clamp(48px,6vw,84px);font-weight:900;letter-spacing:-.02em;color:var(--dark);line-height:1;margin-bottom:6px}
+.stat-label{font-size:15px;color:var(--dark);font-weight:500;line-height:1.4}
+
+/* SECTION */
+.section{padding:96px 32px;background:#fff;position:relative}
+.section.cream{background:var(--cream)}
+.section-inner{max-width:1180px;margin:0 auto}
+.section-head{max-width:760px;margin:0 auto 64px;text-align:center}
+.section-eyebrow{display:inline-block;background:var(--dark);color:var(--yellow);padding:5px 14px;border-radius:9999px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:18px}
+.section-head h2{font-family:'Cooper','Caecilia',Georgia,'Times New Roman',serif;font-size:clamp(36px,5.5vw,64px);font-weight:900;letter-spacing:-.02em;line-height:1.05;color:var(--dark);margin-bottom:18px}
+.section-head p{font-size:18px;color:var(--dark);line-height:1.55;font-weight:500}
+
+/* BENEFITS — 4 cards w/ yellow left border accent (Mailchimp signature) */
+.benefits-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.benefit-card{background:#fff;border:3px solid var(--dark);border-radius:20px;padding:36px 32px;position:relative;transition:transform .2s,box-shadow .2s;box-shadow:8px 8px 0 var(--dark)}
+.benefit-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:14px;background:var(--yellow);border-radius:17px 0 0 17px}
+.benefit-card:hover{transform:translate(-3px,-3px);box-shadow:11px 11px 0 var(--dark)}
+.benefit-card:nth-child(2)::before{background:var(--peach)}
+.benefit-card:nth-child(3)::before{background:var(--teal)}
+.benefit-card:nth-child(4)::before{background:#43b581}
+.benefit-icon{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:var(--yellow);border:2px solid var(--dark);color:var(--dark);font-size:30px;margin-bottom:20px;line-height:1;padding-left:14px}
+.benefit-card:nth-child(2) .benefit-icon{background:var(--peach)}
+.benefit-card:nth-child(3) .benefit-icon{background:var(--teal)}
+.benefit-card:nth-child(4) .benefit-icon{background:#FFD96B}
+.benefit-card h3{font-family:'Cooper','Caecilia',Georgia,serif;font-size:24px;font-weight:900;letter-spacing:-.012em;margin-bottom:10px;color:var(--dark);line-height:1.2;padding-left:14px}
+.benefit-card p{font-size:16px;color:var(--dark);line-height:1.55;padding-left:14px;font-weight:400}
+
+/* HOW — 3 numbered steps with serif typography */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:32px}
+.step{text-align:center;padding:0}
+.step-num{font-family:'Cooper','Caecilia',Georgia,serif;font-size:80px;font-weight:900;line-height:1;color:var(--yellow);-webkit-text-stroke:3px var(--dark);text-stroke:3px var(--dark);margin-bottom:18px}
+.step h3{font-family:'Cooper','Caecilia',Georgia,serif;font-size:24px;font-weight:900;letter-spacing:-.012em;margin-bottom:10px;color:var(--dark);line-height:1.25}
+.step p{font-size:16px;color:var(--dark);line-height:1.55;max-width:300px;margin:0 auto;font-weight:400}
+
+/* REVIEWS */
+.reviews-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.review{background:var(--yellow);border:3px solid var(--dark);border-radius:20px;padding:36px 32px;position:relative;box-shadow:8px 8px 0 var(--dark)}
+.review:nth-child(2){background:var(--peach)}
+.review-quote{font-family:'Cooper','Caecilia',Georgia,serif;font-size:22px;color:var(--dark);line-height:1.35;font-weight:700;margin-bottom:24px;letter-spacing:-.012em}
+.review-author{display:flex;align-items:center;gap:14px}
+.review-avatar{width:50px;height:50px;border-radius:50%;background:var(--dark);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;border:2px solid var(--dark)}
+.review:nth-child(2) .review-avatar{background:var(--dark);color:var(--peach)}
+.review-name{font-size:16px;font-weight:700;color:var(--dark);letter-spacing:-.005em}
+.review-role{font-size:13px;color:var(--dark);opacity:.7}
+
+/* FAQ — cream bg, yellow + toggle */
+.faq{max-width:760px;margin:0 auto}
+.faq-item{background:#fff;border:3px solid var(--dark);border-radius:14px;margin-bottom:12px;overflow:hidden;transition:background .15s,transform .15s,box-shadow .15s;box-shadow:6px 6px 0 var(--dark)}
+.faq-item.active{background:var(--yellow)}
+.faq-q{width:100%;text-align:left;background:none;border:none;padding:22px 26px;font-family:'Cooper','Caecilia',Georgia,serif;font-size:19px;font-weight:900;letter-spacing:-.012em;color:var(--dark);cursor:pointer;font-family:'Cooper','Caecilia',Georgia,serif;display:flex;justify-content:space-between;align-items:center;line-height:1.3;gap:24px}
+.faq-q::after{content:'+';font-size:28px;color:var(--dark);transition:transform .25s;flex-shrink:0;font-weight:900;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:2px solid var(--dark);border-radius:50%;background:var(--yellow);font-family:'Helvetica Neue',Arial,sans-serif;line-height:1}
+.faq-item.active .faq-q::after{transform:rotate(45deg);background:#fff}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease,padding .25s;font-size:16px;color:var(--dark);line-height:1.65;font-weight:400}
+.faq-item.active .faq-a{max-height:600px;padding:0 26px 22px}
+
+/* CTA — yellow */
+.cta-block{background:var(--yellow);color:var(--dark);padding:120px 32px;text-align:center;position:relative;overflow:hidden;border-top:3px solid var(--dark);border-bottom:3px solid var(--dark)}
+.cta-block::before{content:'';position:absolute;top:30px;left:50px;width:80px;height:80px;background:var(--peach);border-radius:50%;border:3px solid var(--dark);pointer-events:none}
+.cta-block::after{content:'';position:absolute;bottom:30px;right:50px;width:100px;height:100px;background:var(--teal);border-radius:50%;border:3px solid var(--dark);pointer-events:none}
+.cta-inner{max-width:560px;margin:0 auto;position:relative;z-index:1}
+.cta-inner h2{font-family:'Cooper','Caecilia',Georgia,serif;font-size:clamp(36px,5.5vw,64px);font-weight:900;letter-spacing:-.02em;line-height:1.05;margin-bottom:18px;color:var(--dark)}
+.cta-inner p{font-size:18px;color:var(--dark);line-height:1.5;margin-bottom:36px;font-weight:500}
+.cta-form{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:480px;margin:0 auto}
+.cta-form input{padding:14px 18px;border-radius:12px;border:2px solid var(--dark);background:#fff;color:var(--dark);font-size:15px;font-family:inherit;outline:none;font-weight:500;transition:box-shadow .15s,transform .15s}
+.cta-form input::placeholder{color:var(--muted)}
+.cta-form input:focus{box-shadow:4px 4px 0 var(--dark);transform:translate(-2px,-2px)}
+.cta-form input[type=email],.cta-form input[type=url]{grid-column:1/-1}
+.cta-form button{grid-column:1/-1;padding:14px 28px;border-radius:9999px;border:2px solid var(--dark);background:var(--dark);color:var(--yellow);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s,color .15s,transform .15s,box-shadow .15s;margin-top:8px}
+.cta-form button:hover{background:var(--yellow);color:var(--dark);transform:translateY(-2px);box-shadow:4px 4px 0 var(--dark)}
+
+/* FOOTER — dark brown with yellow accents */
+.footer{background:var(--dark);color:#fff;padding:80px 32px 40px;position:relative}
+.footer::before{content:'';position:absolute;top:0;left:0;right:0;height:24px;background:var(--yellow);background-image:linear-gradient(135deg,var(--dark) 25%,transparent 25%),linear-gradient(225deg,var(--dark) 25%,transparent 25%);background-position:0 0;background-repeat:repeat-x;background-size:24px 24px}
+.footer-inner{max-width:1280px;margin:0 auto;padding-top:24px}
+.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:48px;padding-bottom:48px;border-bottom:2px solid rgba(255,224,27,.2)}
+.footer-brand-block{max-width:280px}
+.footer-brand-block .brand{font-size:24px;color:var(--yellow)}
+.footer-brand-block .brand .mascot{background:var(--yellow);color:var(--dark)}
+.footer-tag{font-size:14px;color:#fff;opacity:.85;line-height:1.55;margin-top:14px}
+.footer-soc{display:flex;gap:10px;margin-top:24px}
+.footer-soc a{width:38px;height:38px;border-radius:50%;background:var(--yellow);color:var(--dark);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;transition:transform .15s}
+.footer-soc a:hover{transform:translateY(-3px);text-decoration:none}
+.footer-col h4{font-family:'Cooper','Caecilia',Georgia,serif;font-size:17px;font-weight:900;color:var(--yellow);margin-bottom:16px}
+.footer-col ul{list-style:none}
+.footer-col li{margin-bottom:10px}
+.footer-col a{color:#fff;font-size:14px;font-weight:500;opacity:.9}
+.footer-col a:hover{color:var(--yellow);text-decoration:none;opacity:1}
+.footer-bot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;padding-top:32px;font-size:13px;color:#fff;opacity:.7;align-items:center}
+
+@media(max-width:900px){
+.hero-inner{grid-template-columns:1fr;gap:36px;text-align:center}
+.hero-text .sub{margin-left:auto;margin-right:auto}
+.hero-cta-row{justify-content:center}
+.freddie{max-width:300px}
+.benefits-grid,.reviews-grid{grid-template-columns:1fr}
+.steps{grid-template-columns:1fr;gap:48px}
+.stats-inner{grid-template-columns:1fr;gap:36px}
+.footer-top{grid-template-columns:1fr 1fr;gap:32px}
+}
+@media(max-width:640px){
+.nav-links{display:none}
+.nav-utility .login{display:none}
+.nav-hamburger{display:block}
+.nav-inner{padding:0 18px;gap:0;height:56px}
+.hero{padding:48px 18px 64px}
+.hero-text h1{font-size:42px;letter-spacing:-.015em}
+.hero-text .sub{font-size:16px}
+.section{padding:64px 18px}
+.cta-block{padding:64px 18px}
+.cta-block::before,.cta-block::after{display:none}
+.footer{padding:48px 18px 32px}
+.footer-top{grid-template-columns:1fr 1fr;gap:24px}
+.cta-form{grid-template-columns:1fr}
+.cta-form input[type=email],.cta-form input[type=url]{grid-column:auto}
+.benefit-card{padding:28px 22px}
+.benefit-card h3,.benefit-card p{padding-left:8px}
+.freddie{font-size:140px}
+}
+</style></head>
+<body>__TRACKING_PIXEL__
+
+<nav class="nav"><div class="nav-inner">
+<a href="#" class="brand"><span class="mascot">&#128053;</span>Mailchimp</a>
+<ul class="nav-links">
+<li><a href="#benefits">Why Mailchimp</a></li>
+<li><a href="#how">Products</a></li>
+<li><a href="#">Pricing</a></li>
+<li><a href="#reviews">Resources</a></li>
+<li><a href="#faq">Inspiration</a></li>
+</ul>
+<div class="nav-utility">
+<a href="#" class="login">Log in</a>
+<a href="#form" class="pill-dark">Sign Up Free</a>
+</div>
+<button class="nav-hamburger" aria-label="Menu">&#9776;</button>
+</div></nav>
+
+<!-- HERO — yellow w/ split layout & Freddie -->
+<section class="hero" id="hero"><div class="hero-inner">
+<div class="hero-text">
+<span class="eyebrow">{{BADGE}}</span>
+<h1>{{HERO_TITLE}}</h1>
+<p class="sub">{{HERO_SUBTITLE}}</p>
+<div class="hero-cta-row">
+<a href="#form" class="pill-dark">{{CTA_BUTTON}} &rarr;</a>
+<a href="#benefits" class="pill-ghost">Talk to Sales</a>
+</div>
+</div>
+<div class="freddie">&#128053;</div>
+</div></section>
+
+<!-- STATS -->
+<section class="stats-band"><div class="stats-inner">
+<div><div class="stat-num">{{STAT_1_NUM}}</div><div class="stat-label">{{STAT_1_LABEL}}</div></div>
+<div><div class="stat-num">{{STAT_2_NUM}}</div><div class="stat-label">{{STAT_2_LABEL}}</div></div>
+<div><div class="stat-num">{{STAT_3_NUM}}</div><div class="stat-label">{{STAT_3_LABEL}}</div></div>
+</div></section>
+
+<!-- BENEFITS -->
+<section class="section" id="benefits"><div class="section-inner">
+<div class="section-head">
+<div class="section-eyebrow">Features</div>
+<h2>{{BENEFITS_HEADLINE}}</h2>
+<p>{{BENEFITS_SUBHEADLINE}}</p>
+</div>
+<div class="benefits-grid">
+<div class="benefit-card"><div class="benefit-icon">{{BENEFIT_1_ICON}}</div><h3>{{BENEFIT_1_TITLE}}</h3><p>{{BENEFIT_1_DESC}}</p></div>
+<div class="benefit-card"><div class="benefit-icon">{{BENEFIT_2_ICON}}</div><h3>{{BENEFIT_2_TITLE}}</h3><p>{{BENEFIT_2_DESC}}</p></div>
+<div class="benefit-card"><div class="benefit-icon">{{BENEFIT_3_ICON}}</div><h3>{{BENEFIT_3_TITLE}}</h3><p>{{BENEFIT_3_DESC}}</p></div>
+<div class="benefit-card"><div class="benefit-icon">{{BENEFIT_4_ICON}}</div><h3>{{BENEFIT_4_TITLE}}</h3><p>{{BENEFIT_4_DESC}}</p></div>
+</div>
+</div></section>
+
+<!-- HOW -->
+<section class="section cream" id="how"><div class="section-inner">
+<div class="section-head">
+<div class="section-eyebrow">How it works</div>
+<h2>{{HOW_HEADLINE}}</h2>
+<p>{{HOW_SUBHEADLINE}}</p>
+</div>
+<div class="steps">
+<div class="step"><div class="step-num">01</div><h3>{{STEP_1_TITLE}}</h3><p>{{STEP_1_DESC}}</p></div>
+<div class="step"><div class="step-num">02</div><h3>{{STEP_2_TITLE}}</h3><p>{{STEP_2_DESC}}</p></div>
+<div class="step"><div class="step-num">03</div><h3>{{STEP_3_TITLE}}</h3><p>{{STEP_3_DESC}}</p></div>
+</div>
+</div></section>
+
+<!-- REVIEWS -->
+<section class="section" id="reviews"><div class="section-inner">
+<div class="section-head">
+<div class="section-eyebrow">Customers</div>
+<h2>{{REVIEWS_HEADLINE}}</h2>
+<p>{{REVIEWS_SUBHEADLINE}}</p>
+</div>
+<div class="reviews-grid">
+<div class="review"><div class="review-quote">&ldquo;{{REVIEW_1_QUOTE}}&rdquo;</div><div class="review-author"><div class="review-avatar">{{REVIEW_1_INITIALS}}</div><div><div class="review-name">{{REVIEW_1_NAME}}</div><div class="review-role">{{REVIEW_1_ROLE}}</div></div></div></div>
+<div class="review"><div class="review-quote">&ldquo;{{REVIEW_2_QUOTE}}&rdquo;</div><div class="review-author"><div class="review-avatar">{{REVIEW_2_INITIALS}}</div><div><div class="review-name">{{REVIEW_2_NAME}}</div><div class="review-role">{{REVIEW_2_ROLE}}</div></div></div></div>
+</div>
+</div></section>
+
+<!-- FAQ -->
+<section class="section cream" id="faq"><div class="section-inner">
+<div class="section-head">
+<div class="section-eyebrow">FAQ</div>
+<h2>{{FAQ_HEADLINE}}</h2>
+<p>{{FAQ_SUBHEADLINE}}</p>
+</div>
+<div class="faq">
+<div class="faq-item active"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_1_Q}}</button><div class="faq-a">{{FAQ_1_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_2_Q}}</button><div class="faq-a">{{FAQ_2_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_3_Q}}</button><div class="faq-a">{{FAQ_3_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_4_Q}}</button><div class="faq-a">{{FAQ_4_A}}</div></div>
+</div>
+</div></section>
+
+<!-- CTA -->
+<section class="cta-block" id="form"><div class="cta-inner">
+<h2>{{FOOTER_HEADLINE}}</h2>
+<p>{{FOOTER_SUBHEADLINE}}</p>
+<form class="cta-form" action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST">
+<input type="text" name="first_name" placeholder="First name" required>
+<input type="text" name="last_name" placeholder="Last name" required>
+<input type="email" name="email" placeholder="Email" required>
+<input type="tel" name="phone" placeholder="Phone" required>
+<input type="url" name="website" placeholder="Website" required>
+<button type="submit">{{FOOTER_CTA}} &rarr;</button>
+</form>
+</div></section>
+
+<!-- FOOTER -->
+<footer class="footer"><div class="footer-inner">
+<div class="footer-top">
+<div class="footer-brand-block">
+<a href="#" class="brand"><span class="mascot">&#128053;</span>Mailchimp</a>
+<p class="footer-tag">An all-in-one Intuit Mailchimp marketing platform for managing your business.</p>
+<div class="footer-soc"><a href="#">Tw</a><a href="#">Fb</a><a href="#">Ig</a><a href="#">In</a><a href="#">Yt</a></div>
+</div>
+<div class="footer-col"><h4>Why Mailchimp</h4><ul><li><a href="#">Email Marketing</a></li><li><a href="#">Marketing CRM</a></li><li><a href="#">Subject Line Helper</a></li><li><a href="#">All Features</a></li></ul></div>
+<div class="footer-col"><h4>Products</h4><ul><li><a href="#">Websites</a></li><li><a href="#">Landing Pages</a></li><li><a href="#">Pop-up Forms</a></li><li><a href="#">Mobile App</a></li><li><a href="#">Pricing</a></li></ul></div>
+<div class="footer-col"><h4>Resources</h4><ul><li><a href="#">Help Center</a></li><li><a href="#">Email Templates</a></li><li><a href="#">Knowledge Base</a></li><li><a href="#">Smart Tips</a></li><li><a href="#">Research</a></li></ul></div>
+<div class="footer-col"><h4>Company</h4><ul><li><a href="#">About Us</a></li><li><a href="#">Newsroom</a></li><li><a href="#">Careers</a></li><li><a href="#">Diversity</a></li><li><a href="#">Press &amp; Awards</a></li></ul></div>
+</div>
+<div class="footer-bot">
+<div>&copy; {{YEAR}} Eko AI Inc. &middot; All Rights Reserved. &middot; <a href="#" style="color:#fff;text-decoration:underline">Privacy</a> &middot; <a href="#" style="color:#fff;text-decoration:underline">Terms</a> &middot; <a href="#" style="color:#fff;text-decoration:underline">Cookie Preferences</a></div>
+<div>&#128053; Backed by Intuit</div>
+</div>
+</div></footer>
+__FORM_SUBMIT_JS__
+</body></html>
+"""
+
+# ─── Slack Pro ─────────────────────────────────────────────────────────────
+_TPL_SLACK_PRO = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{TITLE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#fff;--cream:#f4ede4;--text:#1d1c1d;--muted:#454245;--aubergine:#611f69;--aubergine-dark:#4a154b;--mint:#2eb67d;--yellow:#ecb22e;--red:#e01e5a;--teal:#36c5f0;--border:#e0dcd6;--surface:#ffffff;--chat-bg:#f8f8f8;--sidebar:#3f0e40}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh;-webkit-text-size-adjust:100%}
+body{font-family:"Slack-Lato","Lato","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;font-weight:400}
+a{color:var(--aubergine);text-decoration:none}
+img{max-width:100%;display:block}
+
+/* NAV — white sticky with Slack 4-color hashtag logo */
+.nav{position:sticky;top:0;left:0;right:0;z-index:100;background:#fff;border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1340px;margin:0 auto;padding:0 24px;height:70px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo-mark{width:30px;height:30px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px}
+.logo-mark span{border-radius:3px}
+.logo-mark span:nth-child(1){background:var(--red)}
+.logo-mark span:nth-child(2){background:var(--yellow)}
+.logo-mark span:nth-child(3){background:var(--teal)}
+.logo-mark span:nth-child(4){background:var(--mint)}
+.logo-text{font-family:"Slack-Lato","Lato",sans-serif;font-weight:900;font-size:24px;color:var(--text);letter-spacing:-.5px}
+.nav-links{display:flex;gap:28px;list-style:none;align-items:center;flex:1;justify-content:center}
+.nav-links a{color:var(--text);font-size:15px;font-weight:700;display:inline-flex;align-items:center;gap:4px;transition:color .15s}
+.nav-links a::after{content:'\02C5';font-size:13px;color:var(--muted)}
+.nav-links li:last-child a::after{content:''}
+.nav-links a:hover{color:var(--aubergine)}
+.nav-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.nav-signin{color:var(--text);font-size:14px;font-weight:700;padding:8px 4px}
+.nav-signin:hover{color:var(--aubergine);text-decoration:underline}
+.nav-outline{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border:2px solid var(--aubergine);background:#fff;color:var(--aubergine);font-weight:900;font-size:13px;letter-spacing:.6px;text-transform:uppercase;border-radius:4px;transition:background .15s,color .15s;font-family:inherit;cursor:pointer}
+.nav-outline:hover{background:var(--aubergine);color:#fff;text-decoration:none}
+.nav-cta{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;background:var(--aubergine);color:#fff!important;font-weight:900;font-size:13px;letter-spacing:.6px;text-transform:uppercase;border-radius:4px;transition:background .15s;font-family:inherit}
+.nav-cta:hover{background:var(--aubergine-dark);text-decoration:none}
+
+/* HERO — full bleed aubergine */
+.hero{background:var(--aubergine);color:#fff;padding:88px 24px 96px;position:relative;overflow:hidden}
+.hero::before,.hero::after{content:'';position:absolute;border-radius:50%;filter:blur(40px);opacity:.45;pointer-events:none}
+.blob{position:absolute;border-radius:50%;filter:blur(50px);opacity:.55;pointer-events:none}
+.blob-1{width:220px;height:220px;background:var(--mint);top:-60px;right:8%}
+.blob-2{width:180px;height:180px;background:var(--yellow);top:30%;left:-40px}
+.blob-3{width:200px;height:200px;background:var(--red);bottom:-60px;right:18%}
+.blob-4{width:160px;height:160px;background:var(--teal);bottom:10%;left:25%}
+.hero-inner{max-width:1140px;margin:0 auto;text-align:center;position:relative;z-index:2}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:13px;font-weight:700;margin-bottom:24px;text-transform:uppercase;letter-spacing:.6px}
+.badge::before{content:'\2728'}
+.hero h1{font-size:clamp(40px,6vw,72px);font-weight:900;line-height:1.05;letter-spacing:-2px;margin-bottom:24px;color:#fff;max-width:980px;margin-left:auto;margin-right:auto}
+.hero p.sub{font-size:clamp(17px,2.2vw,22px);color:rgba(255,255,255,.88);max-width:680px;margin:0 auto 36px;line-height:1.45;font-weight:400}
+.hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:60px}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:16px 28px;border-radius:4px;font-weight:900;font-size:14px;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;border:none;font-family:inherit;text-decoration:none;transition:all .2s}
+.btn-white{background:#fff;color:var(--aubergine)!important}
+.btn-white:hover{background:#f4ede4;transform:translateY(-1px);text-decoration:none}
+.btn-white-outline{background:transparent;color:#fff!important;border:2px solid #fff}
+.btn-white-outline:hover{background:#fff;color:var(--aubergine)!important;text-decoration:none}
+
+/* HERO FORM — beneath CTA, on aubergine */
+.hero-form{max-width:680px;margin:0 auto;padding:24px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:12px;backdrop-filter:blur(6px);display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hero-form input{padding:14px 16px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.95);color:var(--text);font-size:14px;border-radius:6px;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s}
+.hero-form input:focus{border-color:var(--mint);box-shadow:0 0 0 3px rgba(46,182,125,.3)}
+.hero-form input::placeholder{color:var(--muted)}
+.hero-form input[name="website"]{grid-column:1/3}
+.hero-form button{grid-column:1/3;padding:16px;background:#fff;color:var(--aubergine);border:none;border-radius:6px;font-weight:900;font-size:14px;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;font-family:inherit;transition:background .15s,transform .15s}
+.hero-form button:hover{background:var(--cream);transform:translateY(-1px)}
+
+/* STATS strip — on white below hero */
+.stats-strip{background:#fff;padding:48px 24px;border-bottom:1px solid var(--border)}
+.stats-inner{max-width:1140px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:32px;text-align:center}
+.stat{padding:8px}
+.stat-num{font-size:48px;font-weight:900;color:var(--text);letter-spacing:-1.5px;line-height:1}
+.stat-label{font-size:14px;color:var(--muted);margin-top:8px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.stat:nth-child(1) .stat-num{color:var(--aubergine)}
+.stat:nth-child(2) .stat-num{color:var(--mint)}
+.stat:nth-child(3) .stat-num{color:var(--red)}
+
+/* SECTIONS */
+.section{padding:96px 24px}
+.section-cream{background:var(--cream)}
+.section-white{background:#fff}
+.section-inner{max-width:1140px;margin:0 auto}
+.section-header{text-align:center;margin-bottom:56px;max-width:780px;margin-left:auto;margin-right:auto}
+.eyebrow{display:inline-block;font-size:13px;font-weight:900;color:var(--aubergine);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}
+.section-header h2{font-size:clamp(32px,4.5vw,52px);font-weight:900;letter-spacing:-1.4px;line-height:1.1;color:var(--text);margin-bottom:16px}
+.section-header p{color:var(--muted);font-size:18px;line-height:1.55}
+
+/* FEATURE CARDS — white with 4-color icon rotation */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:24px}
+.feature-card{background:#fff;border-radius:12px;padding:32px 28px;box-shadow:0 4px 24px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04);transition:transform .2s,box-shadow .2s}
+.feature-card:hover{transform:translateY(-4px);box-shadow:0 12px 36px rgba(0,0,0,.1)}
+.feature-icon{width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin-bottom:20px;font-weight:900}
+.feature-card:nth-child(1) .feature-icon{background:var(--mint)}
+.feature-card:nth-child(2) .feature-icon{background:var(--yellow);color:var(--text)}
+.feature-card:nth-child(3) .feature-icon{background:var(--red)}
+.feature-card:nth-child(4) .feature-icon{background:var(--teal);color:var(--text)}
+.feature-card h3{font-size:20px;font-weight:900;color:var(--text);margin-bottom:10px;letter-spacing:-.4px;line-height:1.25}
+.feature-card p{color:var(--muted);font-size:15px;line-height:1.55}
+
+/* CHANNELS MOCKUP — Slack-style chat UI */
+.mockup-section{padding:0 24px 96px;background:var(--cream)}
+.mockup-inner{max-width:1140px;margin:0 auto}
+.mockup{background:#fff;border-radius:12px;box-shadow:0 24px 60px rgba(97,31,105,.2);overflow:hidden;display:grid;grid-template-columns:240px 1fr;min-height:380px;border:1px solid rgba(0,0,0,.06)}
+.mockup-sidebar{background:var(--sidebar);color:rgba(255,255,255,.85);padding:20px 16px;font-size:14px}
+.mockup-workspace{font-weight:900;color:#fff;font-size:16px;margin-bottom:18px;display:flex;align-items:center;gap:8px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.mockup-workspace::before{content:'\25C9';color:var(--mint);font-size:11px}
+.mockup-section-title{font-size:11px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 8px;font-weight:700}
+.mockup-channel{padding:5px 8px;border-radius:4px;display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.85);font-size:14px;margin-bottom:1px;cursor:pointer}
+.mockup-channel.active{background:#1164a3;color:#fff;font-weight:700}
+.mockup-channel::before{content:'#';opacity:.7}
+.mockup-main{display:flex;flex-direction:column;background:#fff}
+.mockup-channel-header{padding:14px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;font-weight:900;color:var(--text);font-size:15px}
+.mockup-channel-header::before{content:'#';color:var(--muted);font-weight:400;font-size:18px}
+.mockup-messages{padding:22px;display:flex;flex-direction:column;gap:18px;flex:1}
+.mockup-msg{display:grid;grid-template-columns:36px 1fr;gap:10px;align-items:flex-start}
+.mockup-avatar{width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:13px}
+.mockup-msg:nth-child(1) .mockup-avatar{background:var(--mint)}
+.mockup-msg:nth-child(2) .mockup-avatar{background:var(--yellow);color:var(--text)}
+.mockup-msg:nth-child(3) .mockup-avatar{background:var(--red)}
+.mockup-msg-head{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.mockup-msg-name{font-weight:900;color:var(--text);font-size:14px}
+.mockup-msg-time{color:var(--muted);font-size:12px}
+.mockup-msg-body{color:var(--text);font-size:14px;line-height:1.5}
+.mockup-msg-body strong{color:var(--aubergine);background:rgba(97,31,105,.08);padding:1px 4px;border-radius:3px}
+
+/* STEPS — How It Works */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+.step{padding:32px;text-align:left}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--aubergine);color:#fff;font-weight:900;font-size:20px;margin-bottom:20px}
+.step:nth-child(2) .step-num{background:var(--mint)}
+.step:nth-child(3) .step-num{background:var(--yellow);color:var(--text)}
+.step h3{font-size:22px;font-weight:900;color:var(--text);margin-bottom:10px;letter-spacing:-.5px;line-height:1.2}
+.step p{color:var(--muted);font-size:15px;line-height:1.6}
+
+/* REVIEWS */
+.reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px}
+.review{background:#fff;border-radius:12px;padding:36px 32px;box-shadow:0 4px 20px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04);position:relative}
+.review::before{content:'\201C';position:absolute;top:14px;left:24px;font-size:64px;line-height:1;font-family:Georgia,serif;font-weight:900;opacity:.95}
+.review:nth-child(1)::before{color:var(--red)}
+.review:nth-child(2)::before{color:var(--teal)}
+.review-quote{font-size:17px;color:var(--text);line-height:1.55;font-weight:400;margin:36px 0 24px;font-style:italic}
+.review-author{display:flex;align-items:center;gap:14px;padding-top:20px;border-top:1px solid var(--border)}
+.review-avatar{width:48px;height:48px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:15px}
+.review:nth-child(1) .review-avatar{background:var(--mint)}
+.review:nth-child(2) .review-avatar{background:var(--aubergine)}
+.review-name{font-weight:900;color:var(--text);font-size:15px;letter-spacing:-.2px}
+.review-role{color:var(--muted);font-size:13px;margin-top:2px}
+
+/* FAQ */
+.faq{max-width:820px;margin:0 auto}
+.faq-item{border-bottom:1px solid var(--border);background:transparent}
+.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 4px;background:none;border:none;color:var(--text);font-size:18px;font-weight:900;text-align:left;cursor:pointer;font-family:inherit;letter-spacing:-.3px;line-height:1.4;transition:color .15s}
+.faq-q:hover{color:var(--aubergine)}
+.faq-q::after{content:'+';font-size:24px;color:var(--aubergine);font-weight:900;line-height:1;flex-shrink:0;transition:transform .3s}
+.faq-item.active .faq-q::after{transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease,padding .35s ease;color:var(--muted);font-size:16px;line-height:1.65;padding:0 4px}
+.faq-item.active .faq-a{max-height:300px;padding:0 4px 24px}
+
+/* FOOTER */
+.footer-cta{background:var(--aubergine);padding:80px 24px;color:#fff;text-align:center;position:relative;overflow:hidden}
+.footer-cta::before{content:'';position:absolute;top:-80px;left:10%;width:200px;height:200px;background:var(--yellow);border-radius:50%;filter:blur(80px);opacity:.4;pointer-events:none}
+.footer-cta::after{content:'';position:absolute;bottom:-80px;right:10%;width:200px;height:200px;background:var(--mint);border-radius:50%;filter:blur(80px);opacity:.4;pointer-events:none}
+.footer-cta-inner{max-width:780px;margin:0 auto;position:relative;z-index:1}
+.footer-cta h2{font-size:clamp(32px,4.5vw,52px);font-weight:900;letter-spacing:-1.4px;line-height:1.1;color:#fff;margin-bottom:18px}
+.footer-cta p{font-size:18px;color:rgba(255,255,255,.88);margin-bottom:32px;line-height:1.55}
+.footer-cta-btn{display:inline-flex;align-items:center;justify-content:center;padding:18px 36px;background:#fff;color:var(--aubergine);border-radius:4px;font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:.6px;transition:transform .15s,background .15s}
+.footer-cta-btn:hover{background:var(--cream);transform:translateY(-2px);text-decoration:none}
+
+.footer{background:var(--aubergine-dark);color:rgba(255,255,255,.75);padding:64px 24px 32px}
+.footer-inner{max-width:1140px;margin:0 auto}
+.footer-cols{display:grid;grid-template-columns:1.5fr repeat(4,1fr);gap:32px;padding-bottom:48px;border-bottom:1px solid rgba(255,255,255,.12)}
+.footer-brand .logo-text{color:#fff}
+.footer-brand p{margin-top:14px;font-size:14px;line-height:1.6;color:rgba(255,255,255,.7);max-width:280px}
+.footer-col h4{font-size:13px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px}
+.footer-col ul{list-style:none}
+.footer-col li{margin-bottom:10px}
+.footer-col a{color:rgba(255,255,255,.75);font-size:14px;transition:color .15s}
+.footer-col a:hover{color:#fff;text-decoration:underline}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding-top:24px;font-size:13px;color:rgba(255,255,255,.6)}
+.footer-bottom .logo-mark{width:24px;height:24px;gap:2px}
+
+@media(max-width:900px){
+  .nav-links{display:none}
+  .footer-cols{grid-template-columns:1fr 1fr;gap:28px}
+}
+@media(max-width:640px){
+  .hero{padding:60px 18px 72px}
+  .hero-form{grid-template-columns:1fr}
+  .hero-form input[name="website"]{grid-column:1}
+  .hero-form button{grid-column:1}
+  .hero-ctas{flex-direction:column}
+  .hero-ctas .btn{width:100%}
+  .section{padding:64px 18px}
+  .stats-strip{padding:36px 18px}
+  .features-grid,.steps-grid,.reviews-grid{grid-template-columns:1fr}
+  .mockup{grid-template-columns:1fr}
+  .mockup-sidebar{display:none}
+  .footer-cols{grid-template-columns:1fr}
+  .nav-outline{display:none}
+}
+</style></head>
+<body>__TRACKING_PIXEL__
+
+<nav class="nav"><div class="nav-inner">
+  <a href="#" class="logo">
+    <span class="logo-mark"><span></span><span></span><span></span><span></span></span>
+    <span class="logo-text">slack</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#benefits">Features</a></li>
+    <li><a href="#how">Solutions</a></li>
+    <li><a href="#reviews">Enterprise</a></li>
+    <li><a href="#faq">Resources</a></li>
+    <li><a href="#form">Pricing</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="#form" class="nav-signin">Sign in</a>
+    <a href="#form" class="nav-outline">Talk to Sales</a>
+    <a href="#form" class="nav-cta">Try for Free</a>
+  </div>
+</div></nav>
+
+<section class="hero" id="form">
+  <span class="blob blob-1"></span>
+  <span class="blob blob-2"></span>
+  <span class="blob blob-3"></span>
+  <span class="blob blob-4"></span>
+  <div class="hero-inner">
+    <div class="badge">{{BADGE}}</div>
+    <h1>{{HERO_TITLE}}</h1>
+    <p class="sub">{{HERO_SUBTITLE}}</p>
+    <div class="hero-ctas">
+      <a href="#hero-form" class="btn btn-white">{{CTA_BUTTON}}</a>
+      <a href="#how" class="btn btn-white-outline">Watch the demo</a>
+    </div>
+    <form id="hero-form" class="hero-form" action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST">
+      <input type="text" name="first_name" placeholder="First Name" required>
+      <input type="text" name="last_name" placeholder="Last Name" required>
+      <input type="email" name="email" placeholder="Work email" required>
+      <input type="tel" name="phone" placeholder="Phone" required>
+      <input type="url" name="website" placeholder="Company website" required>
+      <button type="submit">{{CTA_BUTTON}}</button>
+    </form>
+  </div>
+</section>
+
+<section class="stats-strip">
+  <div class="stats-inner">
+    <div class="stat"><div class="stat-num">{{STAT_1_NUM}}</div><div class="stat-label">{{STAT_1_LABEL}}</div></div>
+    <div class="stat"><div class="stat-num">{{STAT_2_NUM}}</div><div class="stat-label">{{STAT_2_LABEL}}</div></div>
+    <div class="stat"><div class="stat-num">{{STAT_3_NUM}}</div><div class="stat-label">{{STAT_3_LABEL}}</div></div>
+  </div>
+</section>
+
+<section class="section section-white" id="benefits">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="eyebrow">Why teams choose us</span>
+      <h2>{{BENEFITS_HEADLINE}}</h2>
+      <p>{{BENEFITS_SUBHEADLINE}}</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card"><div class="feature-icon">{{BENEFIT_1_ICON}}</div><h3>{{BENEFIT_1_TITLE}}</h3><p>{{BENEFIT_1_DESC}}</p></div>
+      <div class="feature-card"><div class="feature-icon">{{BENEFIT_2_ICON}}</div><h3>{{BENEFIT_2_TITLE}}</h3><p>{{BENEFIT_2_DESC}}</p></div>
+      <div class="feature-card"><div class="feature-icon">{{BENEFIT_3_ICON}}</div><h3>{{BENEFIT_3_TITLE}}</h3><p>{{BENEFIT_3_DESC}}</p></div>
+      <div class="feature-card"><div class="feature-icon">{{BENEFIT_4_ICON}}</div><h3>{{BENEFIT_4_TITLE}}</h3><p>{{BENEFIT_4_DESC}}</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="mockup-section">
+  <div class="mockup-inner">
+    <div class="mockup">
+      <aside class="mockup-sidebar">
+        <div class="mockup-workspace">Acme HQ</div>
+        <div class="mockup-section-title">Channels</div>
+        <div class="mockup-channel active">general</div>
+        <div class="mockup-channel">growth-loop</div>
+        <div class="mockup-channel">launches</div>
+        <div class="mockup-channel">design-review</div>
+        <div class="mockup-section-title">Direct messages</div>
+        <div class="mockup-channel" style="padding-left:8px">Riley Chen</div>
+        <div class="mockup-channel" style="padding-left:8px">Sam Adeyemi</div>
+      </aside>
+      <div class="mockup-main">
+        <div class="mockup-channel-header">general</div>
+        <div class="mockup-messages">
+          <div class="mockup-msg">
+            <div class="mockup-avatar">MK</div>
+            <div>
+              <div class="mockup-msg-head"><span class="mockup-msg-name">Maya Kapoor</span><span class="mockup-msg-time">9:42 AM</span></div>
+              <div class="mockup-msg-body">Pulled the Q3 numbers into <strong>#growth-loop</strong> — conversions are up 38% since we shipped.</div>
+            </div>
+          </div>
+          <div class="mockup-msg">
+            <div class="mockup-avatar">JT</div>
+            <div>
+              <div class="mockup-msg-head"><span class="mockup-msg-name">Jordan Tate</span><span class="mockup-msg-time">9:44 AM</span></div>
+              <div class="mockup-msg-body">Love this. Can we surface it in <strong>@leadership</strong> stand-up tomorrow?</div>
+            </div>
+          </div>
+          <div class="mockup-msg">
+            <div class="mockup-avatar">RC</div>
+            <div>
+              <div class="mockup-msg-head"><span class="mockup-msg-name">Riley Chen</span><span class="mockup-msg-time">9:45 AM</span></div>
+              <div class="mockup-msg-body">Already on the agenda. The team is going to be thrilled.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-white" id="how">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="eyebrow">How it works</span>
+      <h2>{{HOW_HEADLINE}}</h2>
+      <p>{{HOW_SUBHEADLINE}}</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step"><div class="step-num">1</div><h3>{{STEP_1_TITLE}}</h3><p>{{STEP_1_DESC}}</p></div>
+      <div class="step"><div class="step-num">2</div><h3>{{STEP_2_TITLE}}</h3><p>{{STEP_2_DESC}}</p></div>
+      <div class="step"><div class="step-num">3</div><h3>{{STEP_3_TITLE}}</h3><p>{{STEP_3_DESC}}</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-cream" id="reviews">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="eyebrow">Loved by teams</span>
+      <h2>{{REVIEWS_HEADLINE}}</h2>
+      <p>{{REVIEWS_SUBHEADLINE}}</p>
+    </div>
+    <div class="reviews-grid">
+      <div class="review">
+        <p class="review-quote">{{REVIEW_1_QUOTE}}</p>
+        <div class="review-author">
+          <div class="review-avatar">{{REVIEW_1_INITIALS}}</div>
+          <div><div class="review-name">{{REVIEW_1_NAME}}</div><div class="review-role">{{REVIEW_1_ROLE}}</div></div>
+        </div>
+      </div>
+      <div class="review">
+        <p class="review-quote">{{REVIEW_2_QUOTE}}</p>
+        <div class="review-author">
+          <div class="review-avatar">{{REVIEW_2_INITIALS}}</div>
+          <div><div class="review-name">{{REVIEW_2_NAME}}</div><div class="review-role">{{REVIEW_2_ROLE}}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-white" id="faq">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="eyebrow">FAQ</span>
+      <h2>{{FAQ_HEADLINE}}</h2>
+      <p>{{FAQ_SUBHEADLINE}}</p>
+    </div>
+    <div class="faq">
+      <div class="faq-item active"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_1_Q}}</button><div class="faq-a">{{FAQ_1_A}}</div></div>
+      <div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_2_Q}}</button><div class="faq-a">{{FAQ_2_A}}</div></div>
+      <div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_3_Q}}</button><div class="faq-a">{{FAQ_3_A}}</div></div>
+      <div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_4_Q}}</button><div class="faq-a">{{FAQ_4_A}}</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="footer-cta">
+  <div class="footer-cta-inner">
+    <h2>{{FOOTER_HEADLINE}}</h2>
+    <p>{{FOOTER_SUBHEADLINE}}</p>
+    <a href="#form" class="footer-cta-btn">{{FOOTER_CTA}}</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-cols">
+      <div class="footer-brand">
+        <a href="#" class="logo">
+          <span class="logo-mark"><span></span><span></span><span></span><span></span></span>
+          <span class="logo-text" style="color:#fff">slack</span>
+        </a>
+        <p>Where work happens — channels, messaging, automation and search, all in one place.</p>
+      </div>
+      <div class="footer-col"><h4>Product</h4><ul><li><a href="#benefits">Features</a></li><li><a href="#form">Integrations</a></li><li><a href="#form">Enterprise</a></li><li><a href="#form">Security</a></li></ul></div>
+      <div class="footer-col"><h4>Pricing</h4><ul><li><a href="#form">Plans</a></li><li><a href="#form">Paid vs. Free</a></li><li><a href="#form">For Startups</a></li></ul></div>
+      <div class="footer-col"><h4>Resources</h4><ul><li><a href="#faq">Help Center</a></li><li><a href="#how">Guides</a></li><li><a href="#reviews">Customers</a></li><li><a href="#form">Developers</a></li></ul></div>
+      <div class="footer-col"><h4>Company</h4><ul><li><a href="#">About</a></li><li><a href="#">Newsroom</a></li><li><a href="#">Careers</a></li><li><a href="#">Contact</a></li></ul></div>
+    </div>
+    <div class="footer-bottom">
+      <span>© {{YEAR}} Eko AI · contact@biz.ekoaiautomation.com</span>
+      <span>Privacy · Terms · Cookies</span>
+    </div>
+  </div>
+</footer>
+
+__FORM_SUBMIT_JS__
+</body></html>
+"""
+
+# ─── Coinbase Finance ─────────────────────────────────────────────────────────────
+_TPL_COINBASE_FINANCE = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{TITLE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#fff;--pale:#f7f9fc;--text:#0a0b0d;--muted:#5b616e;--border:#ebedf0;--border-soft:#d8dadc;--blue:#0052ff;--blue-hover:#0041cc;--mint:#27d4a8;--mint-soft:#e6faf3;--red:#cf202f;--red-soft:#fdeaec;--dark-footer:#050505;--star:#f4a000}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh;-webkit-text-size-adjust:100%}
+body{font-family:"Inter","Helvetica Neue","Helvetica","Arial",-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;font-weight:400;font-feature-settings:'ss01','cv11'}
+a{color:var(--blue);text-decoration:none}
+img{max-width:100%;display:block}
+
+/* NAV — clean white sticky */
+.nav{position:sticky;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(12px);-webkit-backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1280px;margin:0 auto;padding:0 24px;height:72px;display:flex;align-items:center;justify-content:space-between;gap:32px}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo-mark{width:32px;height:32px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px;letter-spacing:-1px}
+.logo-text{font-weight:700;font-size:20px;color:var(--text);letter-spacing:-.4px}
+.nav-links{display:flex;gap:28px;list-style:none;align-items:center;flex:1;justify-content:flex-start;margin-left:8px}
+.nav-links a{color:var(--text);font-size:15px;font-weight:500;display:inline-flex;align-items:center;gap:4px;transition:color .15s}
+.nav-links a.has-caret::after{content:'\02C5';font-size:13px;color:var(--muted);margin-top:2px}
+.nav-links a:hover{color:var(--blue)}
+.nav-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.nav-signin{color:var(--text);font-size:15px;font-weight:500;padding:8px 4px}
+.nav-signin:hover{color:var(--blue)}
+.nav-cta{display:inline-flex;align-items:center;justify-content:center;padding:11px 22px;background:var(--text);color:#fff!important;border-radius:999px;font-weight:600;font-size:14px;transition:background .15s,transform .15s;font-family:inherit}
+.nav-cta:hover{background:#272a2f;text-decoration:none;transform:translateY(-1px)}
+
+/* HERO — huge dark headline, signup form, ticker below */
+.hero{padding:96px 24px 60px;background:#fff;position:relative}
+.hero-inner{max-width:1180px;margin:0 auto;text-align:center}
+.eyebrow{display:inline-block;font-size:14px;font-weight:600;color:var(--blue);background:rgba(0,82,255,.08);padding:6px 14px;border-radius:999px;margin-bottom:24px;letter-spacing:-.1px}
+.eyebrow::before{content:'\2728  ';margin-right:4px}
+.hero h1{font-size:clamp(40px,6vw,80px);font-weight:700;line-height:1;letter-spacing:-3px;color:var(--text);margin-bottom:24px;max-width:1000px;margin-left:auto;margin-right:auto}
+.hero h1 .accent{color:var(--blue)}
+.hero p.sub{font-size:clamp(17px,2.2vw,21px);color:var(--muted);max-width:640px;margin:0 auto 40px;line-height:1.45;font-weight:400}
+
+/* Coinbase-style signup form: pill input + dark pill CTA */
+.hero-form-wrap{max-width:560px;margin:0 auto 24px}
+.hero-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hero-form input{padding:15px 20px;border:1px solid var(--border-soft);border-radius:999px;font-size:15px;font-family:inherit;outline:none;background:#fff;color:var(--text);transition:border-color .15s,box-shadow .15s;font-weight:500}
+.hero-form input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,82,255,.12)}
+.hero-form input::placeholder{color:var(--muted)}
+.hero-form input[name="email"],.hero-form input[name="website"]{grid-column:1/3}
+.hero-form button{grid-column:1/3;padding:16px 28px;background:var(--text);color:#fff;border:none;border-radius:999px;font-weight:600;font-size:15px;cursor:pointer;font-family:inherit;transition:background .15s,transform .15s;letter-spacing:-.1px}
+.hero-form button:hover{background:#272a2f;transform:translateY(-1px)}
+.hero-disclaimer{font-size:13px;color:var(--muted);margin-top:14px;font-weight:400}
+.hero-disclaimer a{color:var(--blue);text-decoration:underline}
+
+/* TICKER STRIP — fake crypto prices with sparkline placeholders */
+.ticker{background:var(--pale);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:0;overflow:hidden;position:relative;margin-top:48px}
+.ticker-inner{display:flex;align-items:center;gap:48px;padding:18px 24px;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;font-feature-settings:'tnum'}
+.ticker-inner::-webkit-scrollbar{display:none}
+.ticker-item{display:inline-flex;align-items:center;gap:12px;flex-shrink:0}
+.ticker-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:12px;letter-spacing:-.5px}
+.ti-btc{background:#f7931a}
+.ti-eth{background:#627eea}
+.ti-sol{background:linear-gradient(135deg,#9945ff,#14f195)}
+.ti-usdc{background:#2775ca}
+.ti-link{background:#2a5ada}
+.ti-doge{background:#c2a633}
+.ti-ada{background:#0033ad}
+.ti-xrp{background:#23292f}
+.ticker-meta{display:flex;flex-direction:column;gap:1px;align-items:flex-start}
+.ticker-symbol{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.1px;line-height:1}
+.ticker-name{font-size:11px;color:var(--muted);font-weight:500;line-height:1}
+.ticker-price{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.1px;font-feature-settings:'tnum'}
+.ticker-change{font-size:12px;font-weight:600;padding:2px 6px;border-radius:4px;letter-spacing:-.1px;font-feature-settings:'tnum'}
+.ticker-up{color:var(--mint);background:var(--mint-soft)}
+.ticker-down{color:var(--red);background:var(--red-soft)}
+.ticker-spark{width:60px;height:24px;display:block;flex-shrink:0}
+
+/* SECTIONS */
+.section{padding:96px 24px}
+.section-pale{background:var(--pale)}
+.section-white{background:#fff}
+.section-inner{max-width:1180px;margin:0 auto}
+.section-header{text-align:center;margin-bottom:64px;max-width:760px;margin-left:auto;margin-right:auto}
+.section-header .small-eyebrow{display:inline-block;font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:14px}
+.section-header h2{font-size:clamp(32px,4.5vw,56px);font-weight:700;letter-spacing:-2px;line-height:1.05;color:var(--text);margin-bottom:18px}
+.section-header p{color:var(--muted);font-size:19px;line-height:1.55;font-weight:400}
+
+/* STATS — big blue numbers */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;margin-bottom:24px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:36px 32px;text-align:left;transition:transform .15s,box-shadow .15s}
+.stat-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,82,255,.08)}
+.stat-num{font-size:52px;font-weight:700;color:var(--blue);letter-spacing:-2.5px;line-height:1;font-feature-settings:'tnum'}
+.stat-label{font-size:14px;color:var(--muted);margin-top:10px;font-weight:500}
+
+/* FEATURE CARDS — white with blue→mint gradient icons */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.feature-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:36px 32px;transition:transform .2s,box-shadow .2s,border-color .2s}
+.feature-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,82,255,.1);border-color:rgba(0,82,255,.2)}
+.feature-icon{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--blue),var(--mint));display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;margin-bottom:24px;box-shadow:0 4px 14px rgba(0,82,255,.18)}
+.feature-card h3{font-size:20px;font-weight:700;color:var(--text);margin-bottom:10px;letter-spacing:-.4px;line-height:1.25}
+.feature-card p{color:var(--muted);font-size:15px;line-height:1.55}
+
+/* TRUST BADGES */
+.trust-section{padding:64px 24px;background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.trust-inner{max-width:1180px;margin:0 auto}
+.trust-title{text-align:center;font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:32px}
+.trust-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px}
+.trust-badge{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 16px;background:var(--pale);border:1px solid var(--border);border-radius:12px;text-align:center;transition:border-color .15s,transform .15s}
+.trust-badge:hover{border-color:var(--blue);transform:translateY(-2px)}
+.trust-icon{font-size:28px;line-height:1}
+.trust-label{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.1px}
+.trust-sub{font-size:11px;color:var(--muted);font-weight:500}
+
+/* STEPS */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.step{background:#fff;border:1px solid var(--border);border-radius:16px;padding:36px 32px;position:relative;transition:transform .15s,box-shadow .15s}
+.step:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.06)}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;font-size:18px;margin-bottom:20px;letter-spacing:-.5px}
+.step h3{font-size:22px;font-weight:700;color:var(--text);margin-bottom:10px;letter-spacing:-.5px;line-height:1.2}
+.step p{color:var(--muted);font-size:15px;line-height:1.6}
+
+/* REVIEWS */
+.reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px}
+.review{background:#fff;border:1px solid var(--border);border-radius:16px;padding:36px 32px;transition:border-color .15s,transform .15s}
+.review:hover{border-color:rgba(0,82,255,.2);transform:translateY(-2px)}
+.review-stars{color:var(--star);font-size:16px;letter-spacing:2px;margin-bottom:16px}
+.review-quote{font-size:17px;color:var(--text);line-height:1.55;font-weight:500;margin-bottom:24px;letter-spacing:-.2px}
+.review-author{display:flex;align-items:center;gap:14px;padding-top:20px;border-top:1px solid var(--border)}
+.review-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--mint));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px}
+.review-name{font-weight:700;color:var(--text);font-size:15px;letter-spacing:-.2px}
+.review-role{color:var(--muted);font-size:13px;margin-top:2px;font-weight:500}
+
+/* FAQ */
+.faq{max-width:860px;margin:0 auto}
+.faq-item{border-bottom:1px solid var(--border);background:transparent}
+.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:28px 4px;background:none;border:none;color:var(--text);font-size:19px;font-weight:600;text-align:left;cursor:pointer;font-family:inherit;letter-spacing:-.4px;line-height:1.4;transition:color .15s}
+.faq-q:hover{color:var(--blue)}
+.faq-q::after{content:'+';font-size:24px;color:var(--blue);font-weight:500;line-height:1;flex-shrink:0;transition:transform .3s}
+.faq-item.active .faq-q::after{transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease,padding .35s ease;color:var(--muted);font-size:16px;line-height:1.65;padding:0 4px;font-weight:400}
+.faq-item.active .faq-a{max-height:320px;padding:0 4px 28px}
+
+/* FOOTER CTA — dark navy */
+.footer-cta{background:linear-gradient(135deg,var(--blue),#0033cc);padding:88px 24px;color:#fff;text-align:center;position:relative;overflow:hidden}
+.footer-cta::before{content:'';position:absolute;top:-120px;left:-80px;width:380px;height:380px;background:radial-gradient(circle,rgba(39,212,168,.35),transparent 65%);border-radius:50%;pointer-events:none}
+.footer-cta::after{content:'';position:absolute;bottom:-120px;right:-80px;width:380px;height:380px;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 65%);border-radius:50%;pointer-events:none}
+.footer-cta-inner{max-width:780px;margin:0 auto;position:relative;z-index:1}
+.footer-cta h2{font-size:clamp(32px,4.5vw,56px);font-weight:700;letter-spacing:-2px;line-height:1.05;color:#fff;margin-bottom:18px}
+.footer-cta p{font-size:19px;color:rgba(255,255,255,.92);margin-bottom:36px;line-height:1.55}
+.footer-cta-btn{display:inline-flex;align-items:center;justify-content:center;padding:18px 36px;background:#fff;color:var(--text);border-radius:999px;font-weight:700;font-size:15px;transition:transform .15s,background .15s;letter-spacing:-.1px}
+.footer-cta-btn:hover{background:var(--pale);transform:translateY(-2px);text-decoration:none}
+
+/* FOOTER — very dark with 6 columns */
+.footer{background:var(--dark-footer);color:rgba(255,255,255,.65);padding:80px 24px 32px}
+.footer-inner{max-width:1280px;margin:0 auto}
+.footer-cols{display:grid;grid-template-columns:repeat(6,1fr);gap:32px;padding-bottom:56px;border-bottom:1px solid rgba(255,255,255,.1)}
+.footer-col h4{font-size:14px;font-weight:700;color:#fff;margin-bottom:20px;letter-spacing:-.2px}
+.footer-col ul{list-style:none}
+.footer-col li{margin-bottom:12px}
+.footer-col a{color:rgba(255,255,255,.65);font-size:14px;transition:color .15s}
+.footer-col a:hover{color:#fff;text-decoration:underline}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px;padding-top:32px;font-size:13px;color:rgba(255,255,255,.55)}
+.footer-bottom .footer-logo{display:flex;align-items:center;gap:10px}
+.footer-bottom .footer-logo .logo-mark{width:28px;height:28px;font-size:16px}
+.footer-bottom .footer-logo span{color:#fff;font-weight:700;font-size:18px}
+.footer-disclaimer{margin-top:24px;font-size:12px;color:rgba(255,255,255,.45);line-height:1.6;max-width:920px}
+
+@media(max-width:900px){
+  .nav-links{display:none}
+  .footer-cols{grid-template-columns:repeat(3,1fr);gap:28px}
+  .ticker-inner{gap:32px}
+}
+@media(max-width:640px){
+  .hero{padding:64px 18px 40px}
+  .hero-form{grid-template-columns:1fr}
+  .hero-form input[name="email"],.hero-form input[name="website"]{grid-column:1}
+  .section{padding:64px 18px}
+  .trust-section{padding:48px 18px}
+  .stats-grid,.features-grid,.steps-grid,.reviews-grid,.trust-grid{grid-template-columns:1fr 1fr}
+  .footer-cols{grid-template-columns:1fr 1fr;gap:24px}
+  .footer-cta{padding:64px 18px}
+  .nav-cta{padding:9px 18px;font-size:13px}
+}
+</style></head>
+<body>__TRACKING_PIXEL__
+
+<nav class="nav"><div class="nav-inner">
+  <a href="#" class="logo">
+    <span class="logo-mark">C</span>
+    <span class="logo-text">Coinbase</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#benefits" class="has-caret">Individual</a></li>
+    <li><a href="#how" class="has-caret">Business</a></li>
+    <li><a href="#reviews" class="has-caret">Developers</a></li>
+    <li><a href="#faq">Pricing</a></li>
+    <li><a href="#form">Company</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="#form" class="nav-signin">Sign in</a>
+    <a href="#form" class="nav-cta">Get Started</a>
+  </div>
+</div></nav>
+
+<section class="hero" id="form">
+  <div class="hero-inner">
+    <span class="eyebrow">{{BADGE}}</span>
+    <h1>{{HERO_TITLE}}</h1>
+    <p class="sub">{{HERO_SUBTITLE}}</p>
+    <div class="hero-form-wrap">
+      <form class="hero-form" action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST">
+        <input type="text" name="first_name" placeholder="First name" required>
+        <input type="text" name="last_name" placeholder="Last name" required>
+        <input type="email" name="email" placeholder="Enter your email" required>
+        <input type="tel" name="phone" placeholder="Phone number" required>
+        <input type="url" name="website" placeholder="Company website" required>
+        <button type="submit">{{CTA_BUTTON}}</button>
+      </form>
+      <div class="hero-disclaimer">By continuing you agree to our <a href="#faq">User Agreement</a> and <a href="#faq">Privacy Policy</a>.</div>
+    </div>
+  </div>
+</section>
+
+<div class="ticker">
+  <div class="ticker-inner">
+    <div class="ticker-item">
+      <div class="ticker-icon ti-btc">B</div>
+      <div class="ticker-meta"><span class="ticker-symbol">BTC</span><span class="ticker-name">Bitcoin</span></div>
+      <span class="ticker-price">$67,432</span>
+      <span class="ticker-change ticker-up">+2.34%</span>
+      <svg class="ticker-spark" viewBox="0 0 60 24"><polyline fill="none" stroke="#27d4a8" stroke-width="1.5" points="0,18 8,14 16,16 24,10 32,12 40,7 48,9 60,3"/></svg>
+    </div>
+    <div class="ticker-item">
+      <div class="ticker-icon ti-eth">E</div>
+      <div class="ticker-meta"><span class="ticker-symbol">ETH</span><span class="ticker-name">Ethereum</span></div>
+      <span class="ticker-price">$3,890.21</span>
+      <span class="ticker-change ticker-up">+1.12%</span>
+      <svg class="ticker-spark" viewBox="0 0 60 24"><polyline fill="none" stroke="#27d4a8" stroke-width="1.5" points="0,16 8,18 16,14 24,15 32,10 40,11 48,8 60,6"/></svg>
+    </div>
+    <div class="ticker-item">
+      <div class="ticker-icon ti-sol">S</div>
+      <div class="ticker-meta"><span class="ticker-symbol">SOL</span><span class="ticker-name">Solana</span></div>
+      <span class="ticker-price">$245.18</span>
+      <span class="ticker-change ticker-down">-0.84%</span>
+      <svg class="ticker-spark" viewBox="0 0 60 24"><polyline fill="none" stroke="#cf202f" stroke-width="1.5" points="0,6 8,8 16,10 24,9 32,13 40,12 48,16 60,17"/></svg>
+    </div>
+    <div class="ticker-item">
+      <div class="ticker-icon ti-usdc">U</div>
+      <div class="ticker-meta"><span class="ticker-symbol">USDC</span><span class="ticker-name">USD Coin</span></div>
+      <span class="ticker-price">$1.0001</span>
+      <span class="ticker-change ticker-up">+0.01%</span>
+      <svg class="ticker-spark" viewBox="0 0 60 24"><polyline fill="none" stroke="#27d4a8" stroke-width="1.5" points="0,12 8,12 16,11 24,12 32,12 40,11 48,12 60,12"/></svg>
+    </div>
+    <div class="ticker-item">
+      <div class="ticker-icon ti-link">L</div>
+      <div class="ticker-meta"><span class="ticker-symbol">LINK</span><span class="ticker-name">Chainlink</span></div>
+      <span class="ticker-price">$18.47</span>
+      <span class="ticker-change ticker-up">+4.12%</span>
+      <svg class="ticker-spark" viewBox="0 0 60 24"><polyline fill="none" stroke="#27d4a8" stroke-width="1.5" points="0,18 8,15 16,12 24,14 32,9 40,8 48,5 60,4"/></svg>
+    </div>
+    <div class="ticker-item">
+      <div class="ticker-icon ti-doge">D</div>
+      <div class="ticker-meta"><span class="ticker-symbol">DOGE</span><span class="ticker-name">Dogecoin</span></div>
+      <span class="ticker-price">$0.187</span>
+      <span class="ticker-change ticker-down">-1.42%</span>
+      <svg class="ticker-spark" viewBox="0 0 60 24"><polyline fill="none" stroke="#cf202f" stroke-width="1.5" points="0,8 8,10 16,9 24,12 32,11 40,14 48,15 60,17"/></svg>
+    </div>
+    <div class="ticker-item">
+      <div class="ticker-icon ti-ada">A</div>
+      <div class="ticker-meta"><span class="ticker-symbol">ADA</span><span class="ticker-name">Cardano</span></div>
+      <span class="ticker-price">$0.62</span>
+      <span class="ticker-change ticker-up">+0.78%</span>
+      <svg class="ticker-spark" viewBox="0 0 60 24"><polyline fill="none" stroke="#27d4a8" stroke-width="1.5" points="0,14 8,13 16,12 24,11 32,10 40,11 48,9 60,8"/></svg>
+    </div>
+    <div class="ticker-item">
+      <div class="ticker-icon ti-xrp">X</div>
+      <div class="ticker-meta"><span class="ticker-symbol">XRP</span><span class="ticker-name">XRP</span></div>
+      <span class="ticker-price">$0.524</span>
+      <span class="ticker-change ticker-up">+2.91%</span>
+      <svg class="ticker-spark" viewBox="0 0 60 24"><polyline fill="none" stroke="#27d4a8" stroke-width="1.5" points="0,18 8,16 16,14 24,11 32,12 40,8 48,7 60,5"/></svg>
+    </div>
+  </div>
+</div>
+
+<section class="section section-white" id="stats">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="small-eyebrow">By the numbers</span>
+      <h2>Trusted by millions worldwide.</h2>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">{{STAT_1_NUM}}</div><div class="stat-label">{{STAT_1_LABEL}}</div></div>
+      <div class="stat-card"><div class="stat-num">{{STAT_2_NUM}}</div><div class="stat-label">{{STAT_2_LABEL}}</div></div>
+      <div class="stat-card"><div class="stat-num">{{STAT_3_NUM}}</div><div class="stat-label">{{STAT_3_LABEL}}</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-pale" id="benefits">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="small-eyebrow">Why us</span>
+      <h2>{{BENEFITS_HEADLINE}}</h2>
+      <p>{{BENEFITS_SUBHEADLINE}}</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card"><div class="feature-icon">{{BENEFIT_1_ICON}}</div><h3>{{BENEFIT_1_TITLE}}</h3><p>{{BENEFIT_1_DESC}}</p></div>
+      <div class="feature-card"><div class="feature-icon">{{BENEFIT_2_ICON}}</div><h3>{{BENEFIT_2_TITLE}}</h3><p>{{BENEFIT_2_DESC}}</p></div>
+      <div class="feature-card"><div class="feature-icon">{{BENEFIT_3_ICON}}</div><h3>{{BENEFIT_3_TITLE}}</h3><p>{{BENEFIT_3_DESC}}</p></div>
+      <div class="feature-card"><div class="feature-icon">{{BENEFIT_4_ICON}}</div><h3>{{BENEFIT_4_TITLE}}</h3><p>{{BENEFIT_4_DESC}}</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="trust-section">
+  <div class="trust-inner">
+    <div class="trust-title">Built on trust. Backed by leaders.</div>
+    <div class="trust-grid">
+      <div class="trust-badge"><div class="trust-icon">&#128272;</div><div class="trust-label">FDIC Insured</div><div class="trust-sub">Up to $250K</div></div>
+      <div class="trust-badge"><div class="trust-icon">&#128737;</div><div class="trust-label">SOC 2 Type II</div><div class="trust-sub">Certified</div></div>
+      <div class="trust-badge"><div class="trust-icon">&#9989;</div><div class="trust-label">$100M+ Secured</div><div class="trust-sub">Cold storage</div></div>
+      <div class="trust-badge"><div class="trust-icon">&#127963;</div><div class="trust-label">SEC Registered</div><div class="trust-sub">Compliant</div></div>
+      <div class="trust-badge"><div class="trust-icon">&#127758;</div><div class="trust-label">100+ Countries</div><div class="trust-sub">Available</div></div>
+      <div class="trust-badge"><div class="trust-icon">&#128172;</div><div class="trust-label">24/7 Support</div><div class="trust-sub">Live agents</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-white" id="how">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="small-eyebrow">Getting started</span>
+      <h2>{{HOW_HEADLINE}}</h2>
+      <p>{{HOW_SUBHEADLINE}}</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step"><div class="step-num">1</div><h3>{{STEP_1_TITLE}}</h3><p>{{STEP_1_DESC}}</p></div>
+      <div class="step"><div class="step-num">2</div><h3>{{STEP_2_TITLE}}</h3><p>{{STEP_2_DESC}}</p></div>
+      <div class="step"><div class="step-num">3</div><h3>{{STEP_3_TITLE}}</h3><p>{{STEP_3_DESC}}</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-pale" id="reviews">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="small-eyebrow">Customer stories</span>
+      <h2>{{REVIEWS_HEADLINE}}</h2>
+      <p>{{REVIEWS_SUBHEADLINE}}</p>
+    </div>
+    <div class="reviews-grid">
+      <div class="review">
+        <div class="review-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="review-quote">"{{REVIEW_1_QUOTE}}"</p>
+        <div class="review-author">
+          <div class="review-avatar">{{REVIEW_1_INITIALS}}</div>
+          <div><div class="review-name">{{REVIEW_1_NAME}}</div><div class="review-role">{{REVIEW_1_ROLE}}</div></div>
+        </div>
+      </div>
+      <div class="review">
+        <div class="review-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="review-quote">"{{REVIEW_2_QUOTE}}"</p>
+        <div class="review-author">
+          <div class="review-avatar">{{REVIEW_2_INITIALS}}</div>
+          <div><div class="review-name">{{REVIEW_2_NAME}}</div><div class="review-role">{{REVIEW_2_ROLE}}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-white" id="faq">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="small-eyebrow">Questions</span>
+      <h2>{{FAQ_HEADLINE}}</h2>
+      <p>{{FAQ_SUBHEADLINE}}</p>
+    </div>
+    <div class="faq">
+      <div class="faq-item active"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_1_Q}}</button><div class="faq-a">{{FAQ_1_A}}</div></div>
+      <div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_2_Q}}</button><div class="faq-a">{{FAQ_2_A}}</div></div>
+      <div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_3_Q}}</button><div class="faq-a">{{FAQ_3_A}}</div></div>
+      <div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_4_Q}}</button><div class="faq-a">{{FAQ_4_A}}</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="footer-cta">
+  <div class="footer-cta-inner">
+    <h2>{{FOOTER_HEADLINE}}</h2>
+    <p>{{FOOTER_SUBHEADLINE}}</p>
+    <a href="#form" class="footer-cta-btn">{{FOOTER_CTA}}</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-cols">
+      <div class="footer-col"><h4>Get Started</h4><ul><li><a href="#form">Sign up</a></li><li><a href="#form">Mobile app</a></li><li><a href="#form">Buy & sell</a></li><li><a href="#form">Wallet</a></li></ul></div>
+      <div class="footer-col"><h4>Resources</h4><ul><li><a href="#how">How it works</a></li><li><a href="#benefits">Features</a></li><li><a href="#reviews">Reviews</a></li><li><a href="#faq">FAQ</a></li></ul></div>
+      <div class="footer-col"><h4>Products</h4><ul><li><a href="#form">Individual</a></li><li><a href="#form">Business</a></li><li><a href="#form">Institutional</a></li><li><a href="#form">Developer</a></li></ul></div>
+      <div class="footer-col"><h4>Learn</h4><ul><li><a href="#">Guides</a></li><li><a href="#">Glossary</a></li><li><a href="#">Newsroom</a></li><li><a href="#">Research</a></li></ul></div>
+      <div class="footer-col"><h4>Company</h4><ul><li><a href="#">About</a></li><li><a href="#">Careers</a></li><li><a href="#">Partners</a></li><li><a href="#">Contact</a></li></ul></div>
+      <div class="footer-col"><h4>Legal</h4><ul><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li><li><a href="#">Cookies</a></li><li><a href="#">Disclosures</a></li></ul></div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-logo">
+        <span class="logo-mark">C</span>
+        <span>Coinbase</span>
+      </div>
+      <span>© {{YEAR}} Eko AI · contact@biz.ekoaiautomation.com</span>
+    </div>
+    <div class="footer-disclaimer">Cryptocurrency services are provided by Eko AI. Investing involves risk including loss of principal. Past performance does not guarantee future results. This is a marketing landing page; products and availability may vary by region.</div>
+  </div>
+</footer>
+
+__FORM_SUBMIT_JS__
+</body></html>
+"""
+
+# ─── Webflow Pro ─────────────────────────────────────────────────────────────
+_TPL_WEBFLOW_PRO = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{TITLE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#000;--surface:#0c0c10;--surface-2:#1a1a1f;--border:#2a2a30;--border-bright:#3a3a44;--text:#fff;--muted:#969699;--muted-soft:#6b6b70;--electric:#4353ff;--electric-dim:#2a36b8;--cyan:#00d1ff;--accent:#a3a4ff}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh;-webkit-text-size-adjust:100%}
+body{font-family:"Inter","Helvetica Neue","Helvetica","Arial",-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;font-weight:400}
+a{color:var(--cyan);text-decoration:none}
+img{max-width:100%;display:block}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--electric),transparent);opacity:.5;margin:0 auto;max-width:1280px}
+
+/* NAV — black sticky */
+.nav{position:sticky;top:0;left:0;right:0;z-index:100;background:rgba(0,0,0,.75);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1320px;margin:0 auto;padding:0 28px;height:72px;display:flex;align-items:center;justify-content:space-between;gap:32px}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo-mark{width:32px;height:32px;background:var(--electric);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px;letter-spacing:-1px;box-shadow:0 0 16px rgba(67,83,255,.45)}
+.logo-text{font-weight:800;font-size:20px;color:#fff;letter-spacing:-.5px}
+.nav-links{display:flex;gap:28px;list-style:none;align-items:center;flex:1;justify-content:flex-start;margin-left:8px}
+.nav-links a{color:var(--muted);font-size:15px;font-weight:500;display:inline-flex;align-items:center;gap:4px;transition:color .15s}
+.nav-links a.has-caret::after{content:'\02C5';font-size:13px;margin-top:2px;opacity:.6}
+.nav-links a:hover{color:#fff}
+.nav-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.nav-signin{color:var(--muted);font-size:15px;font-weight:500;padding:8px 4px;transition:color .15s}
+.nav-signin:hover{color:#fff}
+.nav-cta{display:inline-flex;align-items:center;justify-content:center;padding:11px 22px;background:#fff;color:#000!important;border-radius:999px;font-weight:700;font-size:14px;transition:background .15s,transform .15s;font-family:inherit;letter-spacing:-.1px}
+.nav-cta:hover{background:#e8e8ec;text-decoration:none;transform:translateY(-1px)}
+
+/* HERO — black with radial glow */
+.hero{padding:96px 28px 64px;position:relative;overflow:hidden;background:#000}
+.hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(67,83,255,.35),transparent 65%);pointer-events:none;filter:blur(60px)}
+.hero::after{content:'';position:absolute;bottom:-100px;left:0;right:0;height:200px;background:linear-gradient(180deg,transparent,#000);pointer-events:none;z-index:1}
+.hero-inner{max-width:1180px;margin:0 auto;text-align:center;position:relative;z-index:2}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#fff;background:rgba(255,255,255,.06);border:1px solid var(--border);padding:6px 14px;border-radius:999px;margin-bottom:28px;letter-spacing:-.1px;backdrop-filter:blur(8px)}
+.eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--electric);box-shadow:0 0 8px var(--electric);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero h1{font-size:clamp(48px,7vw,96px);font-weight:800;line-height:.95;letter-spacing:-3px;color:#fff;margin-bottom:28px;max-width:1100px;margin-left:auto;margin-right:auto}
+.hero h1 .accent{background:linear-gradient(135deg,var(--electric),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p.sub{font-size:clamp(18px,2.4vw,23px);color:var(--muted);max-width:680px;margin:0 auto 40px;line-height:1.45;font-weight:400}
+.hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:16px 28px;border-radius:999px;font-weight:700;font-size:15px;cursor:pointer;border:none;font-family:inherit;text-decoration:none;transition:all .2s;letter-spacing:-.1px;gap:8px}
+.btn-white{background:#fff;color:#000!important}
+.btn-white:hover{background:#e8e8ec;transform:translateY(-1px);text-decoration:none}
+.btn-outline{background:transparent;color:#fff!important;border:1px solid var(--border-bright)}
+.btn-outline:hover{background:rgba(255,255,255,.06);border-color:#fff;text-decoration:none}
+
+/* HERO FORM — dark glass */
+.hero-form-wrap{max-width:680px;margin:0 auto}
+.hero-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:24px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(12px);box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 0 1px rgba(67,83,255,.08)}
+.hero-form input{padding:14px 18px;border:1px solid var(--border-bright);background:#0c0c10;color:#fff;font-size:15px;border-radius:8px;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;font-weight:500}
+.hero-form input:focus{border-color:var(--electric);box-shadow:0 0 0 3px rgba(67,83,255,.2)}
+.hero-form input::placeholder{color:var(--muted-soft)}
+.hero-form input[name="website"]{grid-column:1/3}
+.hero-form button{grid-column:1/3;padding:16px;background:var(--electric);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;transition:background .15s,transform .15s;letter-spacing:-.1px;box-shadow:0 8px 24px rgba(67,83,255,.35)}
+.hero-form button:hover{background:#5663ff;transform:translateY(-1px)}
+
+/* DESIGNER CANVAS MOCKUP */
+.mockup-section{padding:0 28px 96px;background:#000;position:relative;z-index:3}
+.mockup-inner{max-width:1180px;margin:0 auto}
+.mockup{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;display:grid;grid-template-columns:240px 1fr 240px;min-height:440px;box-shadow:0 40px 100px rgba(67,83,255,.18),0 0 0 1px rgba(255,255,255,.04)}
+.mockup-topbar{grid-column:1/4;display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface-2);gap:12px}
+.mockup-dots{display:flex;gap:6px}
+.mockup-dots span{width:12px;height:12px;border-radius:50%;background:#3a3a44}
+.mockup-dots span:nth-child(1){background:#ff5f57}
+.mockup-dots span:nth-child(2){background:#ffbd2e}
+.mockup-dots span:nth-child(3){background:#28c840}
+.mockup-tab{font-size:12px;color:var(--muted);padding:4px 10px;border-radius:4px;background:rgba(255,255,255,.04);display:inline-flex;align-items:center;gap:6px;font-weight:500}
+.mockup-tab.active{background:var(--electric);color:#fff}
+.mockup-body{display:contents}
+.mockup-left,.mockup-right{background:var(--surface-2);padding:18px 14px;font-size:12px;color:var(--muted);border-right:1px solid var(--border)}
+.mockup-right{border-right:none;border-left:1px solid var(--border)}
+.mockup-panel-title{font-size:11px;color:var(--muted-soft);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;font-weight:700}
+.mockup-tree-item{padding:5px 8px;border-radius:4px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-bottom:2px;cursor:pointer}
+.mockup-tree-item::before{content:'\25BC';font-size:9px;color:var(--muted-soft)}
+.mockup-tree-item.leaf::before{content:'\2022';font-size:11px}
+.mockup-tree-item.active{background:rgba(67,83,255,.18);color:#fff}
+.mockup-tree-item.l2{padding-left:18px}
+.mockup-tree-item.l3{padding-left:28px}
+.mockup-tree-item.l4{padding-left:38px}
+.mockup-canvas{background:#1a1a1f;background-image:radial-gradient(circle,rgba(67,83,255,.08) 1px,transparent 1px);background-size:18px 18px;padding:36px 28px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative}
+.mockup-canvas::before{content:'';position:absolute;top:14px;left:14px;right:14px;bottom:14px;border:1px dashed rgba(67,83,255,.35);border-radius:8px;pointer-events:none}
+.mockup-canvas-h{font-size:32px;font-weight:800;color:#fff;letter-spacing:-1.4px;margin-bottom:12px;line-height:1.05;max-width:380px}
+.mockup-canvas-p{font-size:13px;color:var(--muted);max-width:340px;line-height:1.5;margin-bottom:18px}
+.mockup-canvas-btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 20px;background:var(--electric);color:#fff;border-radius:999px;font-size:13px;font-weight:700}
+.mockup-prop{display:flex;align-items:center;justify-content:space-between;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px}
+.mockup-prop-key{color:var(--muted)}
+.mockup-prop-val{color:#fff;font-weight:600;font-family:"SF Mono","Menlo",monospace;font-size:11px}
+.mockup-swatch{display:flex;align-items:center;gap:6px}
+.mockup-swatch-box{width:14px;height:14px;border-radius:3px;background:var(--electric);border:1px solid var(--border-bright)}
+
+/* TRUST STRIP */
+.trust-strip{padding:48px 28px;background:#000;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.trust-inner{max-width:1180px;margin:0 auto}
+.trust-title{text-align:center;font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:28px}
+.trust-brands{display:flex;justify-content:space-around;align-items:center;gap:32px;flex-wrap:wrap;color:var(--muted-soft);font-weight:800;font-size:18px;letter-spacing:1.2px;text-transform:uppercase;opacity:.85}
+.trust-brands span{transition:color .15s,opacity .15s;cursor:default}
+.trust-brands span:hover{color:#fff;opacity:1}
+
+/* SECTIONS */
+.section{padding:112px 28px;position:relative}
+.section-inner{max-width:1180px;margin:0 auto}
+.section-header{text-align:center;margin-bottom:72px;max-width:780px;margin-left:auto;margin-right:auto}
+.small-eyebrow{display:inline-block;font-size:12px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:2px;margin-bottom:18px}
+.section-header h2{font-size:clamp(36px,5vw,64px);font-weight:800;letter-spacing:-2px;line-height:1.02;color:#fff;margin-bottom:18px}
+.section-header h2 .accent{background:linear-gradient(135deg,var(--electric),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.section-header p{color:var(--muted);font-size:19px;line-height:1.5;font-weight:400}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;margin-bottom:24px}
+.stat-card{padding:36px 32px;text-align:left;border-top:1px solid var(--border)}
+.stat-eyebrow{font-size:12px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:14px}
+.stat-num{font-size:64px;font-weight:900;color:#fff;letter-spacing:-3px;line-height:1;font-feature-settings:'tnum'}
+.stat-label{font-size:15px;color:var(--muted);margin-top:14px;font-weight:500;line-height:1.5}
+
+/* FEATURE CARDS — dark with electric hover */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:20px}
+.feature-card{background:var(--surface-2);border:1px solid var(--border);border-radius:18px;padding:36px 32px;transition:transform .2s,border-color .2s,box-shadow .2s}
+.feature-card:hover{transform:translateY(-4px);border-color:var(--electric);box-shadow:0 16px 40px rgba(67,83,255,.18)}
+.feature-icon{width:52px;height:52px;border-radius:12px;background:rgba(67,83,255,.14);border:1px solid rgba(67,83,255,.3);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--electric);margin-bottom:24px}
+.feature-card h3{font-size:21px;font-weight:700;color:#fff;margin-bottom:12px;letter-spacing:-.5px;line-height:1.2}
+.feature-card p{color:var(--muted);font-size:15px;line-height:1.6}
+
+/* STEPS */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.step{background:var(--surface-2);border:1px solid var(--border);border-radius:18px;padding:36px 32px;position:relative;transition:border-color .15s,transform .15s}
+.step:hover{border-color:var(--border-bright);transform:translateY(-2px)}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--electric),var(--cyan));color:#fff;font-weight:900;font-size:18px;margin-bottom:22px;box-shadow:0 4px 14px rgba(67,83,255,.35)}
+.step h3{font-size:22px;font-weight:700;color:#fff;margin-bottom:10px;letter-spacing:-.5px;line-height:1.2}
+.step p{color:var(--muted);font-size:15px;line-height:1.6}
+
+/* REVIEWS */
+.reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.review{background:var(--surface-2);border:1px solid var(--border);border-radius:18px;padding:40px 36px;transition:border-color .15s,transform .15s}
+.review:hover{border-color:var(--border-bright);transform:translateY(-2px)}
+.review-mark{font-size:48px;color:var(--electric);line-height:.5;margin-bottom:18px;font-family:Georgia,serif;font-weight:900;height:24px}
+.review-quote{font-size:17px;color:var(--muted);line-height:1.6;font-weight:400;margin-bottom:28px;letter-spacing:-.1px}
+.review-author{display:flex;align-items:center;gap:14px;padding-top:24px;border-top:1px solid var(--border)}
+.review-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--electric),var(--cyan));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px}
+.review-name{font-weight:700;color:#fff;font-size:15px;letter-spacing:-.2px}
+.review-role{color:var(--muted);font-size:13px;margin-top:2px;font-weight:500}
+
+/* FAQ */
+.faq{max-width:860px;margin:0 auto}
+.faq-item{border:1px solid var(--border);background:var(--surface-2);border-radius:14px;margin-bottom:10px;overflow:hidden;transition:border-color .15s}
+.faq-item:hover{border-color:var(--border-bright)}
+.faq-item.active{border-color:var(--electric)}
+.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 28px;background:none;border:none;color:#fff;font-size:18px;font-weight:600;text-align:left;cursor:pointer;font-family:inherit;letter-spacing:-.3px;line-height:1.4;transition:color .15s}
+.faq-q::after{content:'+';font-size:24px;color:var(--electric);font-weight:500;line-height:1;flex-shrink:0;transition:transform .3s}
+.faq-item.active .faq-q::after{transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease,padding .35s ease;color:var(--muted);font-size:16px;line-height:1.65;padding:0 28px;font-weight:400}
+.faq-item.active .faq-a{max-height:340px;padding:0 28px 24px}
+
+/* FOOTER CTA */
+.footer-cta{padding:120px 28px;background:#000;text-align:center;position:relative;overflow:hidden;border-top:1px solid var(--border)}
+.footer-cta::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(67,83,255,.32),transparent 60%);pointer-events:none;filter:blur(60px)}
+.footer-cta-inner{max-width:880px;margin:0 auto;position:relative;z-index:1}
+.footer-cta h2{font-size:clamp(42px,6vw,80px);font-weight:800;letter-spacing:-2.5px;line-height:.98;color:#fff;margin-bottom:22px}
+.footer-cta h2 .accent{background:linear-gradient(135deg,var(--electric),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.footer-cta p{font-size:20px;color:var(--muted);margin-bottom:38px;line-height:1.5;max-width:600px;margin-left:auto;margin-right:auto}
+.footer-cta-btn{display:inline-flex;align-items:center;justify-content:center;padding:18px 36px;background:#fff;color:#000;border-radius:999px;font-weight:700;font-size:15px;transition:transform .15s,background .15s;letter-spacing:-.1px;gap:8px}
+.footer-cta-btn:hover{background:#e8e8ec;transform:translateY(-2px);text-decoration:none}
+.footer-cta-btn::after{content:'\2192'}
+
+/* FOOTER */
+.footer{background:#000;color:rgba(255,255,255,.55);padding:0 28px 32px;border-top:1px solid var(--border)}
+.footer-inner{max-width:1320px;margin:0 auto;padding-top:72px}
+.footer-wordmark{font-size:clamp(56px,10vw,140px);font-weight:900;letter-spacing:-5px;line-height:.9;color:#fff;margin-bottom:48px;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.4));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.footer-cols{display:grid;grid-template-columns:1.4fr repeat(4,1fr);gap:32px;padding-bottom:48px;border-bottom:1px solid var(--border)}
+.footer-brand p{font-size:14px;line-height:1.6;color:var(--muted);max-width:280px}
+.footer-col h4{font-size:13px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.8px;margin-bottom:18px}
+.footer-col ul{list-style:none}
+.footer-col li{margin-bottom:10px}
+.footer-col a{color:var(--muted);font-size:14px;transition:color .15s}
+.footer-col a:hover{color:var(--cyan);text-decoration:underline}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px;padding-top:28px;font-size:13px;color:var(--muted-soft)}
+.footer-bottom .footer-logo{display:flex;align-items:center;gap:10px}
+.footer-bottom .footer-logo span:last-child{color:#fff;font-weight:700;font-size:17px}
+
+@media(max-width:900px){
+  .nav-links{display:none}
+  .mockup{grid-template-columns:1fr}
+  .mockup-left,.mockup-right{display:none}
+  .footer-cols{grid-template-columns:1fr 1fr;gap:28px}
+  .trust-brands{gap:18px;font-size:15px}
+}
+@media(max-width:640px){
+  .hero{padding:64px 18px 48px}
+  .hero-form{grid-template-columns:1fr;padding:18px}
+  .hero-form input[name="website"]{grid-column:1}
+  .hero-form button{grid-column:1}
+  .hero-ctas{flex-direction:column}
+  .hero-ctas .btn{width:100%}
+  .section{padding:72px 18px}
+  .stats-grid,.features-grid,.steps-grid,.reviews-grid{grid-template-columns:1fr}
+  .footer-cols{grid-template-columns:1fr}
+  .footer-cta{padding:80px 18px}
+  .mockup-topbar{padding:10px 12px}
+  .nav-inner{padding:0 18px}
+}
+</style></head>
+<body>__TRACKING_PIXEL__
+
+<nav class="nav"><div class="nav-inner">
+  <a href="#" class="logo">
+    <span class="logo-mark">W</span>
+    <span class="logo-text">Webflow</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#benefits" class="has-caret">Why Webflow</a></li>
+    <li><a href="#how">Templates</a></li>
+    <li><a href="#faq">Pricing</a></li>
+    <li><a href="#reviews" class="has-caret">Customers</a></li>
+    <li><a href="#form" class="has-caret">Resources</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="#form" class="nav-signin">Contact Sales</a>
+    <a href="#form" class="nav-cta">Get started &mdash; it's free</a>
+  </div>
+</div></nav>
+
+<section class="hero" id="form">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="dot"></span>{{BADGE}}</div>
+    <h1>{{HERO_TITLE}}</h1>
+    <p class="sub">{{HERO_SUBTITLE}}</p>
+    <div class="hero-ctas">
+      <a href="#hero-form" class="btn btn-white">{{CTA_BUTTON}}</a>
+      <a href="#how" class="btn btn-outline">Watch the demo &rarr;</a>
+    </div>
+    <div class="hero-form-wrap">
+      <form id="hero-form" class="hero-form" action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST">
+        <input type="text" name="first_name" placeholder="First name" required>
+        <input type="text" name="last_name" placeholder="Last name" required>
+        <input type="email" name="email" placeholder="Work email" required>
+        <input type="tel" name="phone" placeholder="Phone" required>
+        <input type="url" name="website" placeholder="Company website" required>
+        <button type="submit">{{CTA_BUTTON}}</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section class="mockup-section">
+  <div class="mockup-inner">
+    <div class="mockup">
+      <div class="mockup-topbar">
+        <div class="mockup-dots"><span></span><span></span><span></span></div>
+        <div class="mockup-tab active">&#9881; Designer</div>
+        <div class="mockup-tab">Editor</div>
+        <div class="mockup-tab">Preview</div>
+        <div style="flex:1"></div>
+        <div class="mockup-tab" style="background:var(--electric);color:#fff">Publish</div>
+      </div>
+      <aside class="mockup-left">
+        <div class="mockup-panel-title">Navigator</div>
+        <div class="mockup-tree-item">Body</div>
+        <div class="mockup-tree-item l2">Section &mdash; Hero</div>
+        <div class="mockup-tree-item l3">Container</div>
+        <div class="mockup-tree-item l4 active leaf">Heading</div>
+        <div class="mockup-tree-item l4 leaf">Paragraph</div>
+        <div class="mockup-tree-item l4 leaf">Button</div>
+        <div class="mockup-tree-item l2">Section &mdash; Features</div>
+        <div class="mockup-tree-item l3">Grid</div>
+        <div class="mockup-tree-item l2">Footer</div>
+      </aside>
+      <div class="mockup-canvas">
+        <div class="mockup-canvas-h">Build it once. Customize on the fly.</div>
+        <div class="mockup-canvas-p">A visual development platform that lets you design, build and launch responsive sites in minutes.</div>
+        <div class="mockup-canvas-btn">Get started</div>
+      </div>
+      <aside class="mockup-right">
+        <div class="mockup-panel-title">Style &mdash; Heading</div>
+        <div class="mockup-prop"><span class="mockup-prop-key">Tag</span><span class="mockup-prop-val">H1</span></div>
+        <div class="mockup-prop"><span class="mockup-prop-key">Font</span><span class="mockup-prop-val">Inter 800</span></div>
+        <div class="mockup-prop"><span class="mockup-prop-key">Size</span><span class="mockup-prop-val">96px</span></div>
+        <div class="mockup-prop"><span class="mockup-prop-key">Line height</span><span class="mockup-prop-val">0.95</span></div>
+        <div class="mockup-prop"><span class="mockup-prop-key">Letter</span><span class="mockup-prop-val">-3px</span></div>
+        <div class="mockup-prop"><span class="mockup-prop-key">Color</span><span class="mockup-prop-val"><span class="mockup-swatch"><span class="mockup-swatch-box"></span>#4353FF</span></span></div>
+        <div class="mockup-panel-title" style="margin-top:18px">Spacing</div>
+        <div class="mockup-prop"><span class="mockup-prop-key">Margin top</span><span class="mockup-prop-val">0</span></div>
+        <div class="mockup-prop"><span class="mockup-prop-key">Margin btm</span><span class="mockup-prop-val">28px</span></div>
+        <div class="mockup-prop"><span class="mockup-prop-key">Padding</span><span class="mockup-prop-val">0 28px</span></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section class="trust-strip">
+  <div class="trust-inner">
+    <div class="trust-title">Powering web experiences for</div>
+    <div class="trust-brands">
+      <span>NETFLIX</span>
+      <span>FUNDRAISE</span>
+      <span>IDEO</span>
+      <span>ORANGEBEARD</span>
+      <span>SOLAR</span>
+      <span>NATIVE INSTRUMENTS</span>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="stats">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="small-eyebrow">Real impact</span>
+      <h2>Numbers that <span class="accent">scale.</span></h2>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-eyebrow">Faster Launch</div>
+        <div class="stat-num">{{STAT_1_NUM}}</div>
+        <div class="stat-label">{{STAT_1_LABEL}}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-eyebrow">Active Teams</div>
+        <div class="stat-num">{{STAT_2_NUM}}</div>
+        <div class="stat-label">{{STAT_2_LABEL}}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-eyebrow">Built Faster</div>
+        <div class="stat-num">{{STAT_3_NUM}}</div>
+        <div class="stat-label">{{STAT_3_LABEL}}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section class="section" id="benefits">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="small-eyebrow">Capabilities</span>
+      <h2>{{BENEFITS_HEADLINE}}</h2>
+      <p>{{BENEFITS_SUBHEADLINE}}</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card"><div class="feature-icon">{{BENEFIT_1_ICON}}</div><h3>{{BENEFIT_1_TITLE}}</h3><p>{{BENEFIT_1_DESC}}</p></div>
+      <div class="feature-card"><div class="feature-icon">{{BENEFIT_2_ICON}}</div><h3>{{BENEFIT_2_TITLE}}</h3><p>{{BENEFIT_2_DESC}}</p></div>
+      <div class="feature-card"><div class="feature-icon">{{BENEFIT_3_ICON}}</div><h3>{{BENEFIT_3_TITLE}}</h3><p>{{BENEFIT_3_DESC}}</p></div>
+      <div class="feature-card"><div class="feature-icon">{{BENEFIT_4_ICON}}</div><h3>{{BENEFIT_4_TITLE}}</h3><p>{{BENEFIT_4_DESC}}</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section class="section" id="how">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="small-eyebrow">How it works</span>
+      <h2>{{HOW_HEADLINE}}</h2>
+      <p>{{HOW_SUBHEADLINE}}</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step"><div class="step-num">1</div><h3>{{STEP_1_TITLE}}</h3><p>{{STEP_1_DESC}}</p></div>
+      <div class="step"><div class="step-num">2</div><h3>{{STEP_2_TITLE}}</h3><p>{{STEP_2_DESC}}</p></div>
+      <div class="step"><div class="step-num">3</div><h3>{{STEP_3_TITLE}}</h3><p>{{STEP_3_DESC}}</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section class="section" id="reviews">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="small-eyebrow">Loved by builders</span>
+      <h2>{{REVIEWS_HEADLINE}}</h2>
+      <p>{{REVIEWS_SUBHEADLINE}}</p>
+    </div>
+    <div class="reviews-grid">
+      <div class="review">
+        <div class="review-mark">&ldquo;</div>
+        <p class="review-quote">{{REVIEW_1_QUOTE}}</p>
+        <div class="review-author">
+          <div class="review-avatar">{{REVIEW_1_INITIALS}}</div>
+          <div><div class="review-name">{{REVIEW_1_NAME}}</div><div class="review-role">{{REVIEW_1_ROLE}}</div></div>
+        </div>
+      </div>
+      <div class="review">
+        <div class="review-mark">&ldquo;</div>
+        <p class="review-quote">{{REVIEW_2_QUOTE}}</p>
+        <div class="review-author">
+          <div class="review-avatar">{{REVIEW_2_INITIALS}}</div>
+          <div><div class="review-name">{{REVIEW_2_NAME}}</div><div class="review-role">{{REVIEW_2_ROLE}}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section class="section" id="faq">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="small-eyebrow">FAQ</span>
+      <h2>{{FAQ_HEADLINE}}</h2>
+      <p>{{FAQ_SUBHEADLINE}}</p>
+    </div>
+    <div class="faq">
+      <div class="faq-item active"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_1_Q}}</button><div class="faq-a">{{FAQ_1_A}}</div></div>
+      <div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_2_Q}}</button><div class="faq-a">{{FAQ_2_A}}</div></div>
+      <div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_3_Q}}</button><div class="faq-a">{{FAQ_3_A}}</div></div>
+      <div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_4_Q}}</button><div class="faq-a">{{FAQ_4_A}}</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="footer-cta">
+  <div class="footer-cta-inner">
+    <h2>{{FOOTER_HEADLINE}}</h2>
+    <p>{{FOOTER_SUBHEADLINE}}</p>
+    <a href="#form" class="footer-cta-btn">{{FOOTER_CTA}}</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-wordmark">Webflow</div>
+    <div class="footer-cols">
+      <div class="footer-brand">
+        <p>The visual development platform for building production-grade websites without writing code.</p>
+      </div>
+      <div class="footer-col"><h4>Product</h4><ul><li><a href="#benefits">Why Webflow</a></li><li><a href="#how">Templates</a></li><li><a href="#form">Hosting</a></li><li><a href="#form">Enterprise</a></li></ul></div>
+      <div class="footer-col"><h4>Solutions</h4><ul><li><a href="#form">Marketing</a></li><li><a href="#form">Ecommerce</a></li><li><a href="#form">Designers</a></li><li><a href="#form">Developers</a></li></ul></div>
+      <div class="footer-col"><h4>Resources</h4><ul><li><a href="#faq">Help Center</a></li><li><a href="#how">Webflow University</a></li><li><a href="#reviews">Community</a></li><li><a href="#form">Forum</a></li></ul></div>
+      <div class="footer-col"><h4>Company</h4><ul><li><a href="#">About</a></li><li><a href="#">Careers</a></li><li><a href="#">Press</a></li><li><a href="#">Contact</a></li></ul></div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-logo">
+        <span class="logo-mark">W</span>
+        <span>Webflow</span>
+      </div>
+      <span>© {{YEAR}} Eko AI · contact@biz.ekoaiautomation.com · Privacy · Terms · Cookies</span>
+    </div>
+  </div>
+</footer>
+
+__FORM_SUBMIT_JS__
+</body></html>
+"""
+
+# ─── Figma Creative ─────────────────────────────────────────────────────────────
+_TPL_FIGMA_CREATIVE = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{TITLE}}</title><style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#fff;--text:#000;--muted:#3b3b3b;--soft:#fafafa;--border:#ebebeb;--red:#f24e1e;--orange:#ff7262;--purple:#a259ff;--blue:#1abcfe;--green:#0acf83;--dark:#0d0d0d}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh;-webkit-text-size-adjust:100%}
+body{font-family:'Whyte','Inter',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.45;-webkit-font-smoothing:antialiased;font-weight:400;letter-spacing:-.011em;min-height:100vh;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes floatA{0%,100%{transform:translate(0,0) rotate(0)}50%{transform:translate(10px,-12px) rotate(2deg)}}
+@keyframes floatB{0%,100%{transform:translate(0,0) rotate(0)}50%{transform:translate(-8px,10px) rotate(-3deg)}}
+
+/* NAV — white sticky with Figma 5-color logo */
+.nav{position:sticky;top:0;left:0;right:0;z-index:9999;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1280px;margin:0 auto;padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;gap:32px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:-.01em;color:#000}
+.brand-logo{width:24px;height:36px;position:relative;flex-shrink:0}
+.brand-logo span{position:absolute;width:12px;height:12px;display:block}
+.brand-logo .s1{top:0;left:0;background:#f24e1e;border-top-left-radius:6px;border-top-right-radius:6px}
+.brand-logo .s2{top:0;left:12px;background:#ff7262;border-top-right-radius:6px}
+.brand-logo .s3{top:12px;left:0;background:#a259ff}
+.brand-logo .s4{top:12px;left:12px;background:#1abcfe;border-radius:50%}
+.brand-logo .s5{top:24px;left:0;background:#0acf83;border-bottom-left-radius:6px}
+.nav-links{display:flex;gap:26px;list-style:none;align-items:center;flex:1;justify-content:center}
+.nav-links a{color:#1e1e1e;font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:4px;padding:6px 0;transition:color .15s}
+.nav-links a:hover{color:#a259ff}
+.nav-links a .ch{font-size:10px;opacity:.6}
+.nav-right{display:flex;align-items:center;gap:14px}
+.nav-right a{font-size:14px;font-weight:500;color:#1e1e1e}
+.nav-login{padding:8px 16px;border:1px solid #d4d4d4;border-radius:999px;font-size:14px;font-weight:500;transition:border-color .15s}
+.nav-login:hover{border-color:#000}
+.nav-cta{padding:8px 18px;background:#000;color:#fff!important;border-radius:999px;font-size:14px;font-weight:500;transition:background .15s}
+.nav-cta:hover{background:#1e1e1e}
+
+/* HERO — multi-color gradient mesh */
+.hero{position:relative;padding:80px 24px 60px;text-align:center;overflow:hidden;background:radial-gradient(circle at 30% 20%,#f24e1e 0%,transparent 40%),radial-gradient(circle at 70% 30%,#a259ff 0%,transparent 40%),radial-gradient(circle at 20% 80%,#0acf83 0%,transparent 40%),radial-gradient(circle at 80% 70%,#1abcfe 0%,transparent 40%),#fff}
+.hero::before{content:'';position:absolute;inset:0;background:rgba(255,255,255,.55);pointer-events:none}
+.hero-inner{position:relative;max-width:980px;margin:0 auto;animation:fadeInUp .8s ease both}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;background:#fff;border:1px solid var(--border);border-radius:999px;font-size:13px;font-weight:500;color:#1e1e1e;margin-bottom:28px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:linear-gradient(135deg,#f24e1e,#a259ff)}
+.hero h1{font-size:clamp(48px,7vw,96px);font-weight:700;line-height:.95;letter-spacing:-.04em;margin-bottom:24px;color:#000}
+.hero h1 .swatch{background:linear-gradient(90deg,#f24e1e,#a259ff,#1abcfe,#0acf83);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:clamp(17px,2vw,22px);color:#1e1e1e;max-width:680px;margin:0 auto 36px;line-height:1.45;font-weight:400}
+.hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:36px}
+.btn-pri{padding:14px 28px;background:#000;color:#fff;border-radius:999px;font-size:16px;font-weight:500;border:none;cursor:pointer;transition:background .15s;display:inline-flex;align-items:center;gap:8px}
+.btn-pri:hover{background:#1e1e1e}
+.btn-out{padding:14px 28px;background:transparent;color:#000;border:1px solid #000;border-radius:999px;font-size:16px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-out:hover{background:#000;color:#fff}
+
+/* CANVAS MOCKUP under hero */
+.canvas-mock{position:relative;max-width:1100px;margin:32px auto 0;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.12),0 4px 12px rgba(0,0,0,.04);overflow:hidden;animation:fadeInUp 1s ease .2s both}
+.canvas-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f5f5f5;border-bottom:1px solid var(--border)}
+.canvas-bar .cdot{width:11px;height:11px;border-radius:50%}
+.canvas-bar .cdot.r{background:#ff5f56}.canvas-bar .cdot.y{background:#ffbd2e}.canvas-bar .cdot.g{background:#27c93f}
+.canvas-bar .ctitle{margin-left:12px;font-size:12px;color:#666;font-weight:500}
+.canvas-body{display:grid;grid-template-columns:60px 1fr 240px;height:380px}
+.canvas-tools{background:#fafafa;border-right:1px solid var(--border);padding:14px 0;display:flex;flex-direction:column;align-items:center;gap:14px}
+.canvas-tools .tool{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#3b3b3b;font-weight:600;cursor:pointer;transition:background .15s}
+.canvas-tools .tool:hover{background:#ececec}
+.canvas-tools .tool.active{background:#a259ff;color:#fff}
+.canvas-stage{background:#f5f5f5;position:relative;overflow:hidden}
+.canvas-stage::before{content:'';position:absolute;inset:0;background-image:radial-gradient(#d8d8d8 1px,transparent 1px);background-size:18px 18px;opacity:.6}
+.shape{position:absolute;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.s-rect{top:18%;left:14%;width:160px;height:110px;background:linear-gradient(135deg,#f24e1e,#ff7262);animation:floatA 6s ease-in-out infinite}
+.s-circle{top:46%;left:32%;width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#1abcfe,#0acf83);animation:floatB 7s ease-in-out infinite}
+.s-pill{top:22%;left:46%;width:220px;height:64px;border-radius:999px;background:#a259ff;animation:floatA 8s ease-in-out infinite}
+.s-tri{top:58%;left:58%;width:0;height:0;border-left:60px solid transparent;border-right:60px solid transparent;border-bottom:104px solid #0acf83;animation:floatB 9s ease-in-out infinite;box-shadow:none}
+.canvas-panel{background:#fafafa;border-left:1px solid var(--border);padding:18px;font-size:12px}
+.canvas-panel h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#7a7a7a;margin-bottom:10px;font-weight:600}
+.canvas-panel .pgroup{margin-bottom:18px}
+.canvas-panel .prow{display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:12px;color:#1e1e1e}
+.canvas-panel .pval{color:#666;font-variant-numeric:tabular-nums}
+.canvas-panel .swatch-color{width:14px;height:14px;border-radius:3px;display:inline-block;vertical-align:middle;margin-right:6px}
+
+/* STATS */
+.stats{display:flex;justify-content:center;gap:64px;margin:60px auto 0;flex-wrap:wrap;max-width:900px;position:relative;z-index:2}
+.stat-block{text-align:center}
+.stat-num{font-size:56px;font-weight:800;letter-spacing:-.04em;line-height:1;color:#000;margin-bottom:6px}
+.stat-num.c1{background:linear-gradient(135deg,#f24e1e,#ff7262);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-num.c2{background:linear-gradient(135deg,#a259ff,#1abcfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-num.c3{background:linear-gradient(135deg,#0acf83,#1abcfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:14px;color:#3b3b3b;font-weight:500}
+
+/* TRUST STRIP */
+.trust{padding:32px 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:#fff}
+.trust-inner{max-width:1100px;margin:0 auto;text-align:center}
+.trust h3{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:#7a7a7a;font-weight:600;margin-bottom:20px}
+.trust-row{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;align-items:center}
+.trust-logo{font-size:18px;font-weight:700;color:#1e1e1e;letter-spacing:-.02em;opacity:.7}
+
+/* SECTIONS */
+.section{padding:120px 24px}
+.section-alt{background:#fafafa}
+.section-inner{max-width:1200px;margin:0 auto}
+.section-header{text-align:center;margin-bottom:64px}
+.section-eyebrow{display:inline-block;font-size:13px;text-transform:uppercase;letter-spacing:.12em;font-weight:600;margin-bottom:14px;background:linear-gradient(90deg,#f24e1e,#a259ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.section-header h2{font-size:clamp(36px,5vw,56px);font-weight:700;letter-spacing:-.03em;line-height:1.05;margin-bottom:16px;color:#000;max-width:760px;margin-left:auto;margin-right:auto}
+.section-header .underline{display:inline-block;height:6px;width:120px;background:linear-gradient(90deg,#f24e1e,#ff7262,#a259ff,#1abcfe,#0acf83);border-radius:3px;margin-top:18px}
+.section-header p{color:#3b3b3b;font-size:18px;max-width:620px;margin:0 auto;line-height:1.5}
+
+/* FEATURE CARDS — 5-color rotation */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+.feature-card{padding:32px;background:#fff;border:1px solid var(--border);border-radius:16px;transition:transform .2s ease,box-shadow .2s ease;display:flex;flex-direction:column}
+.feature-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.08)}
+.feature-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:20px;color:#fff;font-weight:700}
+.feature-card:nth-child(1) .feature-icon{background:#f24e1e}
+.feature-card:nth-child(2) .feature-icon{background:#1abcfe}
+.feature-card:nth-child(3) .feature-icon{background:#a259ff}
+.feature-card:nth-child(4) .feature-icon{background:#0acf83}
+.feature-card h3{font-size:20px;font-weight:600;letter-spacing:-.015em;margin-bottom:10px;color:#000}
+.feature-card p{color:#3b3b3b;font-size:15px;line-height:1.55}
+
+/* HOW / STEPS */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:32px}
+.step-card{padding:36px 28px;background:#fff;border:1px solid var(--border);border-radius:16px;text-align:left;position:relative}
+.step-num{width:48px;height:48px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;margin-bottom:20px}
+.step-card:nth-child(1) .step-num{background:linear-gradient(135deg,#f24e1e,#ff7262)}
+.step-card:nth-child(2) .step-num{background:linear-gradient(135deg,#a259ff,#1abcfe)}
+.step-card:nth-child(3) .step-num{background:linear-gradient(135deg,#0acf83,#1abcfe)}
+.step-card h3{font-size:22px;font-weight:600;letter-spacing:-.015em;margin-bottom:12px;color:#000}
+.step-card p{color:#3b3b3b;font-size:15px;line-height:1.55}
+
+/* REVIEWS */
+.reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:24px}
+.review-card{padding:36px;background:#fff;border:1px solid var(--border);border-radius:16px}
+.review-stars{color:#fbbf24;font-size:18px;letter-spacing:2px;margin-bottom:18px}
+.review-card p{font-size:18px;line-height:1.5;color:#000;font-style:italic;margin-bottom:24px;letter-spacing:-.01em}
+.review-author{display:flex;align-items:center;gap:14px}
+.review-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;flex-shrink:0}
+.review-card:nth-child(1) .review-avatar{background:linear-gradient(135deg,#f24e1e,#ff7262)}
+.review-card:nth-child(2) .review-avatar{background:linear-gradient(135deg,#1abcfe,#a259ff)}
+.review-author strong{display:block;color:#000;font-size:15px;font-weight:600}
+.review-author div:last-child{font-size:14px;color:#3b3b3b}
+
+/* FAQ */
+.faq-list{max-width:820px;margin:0 auto}
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;padding:24px 0;background:none;border:none;color:#000;font-size:18px;font-weight:500;text-align:left;cursor:pointer;letter-spacing:-.01em;font-family:inherit}
+.faq-q::after{content:'+';font-size:28px;font-weight:300;background:linear-gradient(135deg,#f24e1e,#a259ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;transition:transform .3s}
+.faq-item.active .faq-q::after{transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;color:#3b3b3b;font-size:16px;line-height:1.6}
+.faq-item.active .faq-a{max-height:300px;padding-bottom:24px}
+
+/* FORM SECTION */
+.form-section{padding:120px 24px;background:radial-gradient(circle at 30% 20%,rgba(242,78,30,.18) 0%,transparent 45%),radial-gradient(circle at 70% 30%,rgba(162,89,255,.18) 0%,transparent 45%),radial-gradient(circle at 20% 80%,rgba(10,207,131,.18) 0%,transparent 45%),radial-gradient(circle at 80% 70%,rgba(26,188,254,.18) 0%,transparent 45%),#fff}
+.form-card{max-width:560px;margin:0 auto;background:#fff;border:1px solid var(--border);border-radius:20px;padding:48px;box-shadow:0 24px 60px rgba(0,0,0,.08)}
+.form-card h2{font-size:clamp(28px,4vw,40px);font-weight:700;letter-spacing:-.03em;line-height:1.05;margin-bottom:12px;color:#000;text-align:center}
+.form-card p{color:#3b3b3b;font-size:16px;text-align:center;margin-bottom:28px}
+.form-card form{display:flex;flex-direction:column;gap:12px}
+.form-card input{width:100%;padding:14px 16px;border:1px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;color:#000;background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
+.form-card input::placeholder{color:#9a9a9a}
+.form-card input:focus{border-color:#a259ff;box-shadow:0 0 0 3px rgba(162,89,255,.15)}
+.form-card button{padding:16px;background:#000;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:6px;transition:background .15s}
+.form-card button:hover{background:#1e1e1e}
+
+/* FOOTER */
+.footer{background:#000;color:#fff;padding:80px 24px 40px}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-top{display:grid;grid-template-columns:1.4fr repeat(4,1fr);gap:40px;padding-bottom:48px;border-bottom:1px solid #222}
+.footer-brand{display:flex;flex-direction:column;gap:14px}
+.footer-brand .brand{color:#fff}
+.footer-brand p{color:#9a9a9a;font-size:14px;line-height:1.55;max-width:300px}
+.footer-col h4{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:#fff;margin-bottom:18px;font-weight:600}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:12px}
+.footer-col a{color:#9a9a9a;font-size:14px;transition:color .15s}
+.footer-col a:hover{color:#fff}
+.footer-bottom{padding-top:32px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;color:#7a7a7a;font-size:13px}
+
+/* MOBILE */
+@media(max-width:640px){
+  .nav-links{display:none}
+  .nav-right .nav-login{display:none}
+  .nav-inner{padding:0 18px}
+  .hero{padding:60px 18px 48px}
+  .canvas-body{grid-template-columns:50px 1fr;height:300px}
+  .canvas-panel{display:none}
+  .stats{gap:32px;margin-top:40px}
+  .stat-num{font-size:42px}
+  .section{padding:72px 18px}
+  .form-card{padding:32px 22px}
+  .footer-top{grid-template-columns:1fr 1fr;gap:32px}
+  .footer-brand{grid-column:1/-1}
+  .trust-row{gap:24px}
+  .trust-logo{font-size:15px}
+}
+</style></head>
+<body>__TRACKING_PIXEL__
+
+<nav class="nav"><div class="nav-inner">
+<a href="#" class="brand"><span class="brand-logo"><span class="s1"></span><span class="s2"></span><span class="s3"></span><span class="s4"></span><span class="s5"></span></span>Figma</a>
+<ul class="nav-links">
+<li><a href="#benefits">Product <span class="ch">⌄</span></a></li>
+<li><a href="#how-it-works">Solutions <span class="ch">⌄</span></a></li>
+<li><a href="#reviews">Community</a></li>
+<li><a href="#faq">Resources <span class="ch">⌄</span></a></li>
+<li><a href="#form">Pricing <span class="ch">⌄</span></a></li>
+</ul>
+<div class="nav-right">
+<a href="#form">Contact Sales</a>
+<a href="#form" class="nav-login">Log in</a>
+<a href="#form" class="nav-cta">Sign up</a>
+</div></div></nav>
+
+<section class="hero">
+<div class="hero-inner">
+<div class="badge"><span class="dot"></span>{{BADGE}}</div>
+<h1>{{HERO_TITLE}}</h1>
+<p>{{HERO_SUBTITLE}}</p>
+<div class="hero-ctas">
+<a href="#form" class="btn-pri">{{CTA_BUTTON}} →</a>
+<a href="#how-it-works" class="btn-out">View pricing</a>
+</div>
+
+<div class="canvas-mock">
+<div class="canvas-bar"><span class="cdot r"></span><span class="cdot y"></span><span class="cdot g"></span><span class="ctitle">Untitled — Figma</span></div>
+<div class="canvas-body">
+<div class="canvas-tools">
+<div class="tool active">V</div>
+<div class="tool">F</div>
+<div class="tool">R</div>
+<div class="tool">O</div>
+<div class="tool">T</div>
+<div class="tool">P</div>
+<div class="tool">⌘</div>
+</div>
+<div class="canvas-stage">
+<div class="shape s-rect"></div>
+<div class="shape s-circle"></div>
+<div class="shape s-pill"></div>
+<div class="shape s-tri"></div>
+</div>
+<div class="canvas-panel">
+<div class="pgroup"><h4>Design</h4>
+<div class="prow"><span>Fill</span><span class="pval"><span class="swatch-color" style="background:#a259ff"></span>A259FF</span></div>
+<div class="prow"><span>Stroke</span><span class="pval">None</span></div>
+<div class="prow"><span>Effects</span><span class="pval">Drop shadow</span></div>
+</div>
+<div class="pgroup"><h4>Auto layout</h4>
+<div class="prow"><span>Direction</span><span class="pval">→ Horizontal</span></div>
+<div class="prow"><span>Spacing</span><span class="pval">16</span></div>
+<div class="prow"><span>Padding</span><span class="pval">24</span></div>
+</div>
+</div>
+</div></div>
+
+<div class="stats">
+<div class="stat-block"><div class="stat-num c1">{{STAT_1_NUM}}</div><div class="stat-label">{{STAT_1_LABEL}}</div></div>
+<div class="stat-block"><div class="stat-num c2">{{STAT_2_NUM}}</div><div class="stat-label">{{STAT_2_LABEL}}</div></div>
+<div class="stat-block"><div class="stat-num c3">{{STAT_3_NUM}}</div><div class="stat-label">{{STAT_3_LABEL}}</div></div>
+</div>
+</div>
+</section>
+
+<section class="trust"><div class="trust-inner">
+<h3>Powering design at</h3>
+<div class="trust-row">
+<div class="trust-logo">Google</div>
+<div class="trust-logo">Microsoft</div>
+<div class="trust-logo">Slack</div>
+<div class="trust-logo">GitHub</div>
+<div class="trust-logo">Spotify</div>
+<div class="trust-logo">Twitter</div>
+<div class="trust-logo">Uber</div>
+<div class="trust-logo">Volvo</div>
+</div>
+</div></section>
+
+<section class="section" id="benefits"><div class="section-inner">
+<div class="section-header">
+<span class="section-eyebrow">Product</span>
+<h2>{{BENEFITS_HEADLINE}}</h2>
+<div class="underline"></div>
+<p>{{BENEFITS_SUBHEADLINE}}</p>
+</div>
+<div class="features-grid">
+<div class="feature-card"><div class="feature-icon">{{BENEFIT_1_ICON}}</div><h3>{{BENEFIT_1_TITLE}}</h3><p>{{BENEFIT_1_DESC}}</p></div>
+<div class="feature-card"><div class="feature-icon">{{BENEFIT_2_ICON}}</div><h3>{{BENEFIT_2_TITLE}}</h3><p>{{BENEFIT_2_DESC}}</p></div>
+<div class="feature-card"><div class="feature-icon">{{BENEFIT_3_ICON}}</div><h3>{{BENEFIT_3_TITLE}}</h3><p>{{BENEFIT_3_DESC}}</p></div>
+<div class="feature-card"><div class="feature-icon">{{BENEFIT_4_ICON}}</div><h3>{{BENEFIT_4_TITLE}}</h3><p>{{BENEFIT_4_DESC}}</p></div>
+</div></div></section>
+
+<section class="section section-alt" id="how-it-works"><div class="section-inner">
+<div class="section-header">
+<span class="section-eyebrow">How it works</span>
+<h2>{{HOW_HEADLINE}}</h2>
+<div class="underline"></div>
+<p>{{HOW_SUBHEADLINE}}</p>
+</div>
+<div class="steps-grid">
+<div class="step-card"><div class="step-num">1</div><h3>{{STEP_1_TITLE}}</h3><p>{{STEP_1_DESC}}</p></div>
+<div class="step-card"><div class="step-num">2</div><h3>{{STEP_2_TITLE}}</h3><p>{{STEP_2_DESC}}</p></div>
+<div class="step-card"><div class="step-num">3</div><h3>{{STEP_3_TITLE}}</h3><p>{{STEP_3_DESC}}</p></div>
+</div></div></section>
+
+<section class="section" id="reviews"><div class="section-inner">
+<div class="section-header">
+<span class="section-eyebrow">Loved by designers</span>
+<h2>{{REVIEWS_HEADLINE}}</h2>
+<div class="underline"></div>
+<p>{{REVIEWS_SUBHEADLINE}}</p>
+</div>
+<div class="reviews-grid">
+<div class="review-card"><div class="review-stars">★★★★★</div><p>"{{REVIEW_1_QUOTE}}"</p>
+<div class="review-author"><div class="review-avatar">{{REVIEW_1_INITIALS}}</div><div><strong>{{REVIEW_1_NAME}}</strong><div>{{REVIEW_1_ROLE}}</div></div></div></div>
+<div class="review-card"><div class="review-stars">★★★★★</div><p>"{{REVIEW_2_QUOTE}}"</p>
+<div class="review-author"><div class="review-avatar">{{REVIEW_2_INITIALS}}</div><div><strong>{{REVIEW_2_NAME}}</strong><div>{{REVIEW_2_ROLE}}</div></div></div></div>
+</div></div></section>
+
+<section class="section section-alt" id="faq"><div class="section-inner">
+<div class="section-header">
+<span class="section-eyebrow">FAQ</span>
+<h2>{{FAQ_HEADLINE}}</h2>
+<div class="underline"></div>
+<p>{{FAQ_SUBHEADLINE}}</p>
+</div>
+<div class="faq-list">
+<div class="faq-item active"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_1_Q}}</button><div class="faq-a">{{FAQ_1_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_2_Q}}</button><div class="faq-a">{{FAQ_2_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_3_Q}}</button><div class="faq-a">{{FAQ_3_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_4_Q}}</button><div class="faq-a">{{FAQ_4_A}}</div></div>
+</div></div></section>
+
+<section class="form-section" id="form">
+<div class="form-card">
+<h2>{{FOOTER_HEADLINE}}</h2>
+<p>{{FOOTER_SUBHEADLINE}}</p>
+<form action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST">
+<input type="text" name="first_name" placeholder="First name" required>
+<input type="text" name="last_name" placeholder="Last name" required>
+<input type="email" name="email" placeholder="Work email" required>
+<input type="tel" name="phone" placeholder="Phone" required>
+<input type="url" name="website" placeholder="Website" required>
+<button type="submit">{{FOOTER_CTA}}</button>
+</form>
+</div>
+</section>
+
+<footer class="footer"><div class="footer-inner">
+<div class="footer-top">
+<div class="footer-brand">
+<a href="#" class="brand" style="color:#fff"><span class="brand-logo"><span class="s1"></span><span class="s2"></span><span class="s3"></span><span class="s4"></span><span class="s5"></span></span>Figma</a>
+<p>Build prototypes that look real. Design, prototype, and gather feedback all in one place.</p>
+</div>
+<div class="footer-col"><h4>Use cases</h4><ul>
+<li><a href="#">UI design</a></li><li><a href="#">UX design</a></li>
+<li><a href="#">Wireframing</a></li><li><a href="#">Prototyping</a></li>
+<li><a href="#">Design systems</a></li>
+</ul></div>
+<div class="footer-col"><h4>Resources</h4><ul>
+<li><a href="#">Blog</a></li><li><a href="#">Best practices</a></li>
+<li><a href="#">Colors</a></li><li><a href="#">Color wheel</a></li>
+<li><a href="#">Support</a></li>
+</ul></div>
+<div class="footer-col"><h4>Community</h4><ul>
+<li><a href="#">Forum</a></li><li><a href="#">Plugins</a></li>
+<li><a href="#">Widgets</a></li><li><a href="#">Templates</a></li>
+<li><a href="#">Partners</a></li>
+</ul></div>
+<div class="footer-col"><h4>Compare</h4><ul>
+<li><a href="#">Figma vs Sketch</a></li><li><a href="#">Figma vs Adobe XD</a></li>
+<li><a href="#">Figma vs InVision</a></li><li><a href="#">Figma vs Miro</a></li>
+<li><a href="#">All comparisons</a></li>
+</ul></div>
+</div>
+<div class="footer-bottom">
+<div>© {{YEAR}} Eko AI · contact@biz.ekoaiautomation.com</div>
+<div>Made with ❤ on the canvas</div>
+</div>
+</div></footer>
+
+__FORM_SUBMIT_JS__
+</body></html>
+"""
+
+# ─── Robinhood Trade ─────────────────────────────────────────────────────────────
+_TPL_ROBINHOOD_TRADE = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{TITLE}}</title><style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#fff;--text:#0c0c0c;--muted:#5b6371;--soft:#f6f7f8;--border:#e5e7eb;--green:#00C805;--green-d:#00a504;--green-soft:#e6faea;--dark:#0c0c0c;--dark-2:#161616}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh;-webkit-text-size-adjust:100%}
+body{font-family:'Capsule','Inter',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;font-weight:400;letter-spacing:-.005em;min-height:100vh;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glowPulse{0%,100%{filter:drop-shadow(0 0 6px rgba(0,200,5,.5))}50%{filter:drop-shadow(0 0 14px rgba(0,200,5,.85))}}
+@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* NAV */
+.nav{position:sticky;top:0;left:0;right:0;z-index:9999;background:rgba(255,255,255,.96);backdrop-filter:saturate(180%) blur(12px);-webkit-backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1280px;margin:0 auto;padding:0 32px;height:72px;display:flex;align-items:center;justify-content:space-between;gap:32px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:22px;letter-spacing:-.02em;color:var(--dark)}
+.brand-logo{width:28px;height:28px;flex-shrink:0;color:var(--green);animation:glowPulse 3s ease-in-out infinite}
+.nav-links{display:flex;gap:30px;list-style:none;align-items:center;flex:1;justify-content:center}
+.nav-links a{color:var(--dark);font-size:15px;font-weight:500;transition:color .15s;padding:6px 0}
+.nav-links a:hover{color:var(--green-d)}
+.nav-right{display:flex;align-items:center;gap:18px}
+.nav-login{color:var(--dark);font-size:15px;font-weight:500}
+.nav-login:hover{color:var(--green-d)}
+.nav-cta{padding:10px 22px;background:var(--green);color:#fff!important;border-radius:999px;font-size:15px;font-weight:600;transition:background .15s,transform .1s}
+.nav-cta:hover{background:var(--green-d);transform:translateY(-1px)}
+
+/* HERO */
+.hero{padding:90px 24px 60px;background:#fff;position:relative;overflow:hidden}
+.hero-inner{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1.05fr 1fr;gap:64px;align-items:center}
+.hero-text{animation:fadeInUp .8s ease both}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;background:var(--green-soft);border-radius:999px;font-size:13px;font-weight:600;color:var(--green-d);margin-bottom:24px}
+.badge .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(0,200,5,.25)}
+.hero h1{font-size:clamp(48px,7vw,88px);font-weight:700;line-height:1;letter-spacing:-.04em;color:var(--dark);margin-bottom:22px}
+.hero p{font-size:clamp(17px,1.6vw,21px);color:var(--muted);max-width:540px;line-height:1.5;margin-bottom:32px}
+.hero-ctas{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:28px}
+.btn-pri{padding:16px 32px;background:var(--green);color:#fff;border-radius:999px;font-size:16px;font-weight:600;border:none;cursor:pointer;transition:background .15s,transform .1s;display:inline-flex;align-items:center;gap:8px}
+.btn-pri:hover{background:var(--green-d);transform:translateY(-1px)}
+.ghost-link{color:var(--dark);font-size:15px;font-weight:500;transition:color .15s;display:inline-flex;align-items:center;gap:6px}
+.ghost-link:hover{color:var(--green-d)}
+.hero-foot{font-size:13px;color:var(--muted);line-height:1.5;max-width:520px}
+
+/* STOCK CHART MOCKUP */
+.chart-card{background:var(--dark);border-radius:24px;padding:28px;color:#fff;box-shadow:0 32px 80px rgba(0,0,0,.35);position:relative;overflow:hidden;animation:fadeInUp 1s ease .15s both}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.chart-sym{display:flex;align-items:center;gap:12px}
+.chart-sym .ico{width:38px;height:38px;border-radius:50%;background:var(--green-soft);color:var(--green-d);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.chart-sym .meta strong{display:block;font-size:18px;font-weight:700;letter-spacing:-.01em}
+.chart-sym .meta span{font-size:13px;color:#9aa1ad}
+.chart-price{text-align:right}
+.chart-price .big{font-size:32px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.chart-price .ch{display:inline-flex;align-items:center;gap:4px;font-size:14px;color:var(--green);font-weight:600;margin-top:6px}
+.chart-graph{height:170px;position:relative;margin:0 -4px}
+.chart-graph svg{width:100%;height:100%;display:block;overflow:visible}
+.chart-line{fill:none;stroke:var(--green);stroke-width:2.5;filter:drop-shadow(0 0 8px rgba(0,200,5,.55))}
+.chart-fill{fill:url(#chartGrad)}
+.chart-dot{fill:var(--green);filter:drop-shadow(0 0 10px rgba(0,200,5,.9))}
+.chart-bars{display:flex;align-items:flex-end;gap:3px;height:48px;margin-top:14px}
+.chart-bars .bar{flex:1;border-radius:1.5px;min-height:6px}
+.chart-time{display:flex;justify-content:space-between;gap:6px;margin-top:18px;padding-top:14px;border-top:1px solid #222}
+.chart-time .tf{flex:1;padding:8px 0;text-align:center;font-size:12px;font-weight:600;color:#9aa1ad;border-radius:6px;cursor:pointer;transition:all .15s}
+.chart-time .tf.active{background:var(--green);color:#000}
+
+/* TICKER STRIP */
+.ticker{background:var(--dark);color:#fff;padding:14px 0;border-top:1px solid #1e1e1e;border-bottom:1px solid #1e1e1e;overflow:hidden;white-space:nowrap}
+.ticker-track{display:inline-flex;gap:48px;animation:tickerScroll 40s linear infinite;padding-right:48px}
+.ticker-item{display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.ticker-item .sym{color:#fff}
+.ticker-item .pr{color:#9aa1ad}
+.ticker-item .pl{color:var(--green)}
+.ticker-item .ng{color:#ff5c5c}
+
+/* SECTIONS */
+.section{padding:110px 24px}
+.section-inner{max-width:1180px;margin:0 auto}
+.section-alt{background:var(--dark);color:#fff}
+.section-soft{background:var(--soft)}
+.section-header{text-align:center;margin-bottom:64px}
+.section-eyebrow{display:inline-block;font-size:13px;text-transform:uppercase;letter-spacing:.16em;font-weight:700;color:var(--green-d);margin-bottom:14px}
+.section-alt .section-eyebrow{color:var(--green)}
+.section-header h2{font-size:clamp(34px,4.5vw,52px);font-weight:700;letter-spacing:-.03em;line-height:1.05;margin-bottom:16px;color:inherit;max-width:760px;margin-left:auto;margin-right:auto}
+.section-header p{color:var(--muted);font-size:18px;max-width:580px;margin:0 auto;line-height:1.5}
+.section-alt .section-header p{color:#9aa1ad}
+
+/* TRUST STRIP */
+.trust{padding:40px 24px;background:#fff;border-bottom:1px solid var(--border)}
+.trust-inner{max-width:1180px;margin:0 auto;display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:wrap}
+.trust-item{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);font-weight:600}
+.trust-item svg{flex-shrink:0}
+
+/* FEATURE GRID */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.feature-card{padding:36px 30px;background:#fff;border:1px solid var(--border);border-radius:20px;transition:transform .2s,border-color .2s,box-shadow .2s}
+.feature-card:hover{transform:translateY(-4px);border-color:var(--green);box-shadow:0 12px 32px rgba(0,200,5,.08)}
+.section-alt .feature-card{background:var(--dark-2);border-color:#222}
+.section-alt .feature-card:hover{border-color:var(--green)}
+.feature-icon{width:52px;height:52px;border-radius:14px;background:var(--green-soft);color:var(--green-d);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:22px;font-weight:700}
+.section-alt .feature-icon{background:rgba(0,200,5,.15);color:var(--green)}
+.feature-card h3{font-size:20px;font-weight:600;letter-spacing:-.015em;margin-bottom:10px}
+.feature-card p{color:var(--muted);font-size:15px;line-height:1.55}
+.section-alt .feature-card p{color:#9aa1ad}
+
+/* STATS BLOCK */
+.stats-band{padding:96px 24px;background:var(--dark);color:#fff;text-align:center}
+.stats-band h2{font-size:clamp(32px,4.5vw,52px);font-weight:700;letter-spacing:-.03em;margin-bottom:48px;max-width:780px;margin-left:auto;margin-right:auto;line-height:1.1}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:48px;max-width:980px;margin:0 auto}
+.stat-block{text-align:center}
+.stat-num{font-size:clamp(48px,6vw,88px);font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--green);margin-bottom:10px;font-variant-numeric:tabular-nums}
+.stat-label{font-size:14px;color:#9aa1ad;font-weight:500;text-transform:uppercase;letter-spacing:.08em}
+
+/* STEPS */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;counter-reset:step}
+.step-card{padding:36px 28px;background:#fff;border:1px solid var(--border);border-radius:20px;position:relative;counter-increment:step}
+.step-card::before{content:counter(step,decimal-leading-zero);position:absolute;top:24px;right:28px;font-size:64px;font-weight:800;color:var(--green);opacity:.18;line-height:1;letter-spacing:-.04em}
+.step-icon{width:48px;height:48px;border-radius:12px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;margin-bottom:20px}
+.step-card h3{font-size:22px;font-weight:600;letter-spacing:-.015em;margin-bottom:10px}
+.step-card p{color:var(--muted);font-size:15px;line-height:1.55}
+
+/* REVIEWS */
+.reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:24px}
+.review-card{padding:36px;background:#fff;border:1px solid var(--border);border-radius:20px;transition:box-shadow .2s,transform .2s}
+.review-card:hover{box-shadow:0 12px 32px rgba(0,0,0,.06);transform:translateY(-2px)}
+.review-stars{color:var(--green);font-size:16px;letter-spacing:3px;margin-bottom:18px}
+.review-card p{font-size:17px;line-height:1.55;color:var(--dark);margin-bottom:24px;font-style:italic}
+.review-author{display:flex;align-items:center;gap:14px}
+.review-avatar{width:44px;height:44px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+.review-author strong{display:block;color:var(--dark);font-size:15px;font-weight:600}
+.review-author div:last-child{font-size:14px;color:var(--muted)}
+
+/* FAQ */
+.faq-list{max-width:820px;margin:0 auto;background:#fff;border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-item:last-child{border-bottom:none}
+.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;padding:24px 28px;background:none;border:none;color:var(--dark);font-size:17px;font-weight:600;text-align:left;cursor:pointer;letter-spacing:-.01em;font-family:inherit;transition:background .15s}
+.faq-q:hover{background:var(--soft)}
+.faq-q::after{content:'+';font-size:28px;font-weight:300;color:var(--green);transition:transform .3s}
+.faq-item.active .faq-q::after{transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;color:var(--muted);font-size:16px;line-height:1.6;padding:0 28px}
+.faq-item.active .faq-a{max-height:300px;padding:0 28px 24px}
+
+/* FORM SECTION */
+.form-section{padding:120px 24px;background:var(--dark);color:#fff;text-align:center;position:relative;overflow:hidden}
+.form-section::before{content:'';position:absolute;top:0;left:0;right:0;height:300px;background:radial-gradient(ellipse at 50% 0%,rgba(0,200,5,.18) 0%,transparent 60%);pointer-events:none}
+.form-card{position:relative;max-width:520px;margin:0 auto;background:var(--dark-2);border:1px solid #222;border-radius:24px;padding:48px 40px;text-align:left}
+.form-card h2{font-size:clamp(28px,3.6vw,40px);font-weight:700;letter-spacing:-.025em;line-height:1.1;margin-bottom:12px;color:#fff;text-align:center}
+.form-card p{color:#9aa1ad;font-size:16px;text-align:center;margin-bottom:28px}
+.form-card form{display:flex;flex-direction:column;gap:12px}
+.form-card input{width:100%;padding:15px 18px;border:1px solid #2a2a2a;border-radius:12px;font-size:15px;font-family:inherit;color:#fff;background:#0a0a0a;outline:none;transition:border-color .15s,box-shadow .15s}
+.form-card input::placeholder{color:#5b6371}
+.form-card input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,200,5,.15)}
+.form-card button{padding:16px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;transition:background .15s}
+.form-card button:hover{background:var(--green-d)}
+.form-note{margin-top:18px;font-size:12px;color:#5b6371;text-align:center;line-height:1.5}
+
+/* FOOTER */
+.footer{background:var(--dark);color:#fff;padding:72px 24px 40px;border-top:1px solid #1e1e1e}
+.footer-inner{max-width:1180px;margin:0 auto}
+.footer-top{display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:40px;padding-bottom:48px;border-bottom:1px solid #222}
+.footer-brand{display:flex;flex-direction:column;gap:14px}
+.footer-brand .brand{color:#fff}
+.footer-brand p{color:#9aa1ad;font-size:14px;line-height:1.55;max-width:280px}
+.footer-col h4{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:#fff;margin-bottom:18px;font-weight:600}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:12px}
+.footer-col a{color:#9aa1ad;font-size:14px;transition:color .15s}
+.footer-col a:hover{color:var(--green)}
+.footer-legal{padding-top:32px;font-size:11px;color:#5b6371;line-height:1.7;max-width:1180px}
+.footer-legal p{margin-bottom:12px}
+.footer-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-top:24px;color:#5b6371;font-size:12px;padding-top:20px;border-top:1px solid #1e1e1e}
+
+/* MOBILE */
+@media(max-width:900px){
+  .hero-inner{grid-template-columns:1fr;gap:48px}
+  .chart-card{max-width:520px;margin:0 auto}
+}
+@media(max-width:640px){
+  .nav-links{display:none}
+  .nav-right .nav-login{display:none}
+  .nav-inner{padding:0 18px;height:64px}
+  .hero{padding:56px 18px 48px}
+  .section{padding:72px 18px}
+  .stats-band{padding:72px 18px}
+  .stats-row{grid-template-columns:1fr;gap:32px}
+  .form-card{padding:36px 24px}
+  .form-section{padding:72px 18px}
+  .footer-top{grid-template-columns:1fr 1fr;gap:32px}
+  .footer-brand{grid-column:1/-1}
+  .trust-inner{gap:20px}
+}
+</style></head>
+<body>__TRACKING_PIXEL__
+
+<nav class="nav"><div class="nav-inner">
+<a href="#" class="brand">
+<svg class="brand-logo" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+<path d="M16 2C13 8 8 12 4 14c4 .5 8 3 10 7 2-4 6-6.5 10-7-4-2-9-6-8-12z"/>
+<path d="M16 16v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+</svg>
+Robinhood
+</a>
+<ul class="nav-links">
+<li><a href="#benefits">Investing</a></li>
+<li><a href="#how-it-works">Crypto</a></li>
+<li><a href="#reviews">Retirement</a></li>
+<li><a href="#faq">Wallet</a></li>
+<li><a href="#form">Gold</a></li>
+<li><a href="#how-it-works">Learn</a></li>
+</ul>
+<div class="nav-right">
+<a href="#form" class="nav-login">Log in</a>
+<a href="#form" class="nav-cta">Sign Up</a>
+</div></div></nav>
+
+<section class="hero"><div class="hero-inner">
+<div class="hero-text">
+<div class="badge"><span class="dot"></span>{{BADGE}}</div>
+<h1>{{HERO_TITLE}}</h1>
+<p>{{HERO_SUBTITLE}}</p>
+<div class="hero-ctas">
+<a href="#form" class="btn-pri">{{CTA_BUTTON}} →</a>
+<a href="#form" class="ghost-link">Already have an account? Log in →</a>
+</div>
+<div class="hero-foot">Commission-free trading. No account minimums. Sign up in minutes and start investing today.</div>
+</div>
+
+<div class="chart-card">
+<div class="chart-head">
+<div class="chart-sym">
+<div class="ico">E</div>
+<div class="meta"><strong>EKO INC</strong><span>NASDAQ · EKO</span></div>
+</div>
+<div class="chart-price">
+<div class="big">$182.45</div>
+<div class="ch">▲ +$3.21 (1.81%) Today</div>
+</div>
+</div>
+<div class="chart-graph">
+<svg viewBox="0 0 500 170" preserveAspectRatio="none">
+<defs><linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0%" stop-color="#00C805" stop-opacity=".35"/>
+<stop offset="100%" stop-color="#00C805" stop-opacity="0"/>
+</linearGradient></defs>
+<path class="chart-fill" d="M0,130 C30,120 60,140 90,125 C120,110 150,118 180,95 C210,72 240,90 270,70 C300,50 330,62 360,48 C390,35 420,55 450,30 C470,18 490,28 500,22 L500,170 L0,170 Z"/>
+<path class="chart-line" d="M0,130 C30,120 60,140 90,125 C120,110 150,118 180,95 C210,72 240,90 270,70 C300,50 330,62 360,48 C390,35 420,55 450,30 C470,18 490,28 500,22"/>
+<circle class="chart-dot" cx="500" cy="22" r="5"/>
+</svg>
+</div>
+<div class="chart-bars">
+<div class="bar" style="height:32%;background:#00C805"></div>
+<div class="bar" style="height:48%;background:#00C805"></div>
+<div class="bar" style="height:24%;background:#ff5c5c"></div>
+<div class="bar" style="height:56%;background:#00C805"></div>
+<div class="bar" style="height:38%;background:#00C805"></div>
+<div class="bar" style="height:22%;background:#ff5c5c"></div>
+<div class="bar" style="height:64%;background:#00C805"></div>
+<div class="bar" style="height:42%;background:#00C805"></div>
+<div class="bar" style="height:78%;background:#00C805"></div>
+<div class="bar" style="height:52%;background:#00C805"></div>
+<div class="bar" style="height:88%;background:#00C805"></div>
+<div class="bar" style="height:96%;background:#00C805"></div>
+</div>
+<div class="chart-time">
+<div class="tf">1D</div>
+<div class="tf">1W</div>
+<div class="tf active">1M</div>
+<div class="tf">3M</div>
+<div class="tf">1Y</div>
+<div class="tf">ALL</div>
+</div>
+</div>
+</div></section>
+
+<div class="ticker">
+<div class="ticker-track">
+<span class="ticker-item"><span class="sym">AAPL</span> <span class="pr">$182.41</span> <span class="pl">▲ 1.81%</span></span>
+<span class="ticker-item"><span class="sym">TSLA</span> <span class="pr">$248.50</span> <span class="ng">▼ 0.62%</span></span>
+<span class="ticker-item"><span class="sym">NVDA</span> <span class="pr">$921.40</span> <span class="pl">▲ 3.12%</span></span>
+<span class="ticker-item"><span class="sym">MSFT</span> <span class="pr">$415.80</span> <span class="pl">▲ 0.94%</span></span>
+<span class="ticker-item"><span class="sym">GOOG</span> <span class="pr">$172.20</span> <span class="pl">▲ 1.45%</span></span>
+<span class="ticker-item"><span class="sym">META</span> <span class="pr">$498.10</span> <span class="ng">▼ 0.31%</span></span>
+<span class="ticker-item"><span class="sym">AMZN</span> <span class="pr">$184.72</span> <span class="pl">▲ 2.10%</span></span>
+<span class="ticker-item"><span class="sym">BTC</span> <span class="pr">$68,420</span> <span class="pl">▲ 4.20%</span></span>
+<span class="ticker-item"><span class="sym">ETH</span> <span class="pr">$3,612</span> <span class="pl">▲ 2.85%</span></span>
+<span class="ticker-item"><span class="sym">AAPL</span> <span class="pr">$182.41</span> <span class="pl">▲ 1.81%</span></span>
+<span class="ticker-item"><span class="sym">TSLA</span> <span class="pr">$248.50</span> <span class="ng">▼ 0.62%</span></span>
+<span class="ticker-item"><span class="sym">NVDA</span> <span class="pr">$921.40</span> <span class="pl">▲ 3.12%</span></span>
+<span class="ticker-item"><span class="sym">MSFT</span> <span class="pr">$415.80</span> <span class="pl">▲ 0.94%</span></span>
+<span class="ticker-item"><span class="sym">GOOG</span> <span class="pr">$172.20</span> <span class="pl">▲ 1.45%</span></span>
+<span class="ticker-item"><span class="sym">META</span> <span class="pr">$498.10</span> <span class="ng">▼ 0.31%</span></span>
+</div>
+</div>
+
+<section class="trust"><div class="trust-inner">
+<div class="trust-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7v6c0 5 4 9 9 10 5-1 9-5 9-10V7l-9-5z"/></svg>SIPC Protected up to $500,000</div>
+<div class="trust-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>FINRA Member</div>
+<div class="trust-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>256-bit Encryption</div>
+<div class="trust-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>24/5 Live Trading</div>
+</div></section>
+
+<section class="section section-soft" id="benefits"><div class="section-inner">
+<div class="section-header">
+<span class="section-eyebrow">Why Robinhood</span>
+<h2>{{BENEFITS_HEADLINE}}</h2>
+<p>{{BENEFITS_SUBHEADLINE}}</p>
+</div>
+<div class="features-grid">
+<div class="feature-card"><div class="feature-icon">{{BENEFIT_1_ICON}}</div><h3>{{BENEFIT_1_TITLE}}</h3><p>{{BENEFIT_1_DESC}}</p></div>
+<div class="feature-card"><div class="feature-icon">{{BENEFIT_2_ICON}}</div><h3>{{BENEFIT_2_TITLE}}</h3><p>{{BENEFIT_2_DESC}}</p></div>
+<div class="feature-card"><div class="feature-icon">{{BENEFIT_3_ICON}}</div><h3>{{BENEFIT_3_TITLE}}</h3><p>{{BENEFIT_3_DESC}}</p></div>
+<div class="feature-card"><div class="feature-icon">{{BENEFIT_4_ICON}}</div><h3>{{BENEFIT_4_TITLE}}</h3><p>{{BENEFIT_4_DESC}}</p></div>
+</div></div></section>
+
+<section class="stats-band">
+<h2>Trusted by millions of investors</h2>
+<div class="stats-row">
+<div class="stat-block"><div class="stat-num">{{STAT_1_NUM}}</div><div class="stat-label">{{STAT_1_LABEL}}</div></div>
+<div class="stat-block"><div class="stat-num">{{STAT_2_NUM}}</div><div class="stat-label">{{STAT_2_LABEL}}</div></div>
+<div class="stat-block"><div class="stat-num">{{STAT_3_NUM}}</div><div class="stat-label">{{STAT_3_LABEL}}</div></div>
+</div>
+</section>
+
+<section class="section" id="how-it-works"><div class="section-inner">
+<div class="section-header">
+<span class="section-eyebrow">Getting Started</span>
+<h2>{{HOW_HEADLINE}}</h2>
+<p>{{HOW_SUBHEADLINE}}</p>
+</div>
+<div class="steps-grid">
+<div class="step-card"><div class="step-icon">→</div><h3>{{STEP_1_TITLE}}</h3><p>{{STEP_1_DESC}}</p></div>
+<div class="step-card"><div class="step-icon">$</div><h3>{{STEP_2_TITLE}}</h3><p>{{STEP_2_DESC}}</p></div>
+<div class="step-card"><div class="step-icon">↗</div><h3>{{STEP_3_TITLE}}</h3><p>{{STEP_3_DESC}}</p></div>
+</div></div></section>
+
+<section class="section section-soft" id="reviews"><div class="section-inner">
+<div class="section-header">
+<span class="section-eyebrow">Investor Stories</span>
+<h2>{{REVIEWS_HEADLINE}}</h2>
+<p>{{REVIEWS_SUBHEADLINE}}</p>
+</div>
+<div class="reviews-grid">
+<div class="review-card"><div class="review-stars">★★★★★</div><p>"{{REVIEW_1_QUOTE}}"</p>
+<div class="review-author"><div class="review-avatar">{{REVIEW_1_INITIALS}}</div><div><strong>{{REVIEW_1_NAME}}</strong><div>{{REVIEW_1_ROLE}}</div></div></div></div>
+<div class="review-card"><div class="review-stars">★★★★★</div><p>"{{REVIEW_2_QUOTE}}"</p>
+<div class="review-author"><div class="review-avatar">{{REVIEW_2_INITIALS}}</div><div><strong>{{REVIEW_2_NAME}}</strong><div>{{REVIEW_2_ROLE}}</div></div></div></div>
+</div></div></section>
+
+<section class="section" id="faq"><div class="section-inner">
+<div class="section-header">
+<span class="section-eyebrow">FAQ</span>
+<h2>{{FAQ_HEADLINE}}</h2>
+<p>{{FAQ_SUBHEADLINE}}</p>
+</div>
+<div class="faq-list">
+<div class="faq-item active"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_1_Q}}</button><div class="faq-a">{{FAQ_1_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_2_Q}}</button><div class="faq-a">{{FAQ_2_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_3_Q}}</button><div class="faq-a">{{FAQ_3_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_4_Q}}</button><div class="faq-a">{{FAQ_4_A}}</div></div>
+</div></div></section>
+
+<section class="form-section" id="form">
+<div class="form-card">
+<h2>{{FOOTER_HEADLINE}}</h2>
+<p>{{FOOTER_SUBHEADLINE}}</p>
+<form action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST">
+<input type="text" name="first_name" placeholder="First name" required>
+<input type="text" name="last_name" placeholder="Last name" required>
+<input type="email" name="email" placeholder="Email" required>
+<input type="tel" name="phone" placeholder="Phone" required>
+<input type="url" name="website" placeholder="Website" required>
+<button type="submit">{{FOOTER_CTA}}</button>
+</form>
+<div class="form-note">By signing up, you agree to receive communications. Investing involves risk, including loss of principal.</div>
+</div>
+</section>
+
+<footer class="footer"><div class="footer-inner">
+<div class="footer-top">
+<div class="footer-brand">
+<a href="#" class="brand" style="color:#fff">
+<svg class="brand-logo" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+<path d="M16 2C13 8 8 12 4 14c4 .5 8 3 10 7 2-4 6-6.5 10-7-4-2-9-6-8-12z"/>
+<path d="M16 16v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+</svg>
+Robinhood
+</a>
+<p>Investing for everyone. Commission-free. No account minimums.</p>
+</div>
+<div class="footer-col"><h4>Invest</h4><ul>
+<li><a href="#">Stocks & ETFs</a></li><li><a href="#">Options</a></li>
+<li><a href="#">Margin</a></li><li><a href="#">Cash sweep</a></li>
+<li><a href="#">Retirement</a></li>
+</ul></div>
+<div class="footer-col"><h4>Crypto</h4><ul>
+<li><a href="#">Bitcoin</a></li><li><a href="#">Ethereum</a></li>
+<li><a href="#">Wallet</a></li><li><a href="#">Earn rewards</a></li>
+<li><a href="#">Learn crypto</a></li>
+</ul></div>
+<div class="footer-col"><h4>Card</h4><ul>
+<li><a href="#">Robinhood Card</a></li><li><a href="#">Rewards</a></li>
+<li><a href="#">Round-ups</a></li><li><a href="#">Direct deposit</a></li>
+</ul></div>
+<div class="footer-col"><h4>Money</h4><ul>
+<li><a href="#">Spending</a></li><li><a href="#">Cash management</a></li>
+<li><a href="#">Robinhood Gold</a></li><li><a href="#">Pricing</a></li>
+</ul></div>
+<div class="footer-col"><h4>About</h4><ul>
+<li><a href="#">Newsroom</a></li><li><a href="#">Careers</a></li>
+<li><a href="#">Support</a></li><li><a href="#">Snacks newsletter</a></li>
+</ul></div>
+</div>
+<div class="footer-legal">
+<p>All investments involve risk and loss of principal is possible. Information provided is for educational purposes only and is not a recommendation. Securities trading is offered to self-directed customers by Robinhood Financial. Robinhood Financial is a member of FINRA and SIPC. Cryptocurrency services are offered through Robinhood Crypto, LLC ("RHC") (NMLS ID: 1702840).</p>
+<p>Margin investing involves the risk of greater investment losses. Before using margin, customers must determine whether this type of trading strategy is right for them given their specific investment objectives, experience, risk tolerance, and financial situation.</p>
+</div>
+<div class="footer-bottom">
+<div>© {{YEAR}} Eko AI · contact@biz.ekoaiautomation.com</div>
+<div>Member FINRA · SIPC</div>
+</div>
+</div></footer>
+
+__FORM_SUBMIT_JS__
+</body></html>
+"""
+
+# ─── Patagonia Outdoors ─────────────────────────────────────────────────────────────
+_TPL_PATAGONIA_OUTDOORS = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{TITLE}}</title><style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#fff;--text:#2c2625;--muted:#7a7270;--cream:#f2eeda;--cream-d:#e8e2c8;--green:#3b5b3a;--green-d:#2e4a2d;--green-l:#5a7c4f;--blue:#3978aa;--red:#a13d2d;--dark:#2c2625;--border:#d8d1bf}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh;-webkit-text-size-adjust:100%}
+body{font-family:'Acumin Pro','Adobe Acumin','Helvetica Neue',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;-webkit-font-smoothing:antialiased;font-weight:400;min-height:100vh;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* NAV — warm cream */
+.nav{position:sticky;top:0;left:0;right:0;z-index:9999;background:var(--cream);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1320px;margin:0 auto;padding:0 32px;height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:22px;letter-spacing:.01em;color:var(--dark);text-transform:none}
+.brand-logo{width:46px;height:18px;color:var(--green);flex-shrink:0}
+.nav-links{display:flex;gap:32px;list-style:none;align-items:center;flex:1;justify-content:center}
+.nav-links a{color:var(--dark);font-size:15px;font-weight:600;letter-spacing:.01em;text-transform:none;transition:color .15s;padding:6px 0;border-bottom:2px solid transparent}
+.nav-links a:hover{color:var(--green);border-bottom-color:var(--green)}
+.nav-right{display:flex;align-items:center;gap:18px}
+.nav-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--dark);transition:background .15s;cursor:pointer}
+.nav-icon:hover{background:var(--cream-d)}
+.nav-icon svg{width:20px;height:20px}
+.nav-bag{position:relative}
+.nav-bag .count{position:absolute;top:0;right:-2px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+/* HERO */
+.hero{position:relative;height:680px;background:linear-gradient(135deg,var(--green) 0%,var(--green-l) 60%,#7a9a5d 100%);overflow:hidden;display:flex;align-items:flex-end;color:#fff}
+.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.18) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(0,0,0,.3) 0%,transparent 60%),linear-gradient(180deg,transparent 50%,rgba(0,0,0,.35) 100%);pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:50%;background:linear-gradient(180deg,transparent,rgba(44,38,37,.55))}
+.hero-mountains{position:absolute;bottom:0;left:0;right:0;height:45%;pointer-events:none;opacity:.45}
+.hero-mountains svg{width:100%;height:100%;display:block}
+.hero-inner{position:relative;z-index:2;max-width:1320px;width:100%;margin:0 auto;padding:0 32px 80px;animation:fadeInUp 1s ease both}
+.eyebrow{display:inline-block;font-size:13px;text-transform:uppercase;letter-spacing:.22em;font-weight:700;color:#fff;margin-bottom:20px;padding-bottom:6px;border-bottom:2px solid #fff;background:none}
+.hero h1{font-size:clamp(40px,5.5vw,72px);font-weight:700;line-height:1.05;letter-spacing:-.015em;color:#fff;max-width:820px;margin-bottom:24px;text-shadow:0 2px 16px rgba(0,0,0,.2)}
+.hero p{font-size:clamp(16px,1.6vw,20px);color:#f5f0dd;max-width:600px;line-height:1.55;margin-bottom:32px;text-shadow:0 1px 8px rgba(0,0,0,.25)}
+.hero-ctas{display:flex;gap:14px;flex-wrap:wrap}
+.btn-out{padding:14px 28px;background:transparent;color:#fff;border:1.5px solid #fff;font-size:15px;font-weight:700;text-transform:none;cursor:pointer;transition:all .15s;letter-spacing:.02em}
+.btn-out:hover{background:#fff;color:var(--dark)}
+.btn-fill{padding:14px 28px;background:#fff;color:var(--dark);border:1.5px solid #fff;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.02em}
+.btn-fill:hover{background:transparent;color:#fff}
+
+/* ACTIVISM STRIP */
+.activism-strip{background:var(--red);color:#fff;padding:14px 24px;text-align:center;font-size:14px;font-weight:600;letter-spacing:.02em}
+.activism-strip a{color:#fff;text-decoration:underline}
+
+/* SECTIONS */
+.section{padding:100px 24px}
+.section-cream{background:var(--cream)}
+.section-inner{max-width:1320px;margin:0 auto}
+.section-header{margin-bottom:60px;max-width:880px}
+.section-header.center{text-align:center;margin-left:auto;margin-right:auto}
+.section-eyebrow{display:inline-block;font-size:12px;text-transform:uppercase;letter-spacing:.22em;font-weight:700;color:var(--green);margin-bottom:18px}
+.section-header h2{font-size:clamp(32px,4.5vw,52px);font-weight:700;letter-spacing:-.015em;line-height:1.1;margin-bottom:18px;color:var(--dark)}
+.section-header p{color:var(--muted);font-size:18px;line-height:1.55;max-width:640px}
+.section-header.center p{margin-left:auto;margin-right:auto}
+
+/* WORN WEAR / EDITORIAL CARDS */
+.editorial-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.ed-card{background:#fff;border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;transition:transform .25s}
+.ed-card:hover{transform:translateY(-4px)}
+.ed-photo{height:280px;position:relative;overflow:hidden}
+.ed-photo .tag{position:absolute;top:18px;left:18px;background:var(--red);color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;padding:6px 12px}
+.ed-photo.p1{background:linear-gradient(135deg,#3978aa,#5a8db8 60%,#7a9ec4)}
+.ed-photo.p2{background:linear-gradient(135deg,#a13d2d,#c7654b 60%,#dba07e)}
+.ed-body{padding:28px;flex:1;display:flex;flex-direction:column}
+.ed-body h3{font-size:24px;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin-bottom:12px;color:var(--dark)}
+.ed-body p{color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:18px;flex:1}
+.ed-link{color:var(--green);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid var(--green);padding-bottom:3px;align-self:flex-start;transition:color .15s,border-color .15s}
+.ed-link:hover{color:var(--green-d);border-color:var(--green-d)}
+
+/* FEATURES with photo */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+.feature-card{background:var(--cream);border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;transition:transform .2s}
+.feature-card:hover{transform:translateY(-4px)}
+.feature-photo{height:200px;display:flex;align-items:center;justify-content:center;font-size:48px;color:#fff;font-weight:700}
+.feature-card:nth-child(1) .feature-photo{background:linear-gradient(135deg,#3b5b3a,#5a7c4f)}
+.feature-card:nth-child(2) .feature-photo{background:linear-gradient(135deg,#3978aa,#5a8db8)}
+.feature-card:nth-child(3) .feature-photo{background:linear-gradient(135deg,#a13d2d,#c7654b)}
+.feature-card:nth-child(4) .feature-photo{background:linear-gradient(135deg,#7a6b3d,#a89656)}
+.feature-body{padding:26px;flex:1;display:flex;flex-direction:column}
+.feature-body h3{font-size:20px;font-weight:700;letter-spacing:-.01em;margin-bottom:10px;color:var(--dark)}
+.feature-body p{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:16px;flex:1}
+.feature-link{color:var(--green);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid var(--green);padding-bottom:2px;align-self:flex-start}
+
+/* SHOP FILTER MOCKUP */
+.shop-wrap{display:grid;grid-template-columns:240px 1fr;gap:36px;align-items:start}
+.shop-filters{background:#fff;border:1px solid var(--border);padding:24px}
+.shop-filters h4{font-size:11px;text-transform:uppercase;letter-spacing:.14em;font-weight:700;color:var(--muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.shop-filters .filter-group{margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.shop-filters .filter-group:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.shop-filters .filter-title{display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:var(--dark);margin-bottom:12px;cursor:pointer}
+.shop-filters .filter-title::after{content:'−';color:var(--muted)}
+.shop-filters .filter-options{display:flex;flex-direction:column;gap:8px}
+.shop-filters .filter-option{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.shop-filters .filter-option input{accent-color:var(--green)}
+.shop-filters .color-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.shop-filters .swatch{width:22px;height:22px;border-radius:50%;border:1px solid var(--border);cursor:pointer}
+.steps-area{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+.step-card{background:#fff;border:1px solid var(--border);padding:24px;display:flex;flex-direction:column}
+.step-tag{font-size:11px;text-transform:uppercase;letter-spacing:.14em;font-weight:700;color:var(--red);margin-bottom:10px}
+.step-num-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.step-num{width:38px;height:38px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0}
+.step-card h3{font-size:18px;font-weight:700;color:var(--dark);letter-spacing:-.005em}
+.step-card p{color:var(--muted);font-size:14px;line-height:1.55;margin-bottom:14px;flex:1}
+.step-card .step-link{color:var(--green);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;border-bottom:2px solid var(--green);padding-bottom:2px;align-self:flex-start}
+
+/* MISSION / STATS BAND */
+.mission{background:var(--green);color:#fff;padding:100px 24px;text-align:center;position:relative;overflow:hidden}
+.mission::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.08) 0%,transparent 40%),radial-gradient(circle at 80% 70%,rgba(255,255,255,.05) 0%,transparent 40%);pointer-events:none}
+.mission-inner{position:relative;max-width:1100px;margin:0 auto}
+.mission .eyebrow{color:#fff;border-color:#fff}
+.mission h2{font-size:clamp(36px,5vw,60px);font-weight:700;letter-spacing:-.015em;line-height:1.1;margin-bottom:24px;color:#fff;max-width:900px;margin-left:auto;margin-right:auto}
+.mission p{font-size:18px;color:#e6e2c8;max-width:680px;margin:0 auto 56px;line-height:1.55}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:48px;max-width:980px;margin:0 auto}
+.stat-block{text-align:center;padding:0 12px}
+.stat-num{font-size:clamp(48px,5.5vw,80px);font-weight:800;letter-spacing:-.025em;line-height:1;color:#fff;margin-bottom:12px;font-variant-numeric:tabular-nums}
+.stat-label{font-size:14px;color:#e6e2c8;font-weight:500;text-transform:uppercase;letter-spacing:.1em}
+
+/* REVIEWS */
+.reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:28px}
+.review-card{background:var(--cream);padding:36px;border-left:4px solid var(--green);display:flex;flex-direction:column}
+.review-card:nth-child(2){border-left-color:var(--red)}
+.review-tag{font-size:11px;text-transform:uppercase;letter-spacing:.14em;font-weight:700;color:var(--green);margin-bottom:18px}
+.review-card:nth-child(2) .review-tag{color:var(--red)}
+.review-card p{font-size:19px;line-height:1.5;color:var(--dark);margin-bottom:28px;font-weight:500;flex:1}
+.review-author{display:flex;align-items:center;gap:14px;padding-top:18px;border-top:1px solid var(--border)}
+.review-avatar{width:48px;height:48px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0}
+.review-card:nth-child(2) .review-avatar{background:var(--red)}
+.review-author strong{display:block;color:var(--dark);font-size:15px;font-weight:700}
+.review-author div:last-child{font-size:13px;color:var(--muted);letter-spacing:.02em}
+
+/* FAQ */
+.faq-list{max-width:880px;margin:0 auto}
+.faq-item{border-top:1px solid var(--border)}
+.faq-item:last-child{border-bottom:1px solid var(--border)}
+.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;padding:26px 0;background:none;border:none;color:var(--dark);font-size:18px;font-weight:700;text-align:left;cursor:pointer;letter-spacing:-.005em;font-family:inherit;gap:24px}
+.faq-q::after{content:'+';font-size:24px;font-weight:400;color:var(--green);transition:transform .3s;flex-shrink:0}
+.faq-item.active .faq-q::after{transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;color:var(--muted);font-size:16px;line-height:1.65}
+.faq-item.active .faq-a{max-height:300px;padding-bottom:26px}
+
+/* FORM SECTION */
+.form-section{padding:120px 24px;background:var(--cream);position:relative}
+.form-wrap{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.form-side h2{font-size:clamp(32px,4.5vw,52px);font-weight:700;letter-spacing:-.015em;line-height:1.1;margin-bottom:18px;color:var(--dark)}
+.form-side p{color:var(--muted);font-size:17px;line-height:1.6;margin-bottom:24px}
+.form-side .pledge-row{display:flex;flex-direction:column;gap:14px}
+.pledge-item{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--dark);font-weight:600}
+.pledge-item .icn{width:28px;height:28px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.form-card{background:#fff;border:1px solid var(--border);padding:40px}
+.form-card form{display:flex;flex-direction:column;gap:14px}
+.form-card input{width:100%;padding:14px 16px;border:1px solid var(--border);font-size:15px;font-family:inherit;color:var(--dark);background:#fff;outline:none;transition:border-color .15s}
+.form-card input::placeholder{color:#a89e9a}
+.form-card input:focus{border-color:var(--green)}
+.form-card button{padding:16px;background:var(--green);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;text-transform:uppercase;letter-spacing:.06em;transition:background .15s}
+.form-card button:hover{background:var(--green-d)}
+
+/* FOOTER */
+.footer{background:var(--dark);color:var(--cream);padding:72px 24px 36px}
+.footer-inner{max-width:1320px;margin:0 auto}
+.footer-top{display:grid;grid-template-columns:1.3fr repeat(4,1fr);gap:40px;padding-bottom:48px;border-bottom:1px solid #463d3b}
+.footer-brand{display:flex;flex-direction:column;gap:14px}
+.footer-brand .brand{color:var(--cream)}
+.footer-brand .brand-logo{color:var(--cream)}
+.footer-brand p{color:#a89e9a;font-size:14px;line-height:1.55;max-width:280px}
+.footer-col h4{font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:var(--cream);margin-bottom:18px;font-weight:700}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:12px}
+.footer-col a{color:#a89e9a;font-size:14px;transition:color .15s}
+.footer-col a:hover{color:var(--cream)}
+.footer-badges{display:flex;gap:20px;flex-wrap:wrap;padding:32px 0;border-bottom:1px solid #463d3b;margin-bottom:24px}
+.footer-badge{display:flex;align-items:center;gap:10px;padding:10px 16px;border:1px solid #463d3b}
+.footer-badge .bicn{width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+.footer-badge strong{display:block;color:var(--cream);font-size:13px;font-weight:700;line-height:1.2}
+.footer-badge span{display:block;color:#a89e9a;font-size:11px;letter-spacing:.04em}
+.footer-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;color:#a89e9a;font-size:12px;padding-top:8px}
+
+/* MOBILE */
+@media(max-width:900px){
+  .editorial-grid{grid-template-columns:1fr}
+  .shop-wrap{grid-template-columns:1fr;gap:24px}
+  .form-wrap{grid-template-columns:1fr;gap:36px}
+}
+@media(max-width:640px){
+  .nav-links{display:none}
+  .nav-inner{padding:0 18px;height:60px}
+  .hero{height:560px}
+  .hero-inner{padding:0 18px 56px}
+  .section{padding:64px 18px}
+  .mission{padding:64px 18px}
+  .stats-row{grid-template-columns:1fr;gap:32px}
+  .form-section{padding:64px 18px}
+  .form-card{padding:28px 22px}
+  .footer-top{grid-template-columns:1fr 1fr;gap:28px}
+  .footer-brand{grid-column:1/-1}
+  .footer-badges{flex-direction:column}
+}
+</style></head>
+<body>__TRACKING_PIXEL__
+
+<nav class="nav"><div class="nav-inner">
+<a href="#" class="brand">
+<svg class="brand-logo" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+<path d="M0 22 L12 8 L18 14 L26 4 L34 16 L42 6 L50 18 L60 10 L60 22 Z"/>
+</svg>
+Patagonia
+</a>
+<ul class="nav-links">
+<li><a href="#benefits">Shop</a></li>
+<li><a href="#how-it-works">Activism</a></li>
+<li><a href="#reviews">Sports & Activities</a></li>
+<li><a href="#faq">Stories</a></li>
+</ul>
+<div class="nav-right">
+<div class="nav-icon" title="Search">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+</div>
+<div class="nav-icon" title="Account">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+</div>
+<div class="nav-icon nav-bag" title="Bag">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+<span class="count">2</span>
+</div>
+</div></div></nav>
+
+<div class="activism-strip">Worn Wear: Trade in your used Patagonia gear for credit toward something new. <a href="#how-it-works">Learn more →</a></div>
+
+<section class="hero">
+<div class="hero-mountains">
+<svg viewBox="0 0 1440 400" preserveAspectRatio="none" fill="rgba(255,255,255,0.7)">
+<path d="M0,400 L0,260 L160,140 L300,220 L480,90 L660,200 L820,120 L1000,210 L1200,100 L1320,180 L1440,140 L1440,400 Z" fill="rgba(255,255,255,0.18)"/>
+<path d="M0,400 L0,320 L120,220 L280,300 L440,200 L600,290 L760,210 L940,300 L1140,200 L1280,280 L1440,240 L1440,400 Z" fill="rgba(0,0,0,0.18)"/>
+</svg>
+</div>
+<div class="hero-inner">
+<span class="eyebrow">WORN WEAR · {{BADGE}}</span>
+<h1>{{HERO_TITLE}}</h1>
+<p>{{HERO_SUBTITLE}}</p>
+<div class="hero-ctas">
+<a href="#form" class="btn-out">{{CTA_BUTTON}}</a>
+<a href="#how-it-works" class="btn-fill">Read Manifesto</a>
+</div>
+</div>
+</section>
+
+<section class="section" id="benefits"><div class="section-inner">
+<div class="section-header">
+<span class="section-eyebrow">Stories from the field</span>
+<h2>{{BENEFITS_HEADLINE}}</h2>
+<p>{{BENEFITS_SUBHEADLINE}}</p>
+</div>
+<div class="editorial-grid">
+<div class="ed-card">
+<div class="ed-photo p1"><div class="tag">Buy Less, Demand More</div></div>
+<div class="ed-body">
+<h3>{{BENEFIT_1_TITLE}}</h3>
+<p>{{BENEFIT_1_DESC}}</p>
+<a href="#form" class="ed-link">{{BENEFIT_1_ICON}} Read the Manifesto</a>
+</div>
+</div>
+<div class="ed-card">
+<div class="ed-photo p2"><div class="tag">Worn Wear</div></div>
+<div class="ed-body">
+<h3>{{BENEFIT_2_TITLE}}</h3>
+<p>{{BENEFIT_2_DESC}}</p>
+<a href="#form" class="ed-link">{{BENEFIT_2_ICON}} Trade In Your Gear</a>
+</div>
+</div>
+</div>
+
+<div style="margin-top:48px"><div class="features-grid">
+<div class="feature-card">
+<div class="feature-photo">{{BENEFIT_3_ICON}}</div>
+<div class="feature-body"><h3>{{BENEFIT_3_TITLE}}</h3><p>{{BENEFIT_3_DESC}}</p><a href="#form" class="feature-link">Learn more</a></div>
+</div>
+<div class="feature-card">
+<div class="feature-photo">{{BENEFIT_4_ICON}}</div>
+<div class="feature-body"><h3>{{BENEFIT_4_TITLE}}</h3><p>{{BENEFIT_4_DESC}}</p><a href="#form" class="feature-link">Learn more</a></div>
+</div>
+<div class="feature-card">
+<div class="feature-photo">🏔</div>
+<div class="feature-body"><h3>Built to Last</h3><p>Made from recycled materials with our Ironclad Guarantee. If a Patagonia product breaks down or wears out, we repair it, replace it, or refund you.</p><a href="#form" class="feature-link">Our Guarantee</a></div>
+</div>
+<div class="feature-card">
+<div class="feature-photo">🌱</div>
+<div class="feature-body"><h3>1% for the Planet</h3><p>Since 1985, we've pledged 1% of sales to the preservation and restoration of the natural environment. Over $140M donated to date.</p><a href="#form" class="feature-link">See Grantees</a></div>
+</div>
+</div></div>
+</div></section>
+
+<section class="mission"><div class="mission-inner">
+<span class="eyebrow">Our Mission</span>
+<h2>We're in business to save our home planet.</h2>
+<p>Earth is now our only shareholder. Every dollar that's not reinvested back into Patagonia is distributed as dividends to protect the planet.</p>
+<div class="stats-row">
+<div class="stat-block"><div class="stat-num">{{STAT_1_NUM}}</div><div class="stat-label">{{STAT_1_LABEL}}</div></div>
+<div class="stat-block"><div class="stat-num">{{STAT_2_NUM}}</div><div class="stat-label">{{STAT_2_LABEL}}</div></div>
+<div class="stat-block"><div class="stat-num">{{STAT_3_NUM}}</div><div class="stat-label">{{STAT_3_LABEL}}</div></div>
+</div>
+</div></section>
+
+<section class="section section-cream" id="how-it-works"><div class="section-inner">
+<div class="section-header">
+<span class="section-eyebrow">How it works</span>
+<h2>{{HOW_HEADLINE}}</h2>
+<p>{{HOW_SUBHEADLINE}}</p>
+</div>
+
+<div class="shop-wrap">
+<aside class="shop-filters">
+<h4>Filter</h4>
+<div class="filter-group">
+<div class="filter-title">Activity</div>
+<div class="filter-options">
+<label class="filter-option"><input type="checkbox" checked> Climbing</label>
+<label class="filter-option"><input type="checkbox"> Trail Running</label>
+<label class="filter-option"><input type="checkbox" checked> Hiking</label>
+<label class="filter-option"><input type="checkbox"> Skiing</label>
+<label class="filter-option"><input type="checkbox"> Fishing</label>
+</div>
+</div>
+<div class="filter-group">
+<div class="filter-title">Gender</div>
+<div class="filter-options">
+<label class="filter-option"><input type="checkbox"> Men</label>
+<label class="filter-option"><input type="checkbox"> Women</label>
+<label class="filter-option"><input type="checkbox"> Kids</label>
+</div>
+</div>
+<div class="filter-group">
+<div class="filter-title">Category</div>
+<div class="filter-options">
+<label class="filter-option"><input type="checkbox" checked> Jackets</label>
+<label class="filter-option"><input type="checkbox"> Pants</label>
+<label class="filter-option"><input type="checkbox"> Fleece</label>
+<label class="filter-option"><input type="checkbox"> Packs</label>
+</div>
+</div>
+<div class="filter-group">
+<div class="filter-title">Color</div>
+<div class="color-row">
+<span class="swatch" style="background:#3b5b3a"></span>
+<span class="swatch" style="background:#3978aa"></span>
+<span class="swatch" style="background:#a13d2d"></span>
+<span class="swatch" style="background:#2c2625"></span>
+<span class="swatch" style="background:#f2eeda"></span>
+<span class="swatch" style="background:#a89656"></span>
+</div>
+</div>
+</aside>
+
+<div class="steps-area">
+<div class="step-card">
+<div class="step-tag">Step 01</div>
+<div class="step-num-row"><div class="step-num">1</div></div>
+<h3>{{STEP_1_TITLE}}</h3>
+<p>{{STEP_1_DESC}}</p>
+<a href="#form" class="step-link">Start →</a>
+</div>
+<div class="step-card">
+<div class="step-tag">Step 02</div>
+<div class="step-num-row"><div class="step-num">2</div></div>
+<h3>{{STEP_2_TITLE}}</h3>
+<p>{{STEP_2_DESC}}</p>
+<a href="#form" class="step-link">Continue →</a>
+</div>
+<div class="step-card">
+<div class="step-tag">Step 03</div>
+<div class="step-num-row"><div class="step-num">3</div></div>
+<h3>{{STEP_3_TITLE}}</h3>
+<p>{{STEP_3_DESC}}</p>
+<a href="#form" class="step-link">Finish →</a>
+</div>
+</div>
+</div>
+</div></section>
+
+<section class="section" id="reviews"><div class="section-inner">
+<div class="section-header center">
+<span class="section-eyebrow">Voices from the trail</span>
+<h2>{{REVIEWS_HEADLINE}}</h2>
+<p>{{REVIEWS_SUBHEADLINE}}</p>
+</div>
+<div class="reviews-grid">
+<div class="review-card">
+<div class="review-tag">Climber · Yosemite, CA</div>
+<p>"{{REVIEW_1_QUOTE}}"</p>
+<div class="review-author">
+<div class="review-avatar">{{REVIEW_1_INITIALS}}</div>
+<div><strong>{{REVIEW_1_NAME}}</strong><div>{{REVIEW_1_ROLE}}</div></div>
+</div>
+</div>
+<div class="review-card">
+<div class="review-tag">Trail Runner · Patagonia, AR</div>
+<p>"{{REVIEW_2_QUOTE}}"</p>
+<div class="review-author">
+<div class="review-avatar">{{REVIEW_2_INITIALS}}</div>
+<div><strong>{{REVIEW_2_NAME}}</strong><div>{{REVIEW_2_ROLE}}</div></div>
+</div>
+</div>
+</div>
+</div></section>
+
+<section class="section section-cream" id="faq"><div class="section-inner">
+<div class="section-header center">
+<span class="section-eyebrow">Frequently asked</span>
+<h2>{{FAQ_HEADLINE}}</h2>
+<p>{{FAQ_SUBHEADLINE}}</p>
+</div>
+<div class="faq-list">
+<div class="faq-item active"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_1_Q}}</button><div class="faq-a">{{FAQ_1_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_2_Q}}</button><div class="faq-a">{{FAQ_2_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_3_Q}}</button><div class="faq-a">{{FAQ_3_A}}</div></div>
+<div class="faq-item"><button class="faq-q" onclick="this.parentElement.classList.toggle('active')">{{FAQ_4_Q}}</button><div class="faq-a">{{FAQ_4_A}}</div></div>
+</div>
+</div></section>
+
+<section class="form-section" id="form">
+<div class="form-wrap">
+<div class="form-side">
+<span class="section-eyebrow">Don't Buy This Jacket</span>
+<h2>{{FOOTER_HEADLINE}}</h2>
+<p>{{FOOTER_SUBHEADLINE}}</p>
+<div class="pledge-row">
+<div class="pledge-item"><span class="icn">1%</span> 1% of sales pledged to grassroots environmental groups</div>
+<div class="pledge-item"><span class="icn">B</span> Certified B Corporation since 2012</div>
+<div class="pledge-item"><span class="icn">♺</span> Ironclad Guarantee — we'll repair, replace, or refund</div>
+</div>
+</div>
+<div class="form-card">
+<form action="/api/v1/leads/public?landing_page_id={{LP_ID}}" method="POST">
+<input type="text" name="first_name" placeholder="First name" required>
+<input type="text" name="last_name" placeholder="Last name" required>
+<input type="email" name="email" placeholder="Email" required>
+<input type="tel" name="phone" placeholder="Phone" required>
+<input type="url" name="website" placeholder="Website" required>
+<button type="submit">{{FOOTER_CTA}}</button>
+</form>
+</div>
+</div>
+</section>
+
+<footer class="footer"><div class="footer-inner">
+<div class="footer-top">
+<div class="footer-brand">
+<a href="#" class="brand" style="color:var(--cream)">
+<svg class="brand-logo" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+<path d="M0 22 L12 8 L18 14 L26 4 L34 16 L42 6 L50 18 L60 10 L60 22 Z"/>
+</svg>
+Patagonia
+</a>
+<p>In business to save our home planet. Earth is our only shareholder.</p>
+</div>
+<div class="footer-col"><h4>Shop</h4><ul>
+<li><a href="#">Men</a></li><li><a href="#">Women</a></li>
+<li><a href="#">Kids & Baby</a></li><li><a href="#">Worn Wear</a></li>
+<li><a href="#">Gift Cards</a></li>
+</ul></div>
+<div class="footer-col"><h4>Activism</h4><ul>
+<li><a href="#">Patagonia Action Works</a></li><li><a href="#">Environmental Grants</a></li>
+<li><a href="#">Films</a></li><li><a href="#">Tin Shed Ventures</a></li>
+</ul></div>
+<div class="footer-col"><h4>Customer Service</h4><ul>
+<li><a href="#">Help Center</a></li><li><a href="#">Shipping</a></li>
+<li><a href="#">Returns & Exchanges</a></li><li><a href="#">Repairs</a></li>
+<li><a href="#">Order Status</a></li>
+</ul></div>
+<div class="footer-col"><h4>About</h4><ul>
+<li><a href="#">Our Footprint</a></li><li><a href="#">Stories</a></li>
+<li><a href="#">Careers</a></li><li><a href="#">Press Room</a></li>
+<li><a href="#">Our Story</a></li>
+</ul></div>
+</div>
+<div class="footer-badges">
+<div class="footer-badge"><span class="bicn">1%</span><div><strong>1% for the Planet</strong><span>Founding member since 2002</span></div></div>
+<div class="footer-badge"><span class="bicn">B</span><div><strong>Certified B Corp</strong><span>Verified since 2012</span></div></div>
+<div class="footer-badge"><span class="bicn">♺</span><div><strong>Fair Trade Certified</strong><span>Sewn factory bonus</span></div></div>
+</div>
+<div class="footer-bottom">
+<div>© {{YEAR}} Eko AI · contact@biz.ekoaiautomation.com</div>
+<div>Earth is our only shareholder.</div>
+</div>
+</div></footer>
+
+__FORM_SUBMIT_JS__
+</body></html>
+"""
+
 TEMPLATES: dict = {
     "eko-classic": {
         "name": "Eko Classic",
@@ -3382,6 +7360,86 @@ TEMPLATES: dict = {
         "best_for": "B2B services, agencies, consultants, legal, finance",
         "accent": "#FF7A59",
         "html": _TPL_HUBSPOT_SALES,
+    },
+    "vercel-modern": {
+        "name": "Vercel Modern",
+        "tagline": "Black + gradient + mono — dev-tool aesthetic",
+        "vibe": "dark, modern, developer",
+        "best_for": "SaaS, dev tools, AI startups",
+        "accent": "#0070f3",
+        "html": _TPL_VERCEL_MODERN,
+    },
+    "github-dark": {
+        "name": "GitHub Dark",
+        "tagline": "Dark navy with green CTAs and code blocks",
+        "vibe": "dark, technical, code-centric",
+        "best_for": "Open source, dev tools, infrastructure",
+        "accent": "#238636",
+        "html": _TPL_GITHUB_DARK,
+    },
+    "discord-vibrant": {
+        "name": "Discord Vibrant",
+        "tagline": "Blurple with playful community vibe",
+        "vibe": "vibrant, community, playful",
+        "best_for": "Community apps, gaming, social",
+        "accent": "#5865F2",
+        "html": _TPL_DISCORD_VIBRANT,
+    },
+    "mailchimp-whimsical": {
+        "name": "Mailchimp Whimsical",
+        "tagline": "Yellow + serif + cartoon mascot",
+        "vibe": "whimsical, friendly, illustrated",
+        "best_for": "Small business marketing, agencies",
+        "accent": "#FFE01B",
+        "html": _TPL_MAILCHIMP_WHIMSICAL,
+    },
+    "slack-pro": {
+        "name": "Slack Pro",
+        "tagline": "Aubergine + 4-color hashtag identity",
+        "vibe": "productive, vibrant, modern",
+        "best_for": "Enterprise SaaS, productivity tools",
+        "accent": "#611f69",
+        "html": _TPL_SLACK_PRO,
+    },
+    "coinbase-finance": {
+        "name": "Coinbase Finance",
+        "tagline": "Clean blue with crypto ticker",
+        "vibe": "clean, trustworthy, financial",
+        "best_for": "Fintech, crypto, investment platforms",
+        "accent": "#0052FF",
+        "html": _TPL_COINBASE_FINANCE,
+    },
+    "webflow-pro": {
+        "name": "Webflow Pro",
+        "tagline": "Black + electric blue + designer canvas",
+        "vibe": "professional, designer, polished",
+        "best_for": "Design agencies, CMS platforms, no-code",
+        "accent": "#4353ff",
+        "html": _TPL_WEBFLOW_PRO,
+    },
+    "figma-creative": {
+        "name": "Figma Creative",
+        "tagline": "Multi-color gradient mesh + design tool aesthetic",
+        "vibe": "creative, colorful, modern",
+        "best_for": "Design tools, creative agencies, startups",
+        "accent": "#a259ff",
+        "html": _TPL_FIGMA_CREATIVE,
+    },
+    "robinhood-trade": {
+        "name": "Robinhood Trade",
+        "tagline": "Bright green + animated stock chart",
+        "vibe": "modern, fintech, trustworthy",
+        "best_for": "Trading, brokerages, investment apps",
+        "accent": "#00C805",
+        "html": _TPL_ROBINHOOD_TRADE,
+    },
+    "patagonia-outdoors": {
+        "name": "Patagonia Outdoors",
+        "tagline": "Earth tones + activism + photography",
+        "vibe": "earthy, conscious, outdoors",
+        "best_for": "Outdoor brands, sustainability, conservation",
+        "accent": "#3b5b3a",
+        "html": _TPL_PATAGONIA_OUTDOORS,
     },
 }
 

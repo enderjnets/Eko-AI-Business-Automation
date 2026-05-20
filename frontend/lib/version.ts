@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.32";
+export const CURRENT_VERSION = "0.7.33";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,29 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.33",
+    date: "2026-05-20",
+    title: "Landing Pages — 10 templates nuevos (Vercel/GitHub/Discord/Mailchimp/Slack/Coinbase/Webflow/Figma/Robinhood/Patagonia) + fix bug 500 en Generate",
+    changes: [
+      "Bug fix crítico (Generate with AI tiraba 500): Kimi CLI a veces devuelve un NULL byte (0x00) en su output. Postgres TEXT columns rechazan invalid UTF-8 con CharacterNotInRepertoireError. Fix: sanitize() helper strippea NULL bytes en html/css/js/prompt antes del UPDATE",
+      "Generate endpoint ahora resiliente: si el AI genera/fails, fallback a render_template_preview (default copy) en vez de 500 — el user siempre recibe una página válida + retry CTA",
+      "Kimi CLI timeout subido de 120s → 180s para prompts complejos",
+      "10 TEMPLATES NUEVOS (20 totales ahora):",
+      "  • Vercel Modern — black + Geist Mono + ▲ Vercel logo + gradient mesh",
+      "  • GitHub Dark — #0d1117 dark navy + green CTAs + Octocat",
+      "  • Discord Vibrant — Blurple #5865F2 + community vibe + chat bubbles",
+      "  • Mailchimp Whimsical — yellow #FFE01B + serif headlines + Freddie monkey",
+      "  • Slack Pro — aubergine #611f69 + 4-color hashtag + UPPERCASE CTAs",
+      "  • Coinbase Finance — clean #0052FF + crypto ticker animado",
+      "  • Webflow Pro — black + electric #4353ff + Designer canvas mockup",
+      "  • Figma Creative — multicolor gradient mesh (red/orange/purple/blue/green)",
+      "  • Robinhood Trade — #00C805 green + animated stock chart",
+      "  • Patagonia Outdoors — earth tones + activism + photography",
+      "Cada nuevo template: 58 placeholders, form schema intacto, markers OK, bg-leak guard, mobile responsive, FAQ toggle. Cada uno con PNG pre-renderizado vía Patchright (66KB-634KB) cacheado en disk",
+      "Total backend file: ~280KB → ~545KB (+95%)",
+    ],
+  },
   {
     version: "0.7.32",
     date: "2026-05-20",
