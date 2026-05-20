@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import {
   Zap,
   Bot,
@@ -14,75 +15,33 @@ import {
   CheckCircle,
   Loader2,
   Sparkles,
-  Building2,
   UtensilsCrossed,
   Stethoscope,
   Dumbbell,
   Store,
   Briefcase,
 } from "lucide-react";
+import { useT } from "@/contexts/I18nProvider";
+import LanguageSelector from "@/components/LanguageSelector";
 
-const INDUSTRIES = [
-  { icon: Sparkles, label: "Spas & Salones", desc: "Recepción 24/7, reservas, recordatorios" },
-  { icon: UtensilsCrossed, label: "Restaurantes", desc: "Pedidos, reservas, atención al cliente" },
-  { icon: Stethoscope, label: "Clínicas & Médicos", desc: "Agendamiento, seguimiento, recordatorios" },
-  { icon: Dumbbell, label: "Gimnasios", desc: "Membresías, clases, consultas" },
-  { icon: Store, label: "Retail & E-commerce", desc: "Soporte, FAQs, seguimiento de pedidos" },
-  { icon: Briefcase, label: "Profesionales", desc: "Abogados, contadores, coaches, agencias" },
-];
+const CAL_URL = "https://cal.com/ender-ocando-lfxtkn/15min";
 
-const FEATURES = [
-  {
-    icon: Bot,
-    title: "Agente IA 24/7",
-    desc: "Tu negocio nunca duerme. La IA responde llamadas, emails y chats a cualquier hora.",
-  },
-  {
-    icon: Calendar,
-    title: "Agendamiento Automático",
-    desc: "Clientes reservan citas directamente con tu calendario. Sin intervención humana.",
-  },
-  {
-    icon: MessageSquare,
-    title: "Respuestas Instantáneas",
-    desc: "WhatsApp, email, SMS y chat web. Un solo agente para todos los canales.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Escalable",
-    desc: "Atiende 10 o 1,000 clientes al mismo tiempo. Crece sin contratar más personal.",
-  },
-  {
-    icon: Clock,
-    title: "Ahorro de Tiempo",
-    desc: "Reduce 15-20 horas semanales de trabajo administrativo y repetitivo.",
-  },
-  {
-    icon: Shield,
-    title: "Datos Seguros",
-    desc: "Información de clientes protegida. Cumplimiento con estándares de privacidad.",
-  },
-];
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
+};
 
-const HOW_IT_WORKS = [
-  {
-    step: "01",
-    title: "Agenda tu Demo",
-    desc: "15 minutos para entender tu negocio y mostrarte lo que la IA puede hacer por ti.",
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.05 },
   },
-  {
-    step: "02",
-    title: "Setup en 48h",
-    desc: "Configuramos tu agente con tu información, servicios, precios y tono de marca.",
-  },
-  {
-    step: "03",
-    title: "Activa y Escala",
-    desc: "Tu agente IA atiende clientes, agenda citas y libera tu tiempo desde el día 1.",
-  },
-];
+};
 
 export default function LandingPage() {
+  const { t } = useT();
+
   const [form, setForm] = useState({
     business_name: "",
     email: "",
@@ -91,6 +50,30 @@ export default function LandingPage() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const INDUSTRIES = [
+    { icon: Sparkles, label: t("home.industries.spa.label"), desc: t("home.industries.spa.desc") },
+    { icon: UtensilsCrossed, label: t("home.industries.restaurant.label"), desc: t("home.industries.restaurant.desc") },
+    { icon: Stethoscope, label: t("home.industries.clinic.label"), desc: t("home.industries.clinic.desc") },
+    { icon: Dumbbell, label: t("home.industries.gym.label"), desc: t("home.industries.gym.desc") },
+    { icon: Store, label: t("home.industries.retail.label"), desc: t("home.industries.retail.desc") },
+    { icon: Briefcase, label: t("home.industries.pro.label"), desc: t("home.industries.pro.desc") },
+  ];
+
+  const FEATURES = [
+    { icon: Bot, title: t("home.features.f1.title"), desc: t("home.features.f1.desc") },
+    { icon: Calendar, title: t("home.features.f2.title"), desc: t("home.features.f2.desc") },
+    { icon: MessageSquare, title: t("home.features.f3.title"), desc: t("home.features.f3.desc") },
+    { icon: TrendingUp, title: t("home.features.f4.title"), desc: t("home.features.f4.desc") },
+    { icon: Clock, title: t("home.features.f5.title"), desc: t("home.features.f5.desc") },
+    { icon: Shield, title: t("home.features.f6.title"), desc: t("home.features.f6.desc") },
+  ];
+
+  const HOW_IT_WORKS = [
+    { step: "01", title: t("home.how.s1.title"), desc: t("home.how.s1.desc") },
+    { step: "02", title: t("home.how.s2.title"), desc: t("home.how.s2.desc") },
+    { step: "03", title: t("home.how.s3.title"), desc: t("home.how.s3.desc") },
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +85,7 @@ export default function LandingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          notes: `Lead capturado desde landing page. Industria: ${form.category || "No especificada"}`,
+          notes: `Lead captured from landing page. Industry: ${form.category || "N/A"}`,
         }),
       });
       setSubmitted(true);
@@ -127,11 +110,35 @@ export default function LandingPage() {
             </span>
           </Link>
           <div className="hidden md:flex items-center gap-6">
-            <a href="#como-funciona" className="text-sm text-gray-400 hover:text-white transition-colors">Cómo funciona</a>
-            <a href="#industrias" className="text-sm text-gray-400 hover:text-white transition-colors">Industrias</a>
-            <Link href="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">Precios</Link>
-            <a href="https://cal.com/ender-ocando-lfxtkn/15min" target="_blank" rel="noopener noreferrer" className="text-sm px-4 py-2 rounded-lg bg-eko-blue text-white font-medium hover:bg-eko-blue-dark transition-colors">
-              Agenda tu Demo
+            <a href="#como-funciona" className="text-sm text-gray-400 hover:text-white transition-colors">
+              {t("home.nav.how_it_works")}
+            </a>
+            <a href="#industrias" className="text-sm text-gray-400 hover:text-white transition-colors">
+              {t("home.nav.industries")}
+            </a>
+            <Link href="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">
+              {t("home.nav.pricing")}
+            </Link>
+            <LanguageSelector />
+            <a
+              href={CAL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm px-4 py-2 rounded-lg bg-eko-blue text-white font-medium hover:bg-eko-blue-dark transition-colors"
+            >
+              {t("home.nav.book_demo")}
+            </a>
+          </div>
+          {/* Mobile: just selector + CTA */}
+          <div className="md:hidden flex items-center gap-2">
+            <LanguageSelector />
+            <a
+              href={CAL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs px-3 py-1.5 rounded-lg bg-eko-blue text-white font-medium hover:bg-eko-blue-dark transition-colors"
+            >
+              {t("home.nav.book_demo")}
             </a>
           </div>
         </div>
@@ -139,86 +146,107 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-eko-blue/10 border border-eko-blue/20 text-eko-blue text-xs font-medium mb-6">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+          className="max-w-5xl mx-auto text-center"
+        >
+          <motion.div
+            variants={fadeUp}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-eko-blue/10 border border-eko-blue/20 text-eko-blue text-xs font-medium mb-6"
+          >
             <Sparkles className="w-3.5 h-3.5" />
-            Automatización con Inteligencia Artificial para cualquier negocio
-          </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display text-white leading-tight mb-6">
-            Tu negocio funciona{" "}
+            {t("home.hero.badge")}
+          </motion.div>
+          <motion.h1
+            variants={fadeUp}
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display text-white leading-tight mb-6"
+          >
+            {t("home.hero.title_part1")}{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-eko-blue to-cyan-400">
-              mientras duermes
+              {t("home.hero.title_highlight")}
             </span>
-          </h1>
-          <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Agente IA que atiende clientes, agenda citas, responde preguntas y sigue leads —{" "}
-            <span className="text-white font-medium">24/7, en todos tus canales</span>. Reduce costos, elimina tareas repetitivas y escala sin contratar más personal.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+          </motion.h1>
+          <motion.p
+            variants={fadeUp}
+            className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+          >
+            {t("home.hero.subtitle_part1")}{" "}
+            <span className="text-white font-medium">{t("home.hero.subtitle_emphasis")}</span>
+            {t("home.hero.subtitle_part2")}
+          </motion.p>
+          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Link
-              href="https://cal.com/ender-ocando-lfxtkn/15min"
+              href={CAL_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-eko-blue text-white font-semibold hover:bg-eko-blue-dark transition-all flex items-center justify-center gap-2"
             >
               <Calendar className="w-5 h-5" />
-              Agenda tu Demo Gratis
+              {t("home.hero.cta_primary")}
             </Link>
             <Link
               href="/pricing"
               className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white font-semibold hover:bg-white/10 transition-all flex items-center justify-center gap-2"
             >
-              Ver Precios
+              {t("home.hero.cta_secondary")}
               <ArrowRight className="w-4 h-4" />
             </Link>
-          </div>
+          </motion.div>
 
-          {/* Social Proof */}
-          <div className="flex flex-wrap items-center justify-center gap-8 text-gray-500 text-sm">
+          <motion.div variants={fadeUp} className="flex flex-wrap items-center justify-center gap-8 text-gray-500 text-sm">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-eko-green" />
-              <span>Setup en 48 horas</span>
+              <span>{t("home.hero.proof_setup")}</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-eko-green" />
-              <span>Sin contratos de permanencia</span>
+              <span>{t("home.hero.proof_no_contract")}</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-eko-green" />
-              <span>Cancela cuando quieras</span>
+              <span>{t("home.hero.proof_cancel")}</span>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* Lead Capture Form */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white/[0.02] border-y border-white/5">
-        <div className="max-w-xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.6 }}
+          className="max-w-xl mx-auto"
+        >
           {submitted ? (
             <div className="text-center py-8">
               <CheckCircle className="w-14 h-14 text-eko-green mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-2">¡Gracias por tu interés!</h2>
-              <p className="text-gray-400 mb-4">
-                Hemos recibido tu información. Nuestro equipo te contactará en menos de 24 horas.
-              </p>
-              <a href="https://cal.com/ender-ocando-lfxtkn/15min" target="_blank" rel="noopener noreferrer" className="text-eko-blue hover:underline text-sm">
-                O agenda tu demo ahora →
+              <h2 className="text-2xl font-bold text-white mb-2">{t("home.form.success_title")}</h2>
+              <p className="text-gray-400 mb-4">{t("home.form.success_message")}</p>
+              <a
+                href={CAL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-eko-blue hover:underline text-sm"
+              >
+                {t("home.form.success_link")}
               </a>
             </div>
           ) : (
             <>
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-white mb-2">¿Quieres saber cuánto puedes ahorrar?</h2>
-                <p className="text-gray-400 text-sm">
-                  Déjanos tus datos y te enviamos un análisis gratuito de automatización para tu negocio.
-                </p>
+                <h2 className="text-2xl font-bold text-white mb-2">{t("home.form.title")}</h2>
+                <p className="text-gray-400 text-sm">{t("home.form.subtitle")}</p>
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="text"
                     required
-                    placeholder="Nombre de tu negocio"
+                    placeholder={t("home.form.business_name")}
                     value={form.business_name}
                     onChange={(e) => setForm({ ...form, business_name: e.target.value })}
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-blue text-sm"
@@ -228,27 +256,27 @@ export default function LandingPage() {
                     onChange={(e) => setForm({ ...form, category: e.target.value })}
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-eko-blue text-sm appearance-none"
                   >
-                    <option value="" className="bg-eko-graphite text-gray-500">Tipo de negocio</option>
-                    <option value="Spa / Salón" className="bg-eko-graphite">Spa / Salón</option>
-                    <option value="Restaurante / Bar" className="bg-eko-graphite">Restaurante / Bar</option>
-                    <option value="Clínica / Médico" className="bg-eko-graphite">Clínica / Médico</option>
-                    <option value="Gimnasio / Fitness" className="bg-eko-graphite">Gimnasio / Fitness</option>
-                    <option value="Retail / Tienda" className="bg-eko-graphite">Retail / Tienda</option>
-                    <option value="Profesional Independiente" className="bg-eko-graphite">Profesional Independiente</option>
-                    <option value="Otro" className="bg-eko-graphite">Otro</option>
+                    <option value="" className="bg-eko-graphite text-gray-500">{t("home.form.category_default")}</option>
+                    <option value="spa" className="bg-eko-graphite">{t("home.form.category_spa")}</option>
+                    <option value="restaurant" className="bg-eko-graphite">{t("home.form.category_restaurant")}</option>
+                    <option value="clinic" className="bg-eko-graphite">{t("home.form.category_clinic")}</option>
+                    <option value="gym" className="bg-eko-graphite">{t("home.form.category_gym")}</option>
+                    <option value="retail" className="bg-eko-graphite">{t("home.form.category_retail")}</option>
+                    <option value="pro" className="bg-eko-graphite">{t("home.form.category_pro")}</option>
+                    <option value="other" className="bg-eko-graphite">{t("home.form.category_other")}</option>
                   </select>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="email"
-                    placeholder="Email"
+                    placeholder={t("home.form.email")}
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-blue text-sm"
                   />
                   <input
                     type="tel"
-                    placeholder="Teléfono (opcional)"
+                    placeholder={t("home.form.phone")}
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-blue text-sm"
@@ -262,37 +290,46 @@ export default function LandingPage() {
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Enviando...
+                      {t("home.form.submitting")}
                     </>
                   ) : (
                     <>
                       <Zap className="w-4 h-4" />
-                      Recibir Análisis Gratis
+                      {t("home.form.submit")}
                     </>
                   )}
                 </button>
-                <p className="text-center text-gray-600 text-xs">
-                  Sin spam. Solo te contactaremos sobre tu análisis de automatización.
-                </p>
+                <p className="text-center text-gray-600 text-xs">{t("home.form.disclaimer")}</p>
               </form>
             </>
           )}
-        </div>
+        </motion.div>
       </section>
 
       {/* Industries */}
       <section id="industrias" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-3">Para cualquier tipo de negocio</h2>
-            <p className="text-gray-400 max-w-xl mx-auto">
-              Desde spas hasta agencias de marketing. Si tu negocio interactúa con clientes, la IA puede automatizarlo.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl font-bold text-white mb-3">{t("home.industries.title")}</h2>
+            <p className="text-gray-400 max-w-xl mx-auto">{t("home.industries.subtitle")}</p>
+          </motion.div>
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
             {INDUSTRIES.map((ind) => (
-              <div
+              <motion.div
                 key={ind.label}
+                variants={fadeUp}
                 className="group p-6 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/5 hover:border-white/10 transition-all"
               >
                 <div className="w-10 h-10 rounded-lg bg-eko-blue/10 flex items-center justify-center mb-4 group-hover:bg-eko-blue/20 transition-colors">
@@ -300,85 +337,107 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-white font-semibold mb-1">{ind.label}</h3>
                 <p className="text-gray-500 text-sm">{ind.desc}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Features */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white/[0.02] border-y border-white/5">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-3">Todo lo que tu agente IA hace por ti</h2>
-            <p className="text-gray-400 max-w-xl mx-auto">
-              Un solo sistema que reemplaza a múltiples herramientas y horas de trabajo manual.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl font-bold text-white mb-3">{t("home.features.title")}</h2>
+            <p className="text-gray-400 max-w-xl mx-auto">{t("home.features.subtitle")}</p>
+          </motion.div>
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
             {FEATURES.map((feat) => (
-              <div key={feat.title} className="p-6 rounded-xl">
+              <motion.div key={feat.title} variants={fadeUp} className="p-6 rounded-xl">
                 <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-4">
                   <feat.icon className="w-5 h-5 text-eko-blue" />
                 </div>
                 <h3 className="text-white font-semibold mb-2">{feat.title}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{feat.desc}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* How it Works */}
       <section id="como-funciona" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-3">De la demo a la activación en 3 pasos</h2>
-            <p className="text-gray-400 max-w-xl mx-auto">
-              Sin complicaciones técnicas. Nosotros hacemos todo el trabajo pesado.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl font-bold text-white mb-3">{t("home.how.title")}</h2>
+            <p className="text-gray-400 max-w-xl mx-auto">{t("home.how.subtitle")}</p>
+          </motion.div>
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+          >
             {HOW_IT_WORKS.map((step) => (
-              <div key={step.step} className="text-center">
+              <motion.div key={step.step} variants={fadeUp} className="text-center">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-eko-blue to-eko-blue-dark flex items-center justify-center mx-auto mb-5">
                   <span className="text-white font-bold text-lg">{step.step}</span>
                 </div>
                 <h3 className="text-white font-semibold text-lg mb-2">{step.title}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{step.desc}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* CTA */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-eko-blue/5 to-transparent">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            ¿Listo para automatizar tu negocio?
-          </h2>
-          <p className="text-gray-400 text-lg mb-8">
-            Agenda una demo de 15 minutos. Sin compromiso. Te mostramos exactamente cómo la IA funcionará en tu negocio.
-          </p>
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.6 }}
+          className="max-w-3xl mx-auto text-center"
+        >
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t("home.cta.title")}</h2>
+          <p className="text-gray-400 text-lg mb-8">{t("home.cta.subtitle")}</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="https://cal.com/ender-ocando-lfxtkn/15min"
+              href={CAL_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-eko-blue text-white font-semibold hover:bg-eko-blue-dark transition-all flex items-center justify-center gap-2 text-lg"
             >
               <Calendar className="w-5 h-5" />
-              Agendar Demo Gratis
+              {t("home.cta.primary")}
             </Link>
             <Link
               href="/pricing"
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/5 border border-white/10 text-white font-semibold hover:bg-white/10 transition-all"
             >
-              Ver Planes y Precios
+              {t("home.cta.secondary")}
             </Link>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Footer */}
@@ -393,10 +452,13 @@ export default function LandingPage() {
             </span>
           </div>
           <p className="text-gray-600 text-sm">
-            © {new Date().getFullYear()} Eko AI Automation. Todos los derechos reservados.
+            © {new Date().getFullYear()} Eko AI Automation. {t("home.footer.rights")}
           </p>
           <div className="flex items-center gap-4 text-sm text-gray-500">
-            <a href="mailto:contact@biz.ekoaiautomation.com" className="hover:text-gray-300 transition-colors">
+            <a
+              href="mailto:contact@biz.ekoaiautomation.com"
+              className="hover:text-gray-300 transition-colors"
+            >
               contact@biz.ekoaiautomation.com
             </a>
           </div>
