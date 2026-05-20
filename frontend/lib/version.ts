@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.27";
+export const CURRENT_VERSION = "0.7.28";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,17 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.28",
+    date: "2026-05-20",
+    title: "Landing Pages — cache-bust en iframe del template picker + loading eager",
+    changes: [
+      "Reportado por user: thumbnails siguen viéndose iguales tras v0.7.27. Verificado que el deploy es correcto (chunk tiene TemplateThumbnail + ResizeObserver) → causa probable: browser cache de los iframes que cargan /template-preview/<id>",
+      "Iframe src ahora incluye ?v=v0727 query param como cache-bust. Bumpando este constante en cualquier rewrite de templates fuerza navegadores a refetchar el HTML",
+      "loading=eager (era lazy) para que TODOS los thumbnails se carguen al abrir el modal — antes los thumbnails fuera del viewport inicial cargaban tarde y daban impresión de 'todo igual'",
+      "Si el user sigue viendo lo mismo: cache duro del browser → Cmd+Shift+R (hard refresh)",
+    ],
+  },
   {
     version: "0.7.27",
     date: "2026-05-20",

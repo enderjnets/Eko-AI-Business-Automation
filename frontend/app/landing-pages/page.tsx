@@ -133,6 +133,10 @@ function formatApiError(err: any, fallback: string): string {
 // left corner at fixed scale 0.15, which used to leak the parent's tint
 // color across the rest of the card and made light templates like Apple
 // or Notion look dark because of the accent-color overlay around them).
+// Cache-bust constant: bumped whenever templates are rewritten so browsers
+// don't serve stale iframe HTML from a previous deploy.
+const TEMPLATE_CACHE_BUST = "v0727";
+
 function TemplateThumbnail({ id }: { id: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.18);
@@ -156,7 +160,7 @@ function TemplateThumbnail({ id }: { id: string }) {
       style={{ aspectRatio: `${VW} / ${VH}` }}
     >
       <iframe
-        src={`/api/v1/landing-pages/template-preview/${id}`}
+        src={`/api/v1/landing-pages/template-preview/${id}?v=${TEMPLATE_CACHE_BUST}`}
         className="absolute top-0 left-0 border-0 pointer-events-none"
         style={{
           width: `${VW}px`,
@@ -166,7 +170,7 @@ function TemplateThumbnail({ id }: { id: string }) {
         }}
         sandbox="allow-scripts"
         title={`${id} preview`}
-        loading="lazy"
+        loading="eager"
       />
     </div>
   );
