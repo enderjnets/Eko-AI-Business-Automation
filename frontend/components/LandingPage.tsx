@@ -49,7 +49,6 @@ export default function LandingPage() {
   const { t } = useT();
 
   const [form, setForm] = useState({
-    business_name: "",
     website: "",
     email: "",
     phone: "",
@@ -234,25 +233,51 @@ export default function LandingPage() {
             </motion.div>
           </motion.div>
 
-          {/* Right: 3D robot scene (desktop only — heavy asset, mobile users skip) */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, delay: 0.25, ease: "easeOut" }}
-            className="hidden lg:block relative w-full h-[480px] xl:h-[560px]"
-          >
-            <SplineScene scene={SPLINE_SCENE_URL} className="w-full h-full" />
-            {/* Mask the "Built with Spline" free-plan watermark at bottom-right. */}
+          {/* Right: 3D robot scene (desktop only — heavy asset, mobile users skip).
+              Radial mask fades canvas edges so the rectangular Spline bg blends
+              into the page (no visible "box"). Ambient glow behind extends the
+              violet/magenta spillover beyond the container. Clicking anywhere
+              (including the baked-in "Get in touch" button) scrolls to the form. */}
+          <div className="hidden lg:block relative w-full h-[480px] xl:h-[560px]">
             <div
               aria-hidden
-              className="absolute bottom-3 right-3 w-[160px] h-[44px] bg-eko-noir rounded-md pointer-events-none"
+              className="absolute inset-[-12%] -z-10 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse 65% 70% at 50% 55%, rgba(124,58,237,0.22) 0%, rgba(217,70,239,0.10) 38%, transparent 72%)",
+              }}
             />
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1, delay: 0.25, ease: "easeOut" }}
+              onClick={() => {
+                document
+                  .getElementById("lead-form")
+                  ?.scrollIntoView({ behavior: "smooth" });
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label="Scroll to lead form"
+              className="w-full h-full cursor-pointer"
+              style={{
+                maskImage:
+                  "radial-gradient(ellipse 75% 80% at 50% 50%, black 60%, transparent 95%)",
+                WebkitMaskImage:
+                  "radial-gradient(ellipse 75% 80% at 50% 50%, black 60%, transparent 95%)",
+              }}
+            >
+              <SplineScene scene={SPLINE_SCENE_URL} className="w-full h-full" />
+            </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Lead Capture Form */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white/[0.02] border-y border-white/5">
+      <section
+        id="lead-form"
+        className="py-16 px-4 sm:px-6 lg:px-8 bg-white/[0.02] border-y border-white/5"
+      >
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -281,16 +306,8 @@ export default function LandingPage() {
                 <p className="text-gray-400 text-sm">{t("home.form.subtitle")}</p>
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Row 1: business name + website (both required — identity + AI analysis seed) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    required
-                    placeholder={t("home.form.business_name")}
-                    value={form.business_name}
-                    onChange={(e) => setForm({ ...form, business_name: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-violet text-sm"
-                  />
+                {/* Row 1: website (full width) — the AI analysis seed */}
+                <div>
                   <input
                     type="url"
                     required
@@ -299,10 +316,10 @@ export default function LandingPage() {
                     onChange={(e) => setForm({ ...form, website: e.target.value })}
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-violet text-sm"
                   />
+                  <p className="text-xs text-eko-violet/80 pl-1 mt-1.5">
+                    {t("home.form.website_help")}
+                  </p>
                 </div>
-                <p className="text-xs text-eko-violet/80 pl-1 -mt-1">
-                  {t("home.form.website_help")}
-                </p>
 
                 {/* Row 2: category + email */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
