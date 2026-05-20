@@ -3,17 +3,29 @@ const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
     return {
-      // beforeFiles: evaluated BEFORE Next.js checks filesystem pages.
-      // Required for our host-based rewrite so `/` on landing.ekoaiautomation.com
-      // doesn't get intercepted by the existing app/page.tsx (dashboard).
+      // beforeFiles: evaluated BEFORE filesystem routes. Required so
+      // host-based rewrites win over app/page.tsx and other concrete files.
       beforeFiles: [
+        // landing.ekoaiautomation.com/ → renders the active LP component
         {
           source: '/',
           has: [{ type: 'host', value: 'landing.ekoaiautomation.com' }],
           destination: '/landing',
         },
+        // www.ekoaiautomation.com/ + apex → placeholder "Coming Soon"
+        {
+          source: '/',
+          has: [{ type: 'host', value: 'www.ekoaiautomation.com' }],
+          destination: '/coming-soon',
+        },
+        {
+          source: '/',
+          has: [{ type: 'host', value: 'ekoaiautomation.com' }],
+          destination: '/coming-soon',
+        },
+        // app.ekoaiautomation.com → no rewrite. / serves app/page.tsx
+        // (Dashboard if auth, otherwise AuthContext redirects to /login).
       ],
-      // afterFiles: evaluated AFTER filesystem routing (default for normal rewrites).
       afterFiles: [
         {
           source: '/api/:path*',

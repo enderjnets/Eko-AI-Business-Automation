@@ -24,6 +24,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const PUBLIC_PATHS = ["/login", "/book-demo", "/pricing", "/landing"];
 
+// Hosts that run the SaaS dashboard. The auto-redirect to /login when
+// unauthenticated only fires on these hosts. landing.* and www.* / apex are
+// fully public — they serve dynamic LP / marketing and must not push to login.
+const DASHBOARD_HOSTS = new Set<string>([
+  "app.ekoaiautomation.com",
+  // Dev / legacy direct hosts (preserve current behavior during migration)
+  "localhost:3000",
+  "localhost:3001",
+  "100.88.47.99:3001",
+]);
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,7 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isLoading) return;
-    if (!user && !PUBLIC_PATHS.includes(pathname)) {
+    const host = typeof window !== "undefined" ? window.location.host : "";
+    const isDashboardHost = DASHBOARD_HOSTS.has(host);
+    if (isDashboardHost && !user && !PUBLIC_PATHS.includes(pathname)) {
       router.push("/login");
     }
   }, [user, isLoading, pathname, router]);
