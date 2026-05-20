@@ -1,5 +1,37 @@
 
 
+## [0.7.22] — 2026-05-19
+
+### Landing Page templates — auditoría completa, fidelidad real a las marcas inspirantes
+
+El user reportó: *"haz una auditoria a los templates de landing page, veo errores como que los templates no compaginan con la página original en la que se inspiró ese template, ejemplo el de Apple, el template tiene fondo oscuro y la página de Apple no tiene fondo oscuro."*
+
+Investigación reveló que Apple Minimal SÍ tenía `--bg:#fff` en el código — el "fondo oscuro" que el user vio era el dashboard preview iframe filtrando el bg del parent. Aún así, los 9 templates inspirados en marcas externas se sentían genéricos — auditoría completa para hacerlos secciones que podrían pasar por reales de cada sitio.
+
+3 agentes en paralelo, cada uno con 3 templates y un style guide detallado por marca (color exacto, font stack, layout pattern, hero, CTA, nav, footer). Entregaron HTML+CSS+JS faithful que preserva los 58 placeholders, el form schema, los markers `__TRACKING_PIXEL__`/`__FORM_SUBMIT_JS__`, y la regla anti bg-leak de v0.7.21.
+
+Script Python `merge_templates.py` reemplazó cada `_TPL_X = """..."""` block, preservando el wrapping Python. `ast.parse()` passes + 10 entries del dict TEMPLATES intactos.
+
+| Template | Bg | Brand details preserved |
+|---|---|---|
+| Apple Minimal | `#fff` | 44px frosted nav (rgba(.72) + saturate(180%) blur(20px) — la signature de apple.com), pill CTAs duales border-radius:980px, alternando #fff/#f5f5f7, multi-column footer Apple-style |
+| Stripe Gradient | `#f6f9fc` | Animated gradient mesh (4 radial-circles con drift 18s), code-preview con eko.leads.capture() syntax-highlighted, navy footer |
+| Linear Dark | `#08080a` | Signature 64x64 grid pattern + purple glow centrado, sharp 6px CTAs (NO pills), border-hover purple #5e6ad2 |
+| Airbnb Warm | `#fff` | Search-pill nav, category strip horizontal, hero booking-card border-radius:32px, coral #FF385C exacto con gradient #E61E4D→#BD1E59 |
+| Notion Clean | `#fff` | Lyon serif headings (THE Notion DNA), mock document hero con browser-chrome bar, soft blocks border:1px solid #ebebeb radius:10px |
+| Tesla Bold | `#fff` body, dark hero | Transparent nav que se vuelve sólido on-scroll (JS), Gotham condensed uppercase weight 500, full-bleed 100vh hero dark, dual CTAs blue+outline border-radius:4px |
+| Best Buy Retail | `#fff` | Top utility bar dark, blue #0046BE nav, yellow #FFE000 ribbon "FREE shipping over $35", deal cards con DEAL badge + red #C9242D strike-through pricing |
+| Spotify Vibe | `#000` | Spotify-style sound-waves logo en #1ed760, triple album-art stack rotado en hero, massive 96px headline gradient text, big green pill CTA scale(1.04) hover, cards #181818 |
+| HubSpot Sales | `#fff` | Orange #FF7A59 dominante en CTAs/badges/gradient band, trust strip con 6 grayscale Fortune-500 logo placeholders, Lexend Deca, navy footer #33475b |
+
+Tamaños: total `landing_page_template.py` pasó de ~142KB → ~209KB (+47%) — cada template grew 43-107% en bytes por todo el chrome adicional (frosted nav, gradient meshes, grid patterns, multi-column footers, etc).
+
+Verificación: `curl /template-preview/<id>` para los 10 templates devuelve HTTP 200 con el `--bg` correcto. Backend restart sin errores.
+
+Sin breaking changes downstream: 58 placeholders, form schema, markers, generator+SYSTEM_PROMPT todo intacto.
+
+---
+
 ## [0.7.21] — 2026-05-19
 
 ### Landing Pages — prompts bilingües (15 verticales), generación AI language-aware, defensive bg fix

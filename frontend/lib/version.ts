@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.21";
+export const CURRENT_VERSION = "0.7.22";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,24 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.22",
+    date: "2026-05-19",
+    title: "Landing Page templates — auditoría completa, los 9 rewritten con fidelidad real a la marca inspirante",
+    changes: [
+      "Los 9 templates inspirados en marcas externas reescritos a fondo para que se vean como secciones reales de los sitios originales (Apple, Stripe, Linear, Airbnb, Notion, Tesla, Best Buy, Spotify, HubSpot)",
+      "Apple Minimal: SF Pro, frosted nav rgba(.72)+blur, pill CTAs apple.com style (border-radius:980px), alternando #fff/#f5f5f7, multi-column footer Apple-style — el user reportó que veía 'fondo oscuro' (era el iframe parent), confirmado en preview: bg ahora #fff puro",
+      "Stripe: gradient mesh animado real (4 radial-circles purple/cyan/pink/mint con drift 18s), code-preview block en How It Works, navy footer, todo en Sohne/Inter",
+      "Linear: signature grid pattern de 64x64 + purple glow centrado, sharp 6px CTAs (NO pills), Inter Display, cards con border-hover violet — el aesthetic exacto de linear.app",
+      "Airbnb: search-pill nav real + booking-card hero con coral #FF385C exacto (gradient con #E61E4D), category strip horizontal, rounded-32 cards, multi-column footer con 'English (US) · $ USD' toggles",
+      "Spotify: pitch black + #1ed760 (green nuevo, no el legacy #1DB954), Spotify-circular-style logo SVG, hero con triple album-art rotado, big pill CTA con hover:scale(1.04), 'CLIPBOARD' card surfaces #181818",
+      "Tesla: nav transparente que se vuelve sólido on-scroll (window.scrollY>40), Gotham condensed uppercase weight 500, full-bleed 100vh hero dark, dual CTAs (blue+outline) border-radius:4px, sections white #fff con padding 120px+",
+      "Notion: PURO blanco #fff (no off-white), Lyon serif para headings, soft blocks con border:1px solid #ebebeb, mock document hero con browser-chrome + welcome H1 serif, black footer",
+      "Best Buy: top utility bar dark, blue #0046BE nav, yellow #FFE000 ribbon 'FREE shipping over $35', deal cards con corner-badge DEAL + strike-through red #C9242D, dark #1d252c footer",
+      "HubSpot: orange #FF7A59 dominante (nav CTA pill, submit pill, FAQ +/- toggle, gradient band), 6 grayscale Fortune-500 logo placeholders, Lexend Deca, navy footer #33475b",
+      "Mantenidos los 58 placeholders y el form schema en los 10 templates — cero breaking changes downstream",
+    ],
+  },
   {
     version: "0.7.21",
     date: "2026-05-19",
