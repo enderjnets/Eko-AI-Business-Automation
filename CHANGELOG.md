@@ -1,5 +1,43 @@
 
 
+## [0.7.27] — 2026-05-20
+
+### Landing Pages — fix thumbnails del template picker no mostraban el brand real
+
+User reportó por 3ra vez: *"el template de Apple, si lo ves está oscuro usa fondo oscuro y la página de Apple es clara toda clara"*. Las 2 anteriores fixes (v0.7.21 defensive bg, v0.7.22 templates rewrite) confirmaron que el CÓDIGO del template Apple Minimal SÍ tiene `--bg:#fff`, pero el thumbnail seguía viéndose oscuro.
+
+#### Root cause real (no era el template, era el thumbnail)
+
+`frontend/app/landing-pages/page.tsx` líneas 851-857: el iframe del picker grid renderizado con `width:1304px, height:800px, transform:scale(0.15)` — a scale 0.15 el iframe ocupaba solo 195px de ancho en la esquina superior izquierda. El card tenía ~140-180px de ancho. Resultado: solo ~15% del thumbnail mostraba contenido real del template; el resto mostraba el `background: tpl.accent + "10"` del container parent (accent color al 10% alpha).
+
+Para Apple (accent `#0066cc`) eso significaba ~70% del thumbnail era tinte azul translúcido → **"se veía oscuro"** aunque el template real es 100% blanco.
+
+Para Spotify (accent `#1ed760`) tinte verde translúcido sobre el template ya negro → casualmente parecía correcto pero por la razón equivocada.
+
+Bonus bug: `colorScheme: "dark"` heredado por error del ActivePreview (donde tiene sentido por el scrollbar fix). En el picker forzaba dark mode hint a templates light.
+
+#### Fix
+
+Nuevo componente `TemplateThumbnail` con el mismo patrón ResizeObserver que `ActivePreview` ya usaba: `scale = containerWidth / 1280` dinámico, iframe siempre llena el thumbnail exactamente, sin leak del parent.
+
+Removidos: `colorScheme:"dark"`, `background: tpl.accent + "10"` del container, width/height fijos en pixeles, scale fijo 0.15.
+
+#### Resultado
+
+Cada thumbnail ahora muestra fielmente el template completo en su brand real:
+- Apple Minimal: 100% blanco con SF Pro huge type
+- Stripe Gradient: gradient mesh colorido
+- Linear Dark: pure black con grid pattern y purple glow
+- Airbnb Warm: white con coral CTA
+- Notion Clean: white con Lyon serif
+- Tesla Bold: dark hero full-bleed
+- Best Buy Retail: white con blue+yellow
+- Spotify Vibe: black con green
+- HubSpot Sales: white con orange
+- Eko Classic: dark blue gradient (siempre fue correcto)
+
+---
+
 ## [0.7.26] — 2026-05-20
 
 ### Scrapling Phase 4 — research helper pre-AI: LP generator inyecta data fresca del business site al prompt
