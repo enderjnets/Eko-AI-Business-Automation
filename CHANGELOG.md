@@ -1,5 +1,68 @@
 
 
+## [0.7.21] — 2026-05-19
+
+### Landing Pages — prompts bilingües (15 verticales), generación AI language-aware, defensive bg fix
+
+User reportó 3 problemas al probar el módulo Landing Pages:
+
+1. **Visual**: el primer frame del LP generado se ve bien, pero al scrollear hay rectángulos blancos sobre fondo oscuro que rompen el diseño.
+2. **i18n**: el dashboard está en inglés (después de v0.7.19) pero los chips de Restaurante/Clínica/Gym/Spa siguen mostrándose en español e insertan prompts en español.
+3. **Verticales**: solo 4 templates de prompt — pide más con mejores prompts.
+
+#### Fix 2 + 3 — PROMPT_TEMPLATES bilingüe + 15 verticales
+
+`frontend/app/landing-pages/page.tsx`: el const `PROMPT_TEMPLATES` ya no lleva strings hardcoded — cada vertical es `{ id, icon, color }` y al render se usa `t(`lp_prompts.${id}.label`)` + `t(`lp_prompts.${id}.text`)`. Los prompts ahora viven en `translations.ts` con bloques EN/ES paralelos.
+
+Verticales (15 total — los 4 originales mejorados + 11 nuevos):
+
+| ID | EN label | ES label | Tipo |
+|---|---|---|---|
+| restaurant | Restaurant | Restaurante | local hospitality |
+| clinic | Clinic / Dental | Clínica / Dental | healthcare |
+| gym | Gym / Fitness | Gym / Fitness | wellness |
+| spa | Spa / Salon | Spa / Salón | wellness |
+| auto | Auto Repair | Taller Automotriz | local service |
+| law | Law Firm | Bufete Legal | professional |
+| realestate | Real Estate | Inmobiliario | high-ticket |
+| hvac | HVAC / Plumber | HVAC / Plomería | emergency service |
+| photo | Photography | Fotografía | creative |
+| tutor | Tutoring | Tutoría | education |
+| pet | Pet / Vet | Mascotas / Vet | local service |
+| cleaning | Cleaning | Limpieza | recurring B2C/B2B |
+| auto_dealer | Auto Dealer | Concesionario Auto | retail high-ticket |
+| consulting | Consulting | Consultoría | B2B |
+| ecommerce | E-commerce | E-commerce | DTC |
+
+Cada prompt menciona features específicos de Eko AI (Voice Agent, Smart CRM, AI Email Reply, Cal.com integration, lead scoring, etc.) y define tono + audiencia. 30 keys nuevas en el diccionario (15 labels + 15 texts) × 2 idiomas = 60 entries.
+
+#### Fix complementario al #2 — generación AI también language-aware
+
+`backend/app/services/landing_page_template.py` línea 1501 antes decía hardcoded:
+```
+IMPORTANT: All copy MUST be written in English only.
+```
+
+Cambiado a:
+```
+IMPORTANT — LANGUAGE: Auto-detect the language of USER INSTRUCTIONS below.
+Write ALL output copy in that SAME language. ... Brand names (Eko AI,
+Cal.com, VAPI, FLUX, Buffer) and common tech terms (CRM, SEO, FAQ) stay
+English in both cases.
+```
+
+Ahora: usuario español hace click en chip "Restaurante" → prompt en español se inserta en el textarea → AI detecta español → genera la LP entera en español. Usuario inglés → mismo flow en inglés. Bilingüe end-to-end sin agregar nuevas configs.
+
+#### Fix 1 — Defensive visual bg fix
+
+El usuario reportó "blanco sobre negro" al scrollear. Auditoría reveló que los 10 templates tienen `body{background:var(--bg)}` correctamente, pero `html{}` solo definía `scroll-behavior:smooth` sin bg explícito. Si el body height < viewport height (raro pero posible si el LP es corto o el iframe lo embebe con altura mayor), el html sin bg explícito muestra el bg del parent — en el caso del dashboard preview iframe sin `colorScheme`, eso es el bg del documento padre (dashboard dark).
+
+Fix: agregado `background:var(--bg);min-height:100vh` al selector `html{}` Y `min-height:100vh` al `body{}` de los 10 templates. Garantiza que el LP siempre cubre todo el viewport con su propio bg, eliminando cualquier leak del padre.
+
+Script Python (`fix_templates_bg.py`) procesó 9 templates con su regex compacta; Eko Classic (que tiene html{} y body{} en líneas separadas) se patcheó manualmente. Verificación: 10/10 templates ahora con `html{background:var(--bg);min-height:100vh}` + `body{...;min-height:100vh}`.
+
+---
+
 ## [0.7.20] — 2026-05-19
 
 ### i18n — cobertura completa de las 14 páginas internas

@@ -82,8 +82,8 @@ _TPL_EKO_CLASSIC = """<!DOCTYPE html>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#0a0e1a;--surface:#111827;--text:#f1f5f9;--muted:#94a3b8;--primary:#0B4FD8;--accent:#22D3EE}
-html{scroll-behavior:smooth}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;min-height:100vh}
 a{color:var(--accent);text-decoration:none}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(11,79,216,.4)}50%{box-shadow:0 0 0 12px rgba(11,79,216,0)}}
@@ -192,7 +192,7 @@ _TPL_APPLE_MINIMAL = """<!DOCTYPE html>
 <title>{{TITLE}}</title><style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#fff;--text:#1d1d1f;--muted:#86868b;--accent:#0066cc;--light:#f5f5f7}
-html{scroll-behavior:smooth}body{font-family:'SF Pro Display','SF Pro Text',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.47;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh}body{font-family:'SF Pro Display','SF Pro Text',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.47;-webkit-font-smoothing:antialiased;min-height:100vh}
 a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
 .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.72);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(0,0,0,.06)}
 .nav-inner{max-width:1024px;margin:0 auto;padding:0 22px;height:44px;display:flex;align-items:center;justify-content:space-between}
@@ -298,7 +298,7 @@ _TPL_STRIPE_GRADIENT = """<!DOCTYPE html>
 <title>{{TITLE}}</title><style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{--text:#0a2540;--muted:#425466;--accent:#635bff;--purple:#8a4ff5;--green:#00d4ff;--bg:#fff;--surface:#f6f9fc}
-html{scroll-behavior:smooth}body{font-family:'Inter','SF Pro Text',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh}body{font-family:'Inter','SF Pro Text',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
 a{color:var(--accent);text-decoration:none}
 .nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(0,0,0,.05)}
 .nav-inner{max-width:1080px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between}
@@ -409,7 +409,7 @@ _TPL_LINEAR_DARK = """<!DOCTYPE html>
 <title>{{TITLE}}</title><style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#08080a;--surface:#0f0f12;--surface-2:#15151a;--text:#fff;--muted:#888;--accent:#5e6ad2;--accent-2:#a78bfa;--green:#1eb1aa}
-html{scroll-behavior:smooth}body{font-family:'Inter','SF Pro Text',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh}body{font-family:'Inter','SF Pro Text',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
 body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 50% 0%,rgba(94,106,210,.08),transparent 50%),linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:100% 100%,40px 40px,40px 40px;pointer-events:none;z-index:0}
 a{color:var(--accent-2);text-decoration:none}
 .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,8,10,.7);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.05)}
@@ -523,7 +523,7 @@ _TPL_AIRBNB_WARM = """<!DOCTYPE html>
 <title>{{TITLE}}</title><style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{--coral:#FF5A5F;--coral-dark:#E04E52;--text:#222;--muted:#717171;--bg:#fff;--surface:#f7f7f7;--border:#dddddd}
-html{scroll-behavior:smooth}body{font-family:'Cereal','Inter','Circular',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh}body{font-family:'Cereal','Inter','Circular',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
 a{color:var(--coral);text-decoration:none}
 .nav{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(0,0,0,.02)}
 .nav-inner{max-width:1280px;margin:0 auto;padding:0 24px;height:80px;display:flex;align-items:center;justify-content:space-between}
@@ -635,7 +635,7 @@ _TPL_NOTION_CLEAN = """<!DOCTYPE html>
 <title>{{TITLE}}</title><style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#f7f6f3;--surface:#fff;--text:#191919;--muted:#787774;--accent:#2eaadc;--border:#e9e9e7}
-html{scroll-behavior:smooth}body{font-family:'Lyon','Georgia',-apple-system,serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh}body{font-family:'Lyon','Georgia',-apple-system,serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
 .sans{font-family:'Inter','Segoe UI',sans-serif}
 a{color:var(--accent);text-decoration:none;border-bottom:1px solid currentColor}
 .nav{position:sticky;top:0;z-index:100;background:rgba(247,246,243,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
@@ -747,7 +747,7 @@ _TPL_TESLA_BOLD = """<!DOCTYPE html>
 <title>{{TITLE}}</title><style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#000;--text:#fff;--muted:#a3a3a3;--accent:#fff;--surface:#171717;--cta:#3e6ae1}
-html{scroll-behavior:smooth}body{font-family:'Gotham','Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.4;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh}body{font-family:'Gotham','Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.4;-webkit-font-smoothing:antialiased;min-height:100vh}
 a{color:var(--text);text-decoration:none}
 .nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 40px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(0,0,0,.6),transparent)}
 .logo{font-size:24px;font-weight:700;color:#fff;letter-spacing:-.5px;font-stretch:condensed}
@@ -864,7 +864,7 @@ _TPL_BESTBUY_RETAIL = """<!DOCTYPE html>
 <title>{{TITLE}}</title><style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{--blue:#0046BE;--blue-dark:#003494;--yellow:#FFE000;--yellow-dark:#FFD200;--text:#1d252c;--muted:#5c6e7d;--bg:#fff;--surface:#f0f2f4;--border:#cdd5dd}
-html{scroll-behavior:smooth}body{font-family:'Human BBY','Inter',-apple-system,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh}body{font-family:'Human BBY','Inter',-apple-system,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
 a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
 .top-bar{background:var(--blue);color:#fff;padding:6px 24px;text-align:center;font-size:13px;font-weight:600}
 .top-bar .deal{color:var(--yellow)}
@@ -989,7 +989,7 @@ _TPL_SPOTIFY_VIBE = """<!DOCTYPE html>
 <title>{{TITLE}}</title><style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#000;--surface:#121212;--surface-2:#1a1a1a;--text:#fff;--muted:#b3b3b3;--green:#1DB954;--green-dark:#169c46}
-html{scroll-behavior:smooth}body{font-family:'Circular','Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh}body{font-family:'Circular','Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
 a{color:var(--green);text-decoration:none}
 .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);padding:16px 32px;display:flex;align-items:center;justify-content:space-between}
 .logo{font-size:24px;font-weight:900;color:var(--text);letter-spacing:-.5px;display:flex;align-items:center;gap:6px}
@@ -1105,7 +1105,7 @@ _TPL_HUBSPOT_SALES = """<!DOCTYPE html>
 <title>{{TITLE}}</title><style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#fff;--surface:#f5f8fa;--text:#33475b;--text-dark:#2d3e50;--muted:#7c98b6;--orange:#FF7A59;--orange-dark:#FF5C35;--blue:#516F90;--border:#cbd6e2}
-html{scroll-behavior:smooth}body{font-family:'Lexend Deca','Inter','Avenir Next',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;background:var(--bg);min-height:100vh}body{font-family:'Lexend Deca','Inter','Avenir Next',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
 a{color:var(--orange);text-decoration:none}a:hover{text-decoration:underline}
 .nav{background:#fff;border-bottom:1px solid var(--border);padding:0 32px;height:72px;display:flex;align-items:center;justify-content:space-between;max-width:1280px;margin:0 auto}
 .logo{font-size:22px;font-weight:700;color:var(--text-dark);letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
@@ -1498,7 +1498,12 @@ Required JSON structure:
   "FOOTER_CTA": "Footer button text"
 }
 
-IMPORTANT: All copy MUST be written in English only.
+IMPORTANT — LANGUAGE: Auto-detect the language of USER INSTRUCTIONS below.
+Write ALL output copy in that SAME language. If the user wrote the prompt in
+Spanish, every value in the JSON must be in Spanish. If in English, every
+value in English. NEVER mix languages within one page. Brand names (Eko AI,
+Cal.com, VAPI, FLUX, Buffer) and common tech terms (CRM, SEO, FAQ) stay
+English in both cases.
 
 USER INSTRUCTIONS:
 {custom_prompt}

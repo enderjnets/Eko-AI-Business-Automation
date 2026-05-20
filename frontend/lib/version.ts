@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.20";
+export const CURRENT_VERSION = "0.7.21";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,18 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.21",
+    date: "2026-05-19",
+    title: "Landing Pages — prompts bilingües (15 verticales), generación language-aware, defensive bg fix",
+    changes: [
+      "PROMPT_TEMPLATES en Create Landing Page ahora son bilingües: labels y prompts vienen del diccionario i18n (lp_prompts.*), por lo que respetan EN/ES seleccionado",
+      "Expandidos de 4 a 15 verticales: Restaurant, Clinic, Gym, Spa (existentes mejorados) + Auto Repair, Law Firm, Real Estate, HVAC/Plumber, Photography, Tutoring, Pet/Vet, Cleaning, Auto Dealer, Consulting, E-commerce — cada uno con prompt copywriting-grade que menciona features específicos de Eko AI",
+      "Backend SYSTEM_PROMPT (landing_page_template.py) ya NO hardcodea inglés: el AI auto-detecta el idioma del prompt y genera TODO el copy en ese idioma, manteniendo brand names (Eko AI, Cal.com, VAPI) y siglas técnicas (CRM, SEO) en inglés",
+      "Defensive fix visual: agregado `html{background:var(--bg);min-height:100vh}` + `body{...;min-height:100vh}` a los 10 templates para que el bg del LP cubra todo el viewport y no haya leak del parent (iframe/preview) en el área debajo del contenido",
+      "Resultado: usuario español ve botones 'Restaurante / Clínica / etc.' con prompts en español → LP generada en español; usuario inglés ve 'Restaurant / Clinic / etc.' con prompts en inglés → LP en inglés",
+    ],
+  },
   {
     version: "0.7.20",
     date: "2026-05-19",

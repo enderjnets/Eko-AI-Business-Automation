@@ -26,6 +26,18 @@ import {
   Trophy,
   Medal,
   Layers,
+  Wrench,
+  Scale,
+  Home,
+  Hammer,
+  Camera,
+  BookOpen,
+  PawPrint,
+  Sparkles,
+  Car,
+  Briefcase,
+  GraduationCap,
+  ShoppingBag,
 } from "lucide-react";
 import { landingPagesApi } from "@/lib/api";
 import Link from "next/link";
@@ -72,36 +84,25 @@ interface CompareItem {
   created_at: string;
 }
 
+// Vertical-specific prompt seeds — both label and text are translation keys
+// resolved at render time so they follow the user's chosen language.
 const PROMPT_TEMPLATES = [
-  {
-    id: "restaurant",
-    label: "Restaurante",
-    icon: Flame,
-    color: "text-orange-400 bg-orange-400/10 border-orange-400/20 hover:bg-orange-400/20",
-    text: "Crea una landing page para un restaurante local que resalte el menú, reservas online, y promociones de happy hour. Ton cálido y acogedor.",
-  },
-  {
-    id: "clinic",
-    label: "Clínica/Dental",
-    icon: HeartPulse,
-    color: "text-rose-400 bg-rose-400/10 border-rose-400/20 hover:bg-rose-400/20",
-    text: "Crea una landing page para una clínica dental que enfatice servicios de emergencia, seguros aceptados, y citas online. Ton profesional y tranquilizador.",
-  },
-  {
-    id: "gym",
-    label: "Gym/Fitness",
-    icon: Dumbbell,
-    color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20 hover:bg-emerald-400/20",
-    text: "Crea una landing page para un gimnasio local que destaque clases grupales, entrenadores personales, y membresías. Ton energético y motivador.",
-  },
-  {
-    id: "spa",
-    label: "Spa/Salón",
-    icon: Droplets,
-    color: "text-cyan-400 bg-cyan-400/10 border-cyan-400/20 hover:bg-cyan-400/20",
-    text: "Crea una landing page para un spa que resalte masajes, tratamientos faciales, y gift cards. Ton relajante y lujoso.",
-  },
-];
+  { id: "restaurant", icon: Flame, color: "text-orange-400 bg-orange-400/10 border-orange-400/20 hover:bg-orange-400/20" },
+  { id: "clinic", icon: HeartPulse, color: "text-rose-400 bg-rose-400/10 border-rose-400/20 hover:bg-rose-400/20" },
+  { id: "gym", icon: Dumbbell, color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20 hover:bg-emerald-400/20" },
+  { id: "spa", icon: Droplets, color: "text-cyan-400 bg-cyan-400/10 border-cyan-400/20 hover:bg-cyan-400/20" },
+  { id: "auto", icon: Wrench, color: "text-amber-400 bg-amber-400/10 border-amber-400/20 hover:bg-amber-400/20" },
+  { id: "law", icon: Scale, color: "text-slate-300 bg-slate-400/10 border-slate-400/20 hover:bg-slate-400/20" },
+  { id: "realestate", icon: Home, color: "text-teal-400 bg-teal-400/10 border-teal-400/20 hover:bg-teal-400/20" },
+  { id: "hvac", icon: Hammer, color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20 hover:bg-yellow-400/20" },
+  { id: "photo", icon: Camera, color: "text-violet-400 bg-violet-400/10 border-violet-400/20 hover:bg-violet-400/20" },
+  { id: "tutor", icon: GraduationCap, color: "text-blue-400 bg-blue-400/10 border-blue-400/20 hover:bg-blue-400/20" },
+  { id: "pet", icon: PawPrint, color: "text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-400/20 hover:bg-fuchsia-400/20" },
+  { id: "cleaning", icon: Sparkles, color: "text-sky-400 bg-sky-400/10 border-sky-400/20 hover:bg-sky-400/20" },
+  { id: "auto_dealer", icon: Car, color: "text-red-400 bg-red-400/10 border-red-400/20 hover:bg-red-400/20" },
+  { id: "consulting", icon: Briefcase, color: "text-indigo-400 bg-indigo-400/10 border-indigo-400/20 hover:bg-indigo-400/20" },
+  { id: "ecommerce", icon: ShoppingBag, color: "text-pink-400 bg-pink-400/10 border-pink-400/20 hover:bg-pink-400/20" },
+] as const;
 
 // Normalize any API error shape to a string so it never crashes the React tree.
 // FastAPI 422 returns `detail` as an array of validation objects; rendering an
@@ -903,11 +904,12 @@ export default function LandingPagesPage() {
                       {PROMPT_TEMPLATES.map((tmpl) => (
                         <button
                           key={tmpl.id}
-                          onClick={() => setFormPrompt(tmpl.text)}
+                          onClick={() => setFormPrompt(t(`lp_prompts.${tmpl.id}.text` as any))}
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tmpl.color}`}
+                          title={t(`lp_prompts.${tmpl.id}.label` as any)}
                         >
                           <tmpl.icon className="w-3.5 h-3.5" />
-                          {tmpl.label}
+                          {t(`lp_prompts.${tmpl.id}.label` as any)}
                         </button>
                       ))}
                     </div>
