@@ -23,8 +23,14 @@ import {
 } from "lucide-react";
 import { useT } from "@/contexts/I18nProvider";
 import LanguageSelector from "@/components/LanguageSelector";
+import { SplineScene } from "@/components/ui/splite";
 
 const CAL_URL = "https://cal.com/ender-ocando-lfxtkn/15min";
+
+// Robot 3D scene (community remix in user workspace). Swap via spline.design
+// editor → Export → Code → Next.js → Public URI.
+const SPLINE_SCENE_URL =
+  "https://prod.spline.design/wfmv3zVpU19sOZGs/scene.splinecode";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -44,6 +50,7 @@ export default function LandingPage() {
 
   const [form, setForm] = useState({
     business_name: "",
+    website: "",
     email: "",
     phone: "",
     category: "",
@@ -77,6 +84,8 @@ export default function LandingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Website is required (seeds the AI analysis). Plus need at least one contact channel.
+    if (!form.website) return;
     if (!form.email && !form.phone) return;
     setLoading(true);
     try {
@@ -85,7 +94,7 @@ export default function LandingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          notes: `Lead captured from landing page. Industry: ${form.category || "N/A"}`,
+          notes: `Lead captured from landing page. Website: ${form.website}. Industry: ${form.category || "N/A"}`,
         }),
       });
       setSubmitted(true);
@@ -97,16 +106,16 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-eko-graphite">
+    <div className="min-h-screen bg-eko-noir">
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-eko-graphite/80 backdrop-blur-md border-b border-white/5">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-eko-noir/80 backdrop-blur-md border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-eko-blue to-eko-blue-dark flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-eko-violet to-eko-magenta flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <span className="font-display font-bold text-lg text-white">
-              Eko <span className="text-eko-blue">AI</span>
+              Eko <span className="text-eko-violet">AI</span>
             </span>
           </Link>
           <div className="hidden md:flex items-center gap-6">
@@ -124,7 +133,7 @@ export default function LandingPage() {
               href={CAL_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm px-4 py-2 rounded-lg bg-eko-blue text-white font-medium hover:bg-eko-blue-dark transition-colors"
+              className="text-sm px-4 py-2 rounded-lg bg-eko-violet text-white font-medium hover:bg-eko-violet-dark transition-colors"
             >
               {t("home.nav.book_demo")}
             </a>
@@ -136,7 +145,7 @@ export default function LandingPage() {
               href={CAL_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs px-3 py-1.5 rounded-lg bg-eko-blue text-white font-medium hover:bg-eko-blue-dark transition-colors"
+              className="text-xs px-3 py-1.5 rounded-lg bg-eko-violet text-white font-medium hover:bg-eko-violet-dark transition-colors"
             >
               {t("home.nav.book_demo")}
             </a>
@@ -145,71 +154,101 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={staggerContainer}
-          className="max-w-5xl mx-auto text-center"
-        >
+      <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        {/* Ambient glow behind hero */}
+        <div aria-hidden className="absolute inset-0 -z-10 pointer-events-none">
+          <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[36rem] h-[36rem] rounded-full bg-eko-violet/20 blur-[120px]" />
+          <div className="absolute top-1/3 right-1/4 translate-x-1/2 w-[26rem] h-[26rem] rounded-full bg-eko-magenta/15 blur-[100px]" />
+        </div>
+
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center">
+          {/* Left: copy + CTAs */}
           <motion.div
-            variants={fadeUp}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-eko-blue/10 border border-eko-blue/20 text-eko-blue text-xs font-medium mb-6"
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="text-center lg:text-left"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            {t("home.hero.badge")}
-          </motion.div>
-          <motion.h1
-            variants={fadeUp}
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display text-white leading-tight mb-6"
-          >
-            {t("home.hero.title_part1")}{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-eko-blue to-cyan-400">
-              {t("home.hero.title_highlight")}
-            </span>
-          </motion.h1>
-          <motion.p
-            variants={fadeUp}
-            className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed"
-          >
-            {t("home.hero.subtitle_part1")}{" "}
-            <span className="text-white font-medium">{t("home.hero.subtitle_emphasis")}</span>
-            {t("home.hero.subtitle_part2")}
-          </motion.p>
-          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <Link
-              href={CAL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-eko-blue text-white font-semibold hover:bg-eko-blue-dark transition-all flex items-center justify-center gap-2"
+            <motion.div
+              variants={fadeUp}
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-eko-violet/10 border border-eko-violet/20 text-eko-violet text-xs font-medium mb-6"
             >
-              <Calendar className="w-5 h-5" />
-              {t("home.hero.cta_primary")}
-            </Link>
-            <Link
-              href="/pricing"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white font-semibold hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+              <Sparkles className="w-3.5 h-3.5" />
+              {t("home.hero.badge")}
+            </motion.div>
+            <motion.h1
+              variants={fadeUp}
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display text-white leading-tight mb-6"
             >
-              {t("home.hero.cta_secondary")}
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+              {t("home.hero.title_part1")}{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-eko-violet via-eko-magenta to-eko-pink">
+                {t("home.hero.title_highlight")}
+              </span>
+            </motion.h1>
+            <motion.p
+              variants={fadeUp}
+              className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto lg:mx-0 mb-10 leading-relaxed"
+            >
+              {t("home.hero.subtitle_part1")}{" "}
+              <span className="text-white font-medium">{t("home.hero.subtitle_emphasis")}</span>
+              {t("home.hero.subtitle_part2")}
+            </motion.p>
+            <motion.div
+              variants={fadeUp}
+              className="flex flex-col sm:flex-row items-center lg:justify-start justify-center gap-4 mb-10"
+            >
+              <Link
+                href={CAL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-eko-violet text-white font-semibold hover:bg-eko-violet-dark transition-all flex items-center justify-center gap-2"
+              >
+                <Calendar className="w-5 h-5" />
+                {t("home.hero.cta_primary")}
+              </Link>
+              <Link
+                href="/pricing"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white font-semibold hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+              >
+                {t("home.hero.cta_secondary")}
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
+
+            <motion.div
+              variants={fadeUp}
+              className="flex flex-wrap items-center lg:justify-start justify-center gap-x-6 gap-y-2 text-gray-500 text-sm"
+            >
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-eko-green" />
+                <span>{t("home.hero.proof_setup")}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-eko-green" />
+                <span>{t("home.hero.proof_no_contract")}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-eko-green" />
+                <span>{t("home.hero.proof_cancel")}</span>
+              </div>
+            </motion.div>
           </motion.div>
 
-          <motion.div variants={fadeUp} className="flex flex-wrap items-center justify-center gap-8 text-gray-500 text-sm">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-eko-green" />
-              <span>{t("home.hero.proof_setup")}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-eko-green" />
-              <span>{t("home.hero.proof_no_contract")}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-eko-green" />
-              <span>{t("home.hero.proof_cancel")}</span>
-            </div>
+          {/* Right: 3D robot scene (desktop only — heavy asset, mobile users skip) */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.25, ease: "easeOut" }}
+            className="hidden lg:block relative w-full h-[480px] xl:h-[560px]"
+          >
+            <SplineScene scene={SPLINE_SCENE_URL} className="w-full h-full" />
+            {/* Mask the "Built with Spline" free-plan watermark at bottom-right. */}
+            <div
+              aria-hidden
+              className="absolute bottom-3 right-3 w-[160px] h-[44px] bg-eko-noir rounded-md pointer-events-none"
+            />
           </motion.div>
-        </motion.div>
+        </div>
       </section>
 
       {/* Lead Capture Form */}
@@ -230,7 +269,7 @@ export default function LandingPage() {
                 href={CAL_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-eko-blue hover:underline text-sm"
+                className="text-eko-violet hover:underline text-sm"
               >
                 {t("home.form.success_link")}
               </a>
@@ -242,6 +281,7 @@ export default function LandingPage() {
                 <p className="text-gray-400 text-sm">{t("home.form.subtitle")}</p>
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Row 1: business name + website (both required — identity + AI analysis seed) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="text"
@@ -249,43 +289,61 @@ export default function LandingPage() {
                     placeholder={t("home.form.business_name")}
                     value={form.business_name}
                     onChange={(e) => setForm({ ...form, business_name: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-blue text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-violet text-sm"
                   />
+                  <input
+                    type="url"
+                    required
+                    placeholder={t("home.form.website")}
+                    value={form.website}
+                    onChange={(e) => setForm({ ...form, website: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-violet text-sm"
+                  />
+                </div>
+                <p className="text-xs text-eko-violet/80 pl-1 -mt-1">
+                  {t("home.form.website_help")}
+                </p>
+
+                {/* Row 2: category + email */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <select
                     value={form.category}
                     onChange={(e) => setForm({ ...form, category: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-eko-blue text-sm appearance-none"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-eko-violet text-sm appearance-none"
                   >
-                    <option value="" className="bg-eko-graphite text-gray-500">{t("home.form.category_default")}</option>
-                    <option value="spa" className="bg-eko-graphite">{t("home.form.category_spa")}</option>
-                    <option value="restaurant" className="bg-eko-graphite">{t("home.form.category_restaurant")}</option>
-                    <option value="clinic" className="bg-eko-graphite">{t("home.form.category_clinic")}</option>
-                    <option value="gym" className="bg-eko-graphite">{t("home.form.category_gym")}</option>
-                    <option value="retail" className="bg-eko-graphite">{t("home.form.category_retail")}</option>
-                    <option value="pro" className="bg-eko-graphite">{t("home.form.category_pro")}</option>
-                    <option value="other" className="bg-eko-graphite">{t("home.form.category_other")}</option>
+                    <option value="" className="bg-eko-noir text-gray-500">{t("home.form.category_default")}</option>
+                    <option value="spa" className="bg-eko-noir">{t("home.form.category_spa")}</option>
+                    <option value="restaurant" className="bg-eko-noir">{t("home.form.category_restaurant")}</option>
+                    <option value="clinic" className="bg-eko-noir">{t("home.form.category_clinic")}</option>
+                    <option value="gym" className="bg-eko-noir">{t("home.form.category_gym")}</option>
+                    <option value="retail" className="bg-eko-noir">{t("home.form.category_retail")}</option>
+                    <option value="pro" className="bg-eko-noir">{t("home.form.category_pro")}</option>
+                    <option value="other" className="bg-eko-noir">{t("home.form.category_other")}</option>
                   </select>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="email"
                     placeholder={t("home.form.email")}
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-blue text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-violet text-sm"
                   />
+                </div>
+
+                {/* Row 3: phone full width (optional secondary contact) */}
+                <div>
                   <input
                     type="tel"
                     placeholder={t("home.form.phone")}
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-blue text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-violet text-sm"
                   />
                 </div>
+
                 <button
                   type="submit"
-                  disabled={loading || (!form.email && !form.phone)}
-                  className="w-full py-3 rounded-lg bg-eko-blue text-white font-semibold hover:bg-eko-blue-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  disabled={loading || !form.website || (!form.email && !form.phone)}
+                  className="w-full py-3 rounded-lg bg-eko-violet text-white font-semibold hover:bg-eko-violet-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -332,8 +390,8 @@ export default function LandingPage() {
                 variants={fadeUp}
                 className="group p-6 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/5 hover:border-white/10 transition-all"
               >
-                <div className="w-10 h-10 rounded-lg bg-eko-blue/10 flex items-center justify-center mb-4 group-hover:bg-eko-blue/20 transition-colors">
-                  <ind.icon className="w-5 h-5 text-eko-blue" />
+                <div className="w-10 h-10 rounded-lg bg-eko-violet/10 flex items-center justify-center mb-4 group-hover:bg-eko-violet/20 transition-colors">
+                  <ind.icon className="w-5 h-5 text-eko-violet" />
                 </div>
                 <h3 className="text-white font-semibold mb-1">{ind.label}</h3>
                 <p className="text-gray-500 text-sm">{ind.desc}</p>
@@ -366,7 +424,7 @@ export default function LandingPage() {
             {FEATURES.map((feat) => (
               <motion.div key={feat.title} variants={fadeUp} className="p-6 rounded-xl">
                 <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-4">
-                  <feat.icon className="w-5 h-5 text-eko-blue" />
+                  <feat.icon className="w-5 h-5 text-eko-violet" />
                 </div>
                 <h3 className="text-white font-semibold mb-2">{feat.title}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{feat.desc}</p>
@@ -398,7 +456,7 @@ export default function LandingPage() {
           >
             {HOW_IT_WORKS.map((step) => (
               <motion.div key={step.step} variants={fadeUp} className="text-center">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-eko-blue to-eko-blue-dark flex items-center justify-center mx-auto mb-5">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-eko-violet to-eko-magenta flex items-center justify-center mx-auto mb-5">
                   <span className="text-white font-bold text-lg">{step.step}</span>
                 </div>
                 <h3 className="text-white font-semibold text-lg mb-2">{step.title}</h3>
@@ -410,7 +468,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-eko-blue/5 to-transparent">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-eko-violet/10 via-eko-magenta/5 to-transparent">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -425,7 +483,7 @@ export default function LandingPage() {
               href={CAL_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-eko-blue text-white font-semibold hover:bg-eko-blue-dark transition-all flex items-center justify-center gap-2 text-lg"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-eko-violet text-white font-semibold hover:bg-eko-violet-dark transition-all flex items-center justify-center gap-2 text-lg"
             >
               <Calendar className="w-5 h-5" />
               {t("home.cta.primary")}
@@ -444,11 +502,11 @@ export default function LandingPage() {
       <footer className="py-10 px-4 sm:px-6 lg:px-8 border-t border-white/5">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-eko-blue to-eko-blue-dark flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-eko-violet to-eko-magenta flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
             <span className="font-display font-bold text-white">
-              Eko <span className="text-eko-blue">AI</span>
+              Eko <span className="text-eko-violet">AI</span>
             </span>
           </div>
           <p className="text-gray-600 text-sm">

@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.39";
+export const CURRENT_VERSION = "0.7.40";
 
 export interface VersionEntry {
   version: string;

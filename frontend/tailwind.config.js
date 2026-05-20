@@ -15,6 +15,12 @@ module.exports = {
           graphite: '#0F172A',
           green: '#10B981',
           white: '#F8FAFC',
+          // ── Marketing site palette (matches Spline robot scene) ──
+          violet: '#7C3AED',
+          'violet-dark': '#5B21B6',
+          magenta: '#D946EF',
+          pink: '#EC4899',
+          noir: '#0A0414',
         },
         gold: {
           DEFAULT: '#C9A84C',
