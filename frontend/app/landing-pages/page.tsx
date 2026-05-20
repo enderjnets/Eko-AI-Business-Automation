@@ -130,20 +130,27 @@ function formatApiError(err: any, fallback: string): string {
 // Picker grid thumbnail — uses a PRE-RENDERED PNG screenshot of the template.
 // Bulletproof alternative to live iframes: backend renders the template at
 // 1280x800 once via Patchright (chromium) and caches on disk. The browser
-// just downloads an <img>. No iframe scaling, no parent CSS leak, no
-// cache-bust drama, no rendering uncertainty — what you see is the actual
-// rendered template, full stop.
+// just downloads an <img>.
+//
+// Cache strategy:
+//   - PNG URL carries a `?v=<server-version>` query param fetched from the
+//     /templates metadata endpoint. Server bumps this when templates are
+//     rewritten; browser sees a NEW URL and is forced to fetch fresh bytes.
+//   - Fallback to a build-time constant if metadata fetch fails so the
+//     img still renders (avoids broken thumbnails on a flaky network).
+const TEMPLATE_THUMB_BUILD_VERSION = "v30-png-2026-05-20-02";
 
-function TemplateThumbnail({ id }: { id: string }) {
+function TemplateThumbnail({ id, version }: { id: string; version?: string }) {
   const VW = 1280;
   const VH = 800;
+  const v = version || TEMPLATE_THUMB_BUILD_VERSION;
   return (
     <div
       className="relative w-full overflow-hidden bg-[#0F172A]"
       style={{ aspectRatio: `${VW} / ${VH}` }}
     >
       <img
-        src={`/api/v1/landing-pages/template-thumbnail/${id}.png`}
+        src={`/api/v1/landing-pages/template-thumbnail/${id}.png?v=${v}`}
         alt={`${id} template preview`}
         className="absolute inset-0 w-full h-full object-cover object-top"
         loading="eager"

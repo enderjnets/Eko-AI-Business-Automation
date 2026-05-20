@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.30";
+export const CURRENT_VERSION = "0.7.31";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,16 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.31",
+    date: "2026-05-20",
+    title: "Template thumbnails — versioned PNG URL to guarantee browser fetches fresh bytes",
+    changes: [
+      "Added ?v=v30-png-2026-05-20-02 query param to the <img src> in TemplateThumbnail — guarantees that any browser loading the new frontend chunk requests fresh PNG bytes (cannot serve cached version of an old URL)",
+      "Real-browser verification via Patchright headless Chromium confirmed all 10 thumbnails render brand-faithful: Apple Minimal=WHITE, Spotify=BLACK with rotated album cards, Stripe=gradient mesh, Linear=dark grid, Airbnb=white+coral, Notion=white+serif, Tesla=dark hero, BestBuy=white+blue+yellow, HubSpot=white+orange, Eko Classic=dark blue",
+      "Final chunk hash: page-64864b0f54e08942.js — contains template-thumbnail/{id}.png?v=v30-png... URL pattern, zero iframe refs for picker (only ActivePreview)",
+    ],
+  },
   {
     version: "0.7.30",
     date: "2026-05-20",
