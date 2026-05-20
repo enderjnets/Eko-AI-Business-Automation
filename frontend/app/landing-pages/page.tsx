@@ -135,7 +135,7 @@ function formatApiError(err: any, fallback: string): string {
 // or Notion look dark because of the accent-color overlay around them).
 // Cache-bust constant: bumped whenever templates are rewritten so browsers
 // don't serve stale iframe HTML from a previous deploy.
-const TEMPLATE_CACHE_BUST = "v0727";
+const TEMPLATE_CACHE_BUST = "v0729";
 
 function TemplateThumbnail({ id }: { id: string }) {
   const ref = useRef<HTMLDivElement>(null);

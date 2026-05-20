@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.28";
+export const CURRENT_VERSION = "0.7.29";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,26 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.29",
+    date: "2026-05-20",
+    title: "Landing Page templates v3 — rewrite con brand-native signature patterns (Apple full-bleed, Linear app mockup, Spotify rotated albums, etc.)",
+    changes: [
+      "User reportó por 4ta vez que los templates copian estructura pero no el patrón visual signature de cada brand. v3 ahora reproduce el LAYOUT-PATTERN nativo de cada sitio inspirante, no solo los colores",
+      "Apple Minimal: hero + 4 SEPARATE full-bleed product-showcase sections (uno por BENEFIT) alternando bg (#fff → #f5f5f7 → #000 → peach → mint), pill CTAs duales border-radius:980px (Learn more › + Get started), Apple logo SVG real, 11-item product menu, Education Store ribbon, footer Apple 7-column en #f5f5f7",
+      "Stripe Gradient: hero 2-column (left text + right rotated dark code-card con syntax highlighting real de eko.workflows.create() JS), mesh animado 5 layers (purple/cyan/pink/mint/orange) con drift 24-32s, navy #0a2540 footer 5-col",
+      "Linear Dark: 64x64 grid pattern + purple radial glow, sharp 6px corners (NO pills), Linear-style app mockup con sidebar (Workspace/Teams/Cycles) + 7 fake issues con priority squares + EKO-204 IDs mono + colored tags + assignee bubbles, mono eyebrows, hover purple borders",
+      "Tesla Bold: fixed transparent nav que vuelve solid white on scroll (JS scrollY>40), 100vh dark hero con content bottom-anchored, dual identical pill CTAs (Demo Drive + Custom Order, ambos 18px radius padding 12px 100px), Tesla NO uppercase (corrección de v2), Model Lineup grid de 4 product cards, WHITE footer (NO dark — Tesla footer es light)",
+      "Spotify Vibe: pitch black 100%, split hero text-left + 3 rotated album cards right (-10°/0°/+10° con vinyl-hole detail + gradient bgs), 96-104px headline weight 900, glowing green pill CTA #1ed760 con scale(1.04) hover y box-shadow glow, cards #181818 con 80px album-art gradient",
+      "Notion Clean: Lyon serif headings (clamp 48-96px), mock Notion document hero con browser-chrome real (red/yellow/green dots) + 220px sidebar (workspace avatar + Search/Home/Inbox + Private/Shared con emoji items) + main doc area (32px emoji + serif H1 + emoji bullets + cream callout + floating slash-menu popover), black footer con white text",
+      "Airbnb Warm: SVG Belo logo coral, centered Stays/Experiences/Online tabs con active-underline, scrollable category strip con 12 emoji icons (Beachfront/Mountain/OMG!/etc), hero booking-card 4-cell con coral search-circle, listing-style feature cards 1:1 aspect con ★ rating + From $X/night, Airbnb-style reviews",
+      "Best Buy Retail: utility bar dark + blue #0046BE main nav con yellow tag-style logo (CSS clip-path angled cut) + pill search, yellow #FFE000 ribbon, split hero (left product spotlight + right Today's Top Deals 2x2 mini-grid), deal cards con DEAL+HOT corner badges + strike-through red old price + huge FREE/save tag green",
+      "HubSpot Sales: orange sprocket SVG logo + navy Eko wordmark, dual CTA pills border-radius:60px (orange + dark outline), grayscale 6-logo trust wall (NORTHWIND TRADERS, Vertex Solutions, Initech, Pied Piper, Soylent Corp, MASSIVE DYNAMIC), feature cards con circular orange/teal/green/purple icons, 5-hub callout grid (Marketing/Sales/Service/CMS/Operations), FAQ con orange +/- toggle, gradient footer band naranja + dark navy #33475b 5-col footer",
+      "Cache-bust del iframe bumpeado a v0729 para forzar refresh de browser caches",
+      "Total templates: ~142KB → ~274KB (+92%), cada template grew 7-76% en bytes con todo el chrome adicional",
+      "Cero breaking changes: 58 placeholders preservados por template, form schema intacto, markers OK, bg-leak guards intact",
+    ],
+  },
   {
     version: "0.7.28",
     date: "2026-05-20",
