@@ -12,8 +12,10 @@ import {
   HardDrive,
   Sparkles,
   AlertTriangle,
+  Send,
 } from "lucide-react";
 import VideoModal from "./VideoModal";
+import PublishModal from "./PublishModal";
 
 interface Video {
   id: string;
@@ -66,6 +68,8 @@ export default function VideosList() {
   const [filter, setFilter] = useState<"all" | "short" | "long">("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [modalVideo, setModalVideo] = useState<Video | null>(null);
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [publishVideo, setPublishVideo] = useState<Video | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -106,6 +110,11 @@ export default function VideosList() {
   const openVideo = (v: Video) => {
     setModalVideo(v);
     setModalOpen(true);
+  };
+
+  const openPublish = (v: Video) => {
+    setPublishVideo(v);
+    setPublishOpen(true);
   };
 
   const videoUrl = (v: Video) => `${PUBLIC_BASE}${v.url}`;
@@ -258,7 +267,7 @@ export default function VideosList() {
                       {v.business_name}
                     </p>
                   )}
-                  <div className="flex items-center gap-3 text-[10px] text-gray-500">
+                  <div className="flex items-center gap-3 text-[10px] text-gray-500 mb-2">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {formatDuration(v.duration)}
@@ -269,6 +278,13 @@ export default function VideosList() {
                     </span>
                     <span className="ml-auto">{timeAgo(v.created_at)}</span>
                   </div>
+                  <button
+                    onClick={() => openPublish(v)}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-gradient-to-r from-pink-500/80 to-pink-600/80 text-white hover:from-pink-500 hover:to-pink-600 transition-all"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    Publicar en redes
+                  </button>
                 </div>
               </div>
             );
@@ -289,6 +305,26 @@ export default function VideosList() {
           }
         />
       )}
+
+      {/* Publish to social networks modal */}
+      <PublishModal
+        isOpen={publishOpen}
+        onClose={() => setPublishOpen(false)}
+        video={
+          publishVideo
+            ? {
+                id: publishVideo.id,
+                url: videoUrl(publishVideo),
+                thumbnailUrl: thumbUrl(publishVideo),
+                title:
+                  publishVideo.title ||
+                  publishVideo.business_name ||
+                  publishVideo.filename,
+                isShort: publishVideo.type === "short",
+              }
+            : null
+        }
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.44";
+export const CURRENT_VERSION = "0.7.45";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,19 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.45",
+    date: "2026-05-20",
+    title: "Content Studio — habilitar publish a TikTok / Instagram / Facebook desde el tab Videos",
+    changes: [
+      "Antes del fix: el tab Videos del Content Studio solo permitía ver los videos generados por el pipeline; no había forma de publicarlos en las 3 redes ya conectadas en Buffer (TikTok, Instagram, Facebook). Los snapshots solo leían posts (query), nunca creaban (mutation).",
+      "Nuevo endpoint POST /content-api/publish que ejecuta la mutation Buffer createPost por cada canal seleccionado en paralelo. Soporta los 3 modos: shareNow / addToQueue / customScheduled (con dueAt ISO). Metadata por red: Instagram type=reel|post + shouldShareToFeed=true; Facebook type=reel|post; TikTok title (truncado a 150c). Asset siempre como video {url, thumbnailUrl, metadata:{title}} usando la Tailscale Funnel pública (ender-rog.tail25dc73.ts.net) — Buffer puede descargar desde ahí.",
+      "Nuevo componente PublishModal: checkboxes para los 3 canales (TikTok/IG/FB) con los 3 pre-seleccionados; textarea caption con char counter; toggle de timing (Share Now / Add to Queue / Schedule) + datetime-local cuando se programa; per-channel result rows (post id + status si ok, error message si falla) para que parcial success sea visible.",
+      "VideosList: nuevo botón 'Publicar en redes' (Send icon, gradient pink) debajo de la metadata de cada card. Click abre el PublishModal con el video pre-cargado, isShort auto-detectado para mapear a reel vs post.",
+      "+21 i18n keys EN + 21 ES bajo namespace content.publish.* (title, channels, caption, mode.now/queue/schedule, result.all_ok/partial/all_failed, etc.). Total content.* keys ahora = ~42 entries de publish.",
+      "Verificado: Buffer GraphQL schema introspection confirma createPost(input: CreatePostInput!) → PostActionSuccess|MutationError. Las 3 canales (TikTok 6a04fa5a..., Instagram 6a04ff43..., Facebook 6a0503054...) están conectadas y activas en la org 6a04ef662bf345267cf35e70.",
+    ],
+  },
   {
     version: "0.7.44",
     date: "2026-05-20",
