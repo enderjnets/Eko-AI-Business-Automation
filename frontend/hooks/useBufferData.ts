@@ -64,7 +64,7 @@ async function doFetch(force = false): Promise<BufferSnapshot> {
   if (inflight && !force) return inflight;
 
   inflight = (async () => {
-    const r = await fetch("/content-api/buffer-snapshot?limit=200", {
+    const r = await fetch("/content-api/buffer-snapshot?limit=100", {
       cache: "no-store",
     });
     const data: BufferSnapshot = await r.json();

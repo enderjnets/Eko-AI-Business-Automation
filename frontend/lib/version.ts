@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.45";
+export const CURRENT_VERSION = "0.7.46";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,20 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.46",
+    date: "2026-05-21",
+    title: "Content Studio — fix 5 bugs que dejaban los tabs vacíos + fallback offline para channels",
+    changes: [
+      "Bug 1 (CRÍTICO): la query `/content-api/buffer-snapshot` pedía `first: 200` posts pero Buffer cap es 100/request — la query entera retornaba `data: null` con `errors: [{ message: 'Pagination limit exceeded. Maximum 100 items per request.' }]`, y `bufferQuery` tragaba ese error silenciosamente (caía en el catch como un error genérico). Resultado: Monitor → 'Sin canales configurados', Posts → 'Sin publicaciones todavía', Calendar vacío, Analytics 0/0/0 — TODOS los tabs Buffer-dependientes rotos a pesar de tener 3 channels conectados y 14+ posts en Buffer. Fix: clamp postLimit a 100, default = 100 (no 200), expone error en respuesta si bufferQuery no rate-limited pero data=null.",
+      "Bug 2: `useBufferData` hook hardcodeaba `?limit=200` → forzaba el bug 1. Fix: bajado a `?limit=100`.",
+      "Bug 3 (CRÍTICO): `/content-api/pipelines` y `/content-api/stats` leían `/Users/enderj/EkoContentStudio/output` que no existe en el container del ROG. El volume mount estaba mal porque docker-compose se ejecuta con sudo y `~/EkoContentStudio` expandía a `/root/EkoContentStudio` (vacío) en vez de `/home/enderj/EkoContentStudio` (donde están los pipelines reales). Resultado: tab Monitor → 'ENOENT: scandir /Users/enderj/EkoContentStudio/output'. Fix: ambos routes ahora proxyean a `eko-pipeline:8002` (que SÍ tiene el mount correcto via paths absolutos), con dos nuevos endpoints `GET /pipelines?limit=N` y `GET /stats` en pipeline_api.py.",
+      "Bug 4: cuando Buffer está rate-limited (24h cap) Y la cache en memoria está vacía (post container restart), `buffer-snapshot` devolvía `channels: []` rompiendo Monitor + PublishModal en frío. Fix: persist channels a `/tmp/eko-buffer-channels.json` cada vez que Buffer responde + HARDCODED_CHANNELS como ultimate fallback (los 3 IDs y service names del org Eko AI son efectivamente constantes). Si Buffer responde con channels nuevos, sobrescribe el disco; si rate-limited y disco vacío, sirve los hardcoded para que la UI nunca quede sin red.",
+      "Bug 5: `bufferQuery` tragaba errores `data: null` sin retornar `error`. Fix: si `result.error` está set sin rate-limit, lo propaga al cliente para que la UI muestre banner en vez de empty list.",
+      "Smoke tests verificados en producción: `/content-api/buffer-snapshot?limit=100` → 3 channels (TikTok/IG/FB) incluso con Buffer 24h-rate-limited (sirve via fallback). `/content-api/pipelines` → 28 pipelines reales (Apple Inc., Café EKO, etc.). `/content-api/stats` → 28 pipelines / 40 videos / 26 published / by_platform[TikTok,IG,FB] = 1 c/u. `/content-api/videos` → 42 videos del pipeline-output.",
+      "Confirmado publishing real funciona: snapshot muestra 3 posts con status='sent' fechados 2026-05-13 (1 TikTok + 1 IG + 1 FB) — pipelines anteriores SÍ publicaron a las 3 redes. Los 9 'error' son de pipelines viejos pre-fixes.",
+    ],
+  },
   {
     version: "0.7.45",
     date: "2026-05-20",
