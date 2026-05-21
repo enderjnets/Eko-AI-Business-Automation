@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.43";
+export const CURRENT_VERSION = "0.7.44";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,18 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.44",
+    date: "2026-05-20",
+    title: "Home corporativa — agregados campos Nombre + Apellido al form de contacto",
+    changes: [
+      "frontend/components/LandingPage.tsx: nueva primera fila del form con inputs First name + Last name (2-col grid responsive), required. Antes el form solo pedía website/category/email/phone — los leads quedaban como 'Unknown Business' y los emails de respuesta automática salían genéricos.",
+      "Validación del submit button extendida: ahora exige first_name + last_name no-vacíos (trim) además de website + (email OR phone).",
+      "Translations agregadas: home.form.first_name = 'First name' / 'Nombre', home.form.last_name = 'Last name' / 'Apellido'. Toggle EN/ES funciona instantáneamente.",
+      "Backend NO se tocó — PublicLeadCreate schema ya aceptaba first_name + last_name (Optional[str]) desde antes; ahora simplemente llegan poblados.",
+      "Beneficio downstream: el AI Analysis email del lead 616 (v0.7.43) salió como 'Your AI automation analysis for Unknown Business' porque el form no capturaba nombre — combinado con dominio nuevo + URL de unsubscribe rota era spam-trigger. Capturar nombre permite subject personalizado y reduce ese problema.",
+    ],
+  },
   {
     version: "0.7.43",
     date: "2026-05-20",

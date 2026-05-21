@@ -1,5 +1,38 @@
 
 
+## [0.7.44] — 2026-05-20
+
+### Home corporativa — agregados campos Nombre + Apellido al form de contacto
+
+El form de contacto en https://www.ekoaiautomation.com solo capturaba **website / category / email / phone**. Los leads quedaban en DB como `business_name = "Unknown Business"` y los emails de respuesta salían genéricos con subject *"Your AI automation analysis for Unknown Business"* — combinado con los bugs anteriores (URL unsubscribe rota, dominio sender nuevo) este subject genérico empujaba a spam folder corporativo.
+
+#### Cambios
+
+**`frontend/components/LandingPage.tsx`**:
+
+- State extendido con `first_name: ""` y `last_name: ""` (líneas 51-58).
+- Nueva primera fila del form: grid 2-col responsive con dos `<input type="text" required>` para First Name + Last Name, ubicada **antes** del campo Website URL. El usuario provee identidad antes que detalles técnicos del negocio.
+- Validación reforzada en `handleSubmit`: se agregó `if (!form.first_name.trim() || !form.last_name.trim()) return;` antes de los checks existentes.
+- El `disabled` del submit button ahora exige los 4 fields obligatorios: `first_name + last_name + website + (email OR phone)`.
+- El POST a `/api/v1/leads/public` ya enviaba `...form` con spread, así que `first_name` y `last_name` viajan automáticamente sin tocar el body.
+
+**`frontend/lib/i18n/translations.ts`**:
+
+- `home.form.first_name` — EN: `"First name"` · ES: `"Nombre"`
+- `home.form.last_name` — EN: `"Last name"` · ES: `"Apellido"`
+
+Toggle del LanguageSelector en el navbar cambia los placeholders instantáneamente sin recargar (i18n vive en cliente).
+
+#### Backend NO se tocó
+
+`PublicLeadCreate` schema (`backend/app/schemas/lead.py:166-178`) ya define `first_name: Optional[str]` y `last_name: Optional[str]` desde versiones anteriores; el handler en `backend/app/api/v1/leads.py:498-623` ya los persiste en `source_data` JSON + los usa como fallback para `business_name` cuando éste viene vacío. Ahora simplemente llegan poblados desde la home corporativa.
+
+#### Beneficio downstream
+
+Próximos leads capturados desde la home tendrán nombre real → el subject del AI Analysis email puede ser `"Your AI automation analysis for {First Last}"` o `"for {Business Name}"` cuando esté disponible — esto es un follow-up natural (no incluido en este commit). La pieza más importante hoy es **dejar de perder** la identidad del lead en el form de captura.
+
+---
+
 ## [0.7.43] — 2026-05-20
 
 ### AI Analysis email — fix URL de unsubscribe malformada + persistencia del provider_id

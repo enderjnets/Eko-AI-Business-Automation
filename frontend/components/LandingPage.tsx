@@ -49,6 +49,8 @@ export default function LandingPage() {
   const { t } = useT();
 
   const [form, setForm] = useState({
+    first_name: "",
+    last_name: "",
     website: "",
     email: "",
     phone: "",
@@ -83,7 +85,8 @@ export default function LandingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Website is required (seeds the AI analysis). Plus need at least one contact channel.
+    // Name + website are required (seeds the AI analysis + personalization). Plus need at least one contact channel.
+    if (!form.first_name.trim() || !form.last_name.trim()) return;
     if (!form.website) return;
     if (!form.email && !form.phone) return;
     setLoading(true);
@@ -306,6 +309,26 @@ export default function LandingPage() {
                 <p className="text-gray-400 text-sm">{t("home.form.subtitle")}</p>
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Row 0: first name + last name */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    required
+                    placeholder={t("home.form.first_name")}
+                    value={form.first_name}
+                    onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-violet text-sm"
+                  />
+                  <input
+                    type="text"
+                    required
+                    placeholder={t("home.form.last_name")}
+                    value={form.last_name}
+                    onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-eko-violet text-sm"
+                  />
+                </div>
+
                 {/* Row 1: website (full width) — the AI analysis seed */}
                 <div>
                   <input
@@ -359,7 +382,13 @@ export default function LandingPage() {
 
                 <button
                   type="submit"
-                  disabled={loading || !form.website || (!form.email && !form.phone)}
+                  disabled={
+                    loading ||
+                    !form.first_name.trim() ||
+                    !form.last_name.trim() ||
+                    !form.website ||
+                    (!form.email && !form.phone)
+                  }
                   className="w-full py-3 rounded-lg bg-eko-violet text-white font-semibold hover:bg-eko-violet-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? (
