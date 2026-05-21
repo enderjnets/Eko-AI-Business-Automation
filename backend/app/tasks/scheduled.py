@@ -20,7 +20,9 @@ from app.agents.research.agent import ResearchAgent
 from app.services.paperclip import on_system_alert, on_email_sent, on_email_error
 from app.utils.ai_client import generate_embedding
 from app.utils.geocoding import geocode_address as _geocode_address
+from app.config import get_settings
 
+settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
@@ -1111,15 +1113,15 @@ async def _enrich_and_welcome_lead_async(lead_id: int):
                 subject = f"Tu análisis de automatización para {lead.business_name}"
             else:
                 subject = f"Your AI automation analysis for {lead.business_name}"
-            app_url = outreach.from_email.split("@")[-1] if "@" in outreach.from_email else "ekoai.io"
+            app_url = settings.APP_URL.rstrip("/")
             tracking_pixel = outreach._add_tracking_pixel("", lead.id, f"lead_{lead.id}") if hasattr(outreach, "_add_tracking_pixel") else ""
             full_html = render_outreach_email(
                 subject=subject,
                 email_content=analysis_html,
-                unsubscribe_url=f"https://{app_url}/api/v1/webhooks/unsubscribe?lead_id={lead.id}",
+                unsubscribe_url=f"{app_url}/api/v1/webhooks/unsubscribe?lead_id={lead.id}",
                 tracking_pixel=tracking_pixel,
             )
-            await outreach.send(
+            send_result = await outreach.send(
                 to_email=lead.email,
                 subject=subject,
                 body=full_html,
@@ -1129,8 +1131,9 @@ async def _enrich_and_welcome_lead_async(lead_id: int):
                 tags=["ai_analysis", "landing_page"],
                 is_full_html=True,
             )
-            logger.info(f"[Celery] AI Analysis email sent to lead {lead_id}")
-            
+            provider_message_id = (send_result or {}).get("id") if isinstance(send_result, dict) else None
+            logger.info(f"[Celery] AI Analysis email sent to lead {lead_id} (provider_id={provider_message_id})")
+
             # Record the email interaction in the database
             try:
                 interaction = Interaction(
@@ -1140,11 +1143,13 @@ async def _enrich_and_welcome_lead_async(lead_id: int):
                     subject=subject,
                     content=analysis_html[:500] if analysis_html else "",
                     email_status="sent",
+                    email_message_id=provider_message_id,
                     meta={
                         "source": "landing_page",
                         "ai_generated": True,
                         "audio_url": audio_url,
                         "tags": ["ai_analysis", "landing_page"],
+                        "provider": "resend",
                     },
                 )
                 db.add(interaction)

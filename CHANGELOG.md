@@ -1,5 +1,42 @@
 
 
+## [0.7.43] — 2026-05-20
+
+### AI Analysis email — fix URL de unsubscribe malformada + persistencia del provider_id
+
+**Caso disparador**: lead 616 (`evem@clx-global.com`) llenó form de landing page; Resend confirmó `last_event=delivered` pero la usuaria nunca abrió. El bot reportó éxito al usuario en el dashboard, pero a la persona "no le llegó" — probable spam/quarantine corporativo.
+
+#### Bug 1: unsubscribe URL malformada
+
+`backend/app/tasks/scheduled.py:1114`:
+
+```python
+app_url = outreach.from_email.split("@")[-1] if "@" in outreach.from_email else "ekoai.io"
+unsubscribe_url = f"https://{app_url}/api/v1/webhooks/unsubscribe?lead_id={lead.id}"
+```
+
+`outreach.from_email = "Eko AI <contact@biz.ekoaiautomation.com>"` (formato RFC 5322 con display name). Split por `@` da `["Eko AI <contact", "biz.ekoaiautomation.com>"]`. El `[-1]` deja el `>` extra al final → resultado: `https://biz.ekoaiautomation.com>/api/v1/webhooks/unsubscribe?lead_id=616`.
+
+URLs malformadas son red flag para spam filters (Microsoft 365 y Google Workspace los penalizan en el SpamAssassin score). Combinado con dominio sender nuevo (`biz.ekoaiautomation.com`), subject promocional (*"for Unknown Business"*) y HTML pesado con métricas, es probable que el email cayera en Junk/Quarantine.
+
+**Fix**: usar `settings.APP_URL.rstrip("/")` igual que `email.py:336` y el tracking pixel. URL ahora bien formada: `https://ender-rog.tail25dc73.ts.net/api/v1/webhooks/unsubscribe?lead_id=N`. El dominio Tailscale no es ideal de marca, pero es lo que ya se está usando consistentemente en el resto del email — moverlo a un subdominio corporativo es follow-up separado.
+
+#### Bug 2: provider_message_id no persistido
+
+`scheduled.py:1136-1149` creaba el `Interaction` con `email_status="sent"` pero ignoraba el `id` que retorna `outreach.send()` (Resend message ID). Resultado: `interactions.email_message_id = NULL` para todos los emails AI Analysis enviados desde landing pages → sin pivot para correlacionar webhook events (delivered/opened/clicked/bounced) con la conversación en el dashboard.
+
+**Fix**: capturar `send_result = await outreach.send(...)`, extraer `provider_message_id = send_result.get("id")`, persistirlo en `email_message_id` + `meta["provider"] = "resend"`.
+
+#### Verificación
+
+Worker + backend restart limpio post-deploy (sin ImportErrors). Próximo email AI Analysis enviado desde landing page tendrá unsubscribe URL bien formada y `email_message_id` poblado para tracking downstream.
+
+#### Caveat
+
+Este fix **no garantiza** que la usuaria de clx-global.com vea el email retroactivamente — ese mensaje ya fue entregado al servidor de ella el 20-may 21:25 UTC, con el URL roto. Si está en spam, sigue ahí. Para futuras campañas a contactos B2B corporativos vale la pena: (a) audit DKIM/SPF, (b) considerar warm-up del subdominio `biz.ekoaiautomation.com`, (c) subject lines menos genéricos (*"for Unknown Business"* es spam-trigger).
+
+---
+
 ## [0.7.27] — 2026-05-20
 
 ### Landing Pages — fix thumbnails del template picker no mostraban el brand real

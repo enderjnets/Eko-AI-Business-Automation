@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.42";
+export const CURRENT_VERSION = "0.7.43";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,18 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.43",
+    date: "2026-05-20",
+    title: "AI Analysis email — fix URL de unsubscribe malformada + guarda provider_id de Resend",
+    changes: [
+      "Bug: el unsubscribe link del email AI Analysis salía como `https://biz.ekoaiautomation.com>/api/v1/webhooks/unsubscribe?lead_id=N` (con `>` extra). El código en scheduled.py:1114 hacía `outreach.from_email.split('@')[-1]` sobre `'Eko AI <contact@biz.ekoaiautomation.com>'` → el `>` del formato RFC 5322 quedaba pegado al dominio. URL roto = penalty en spam scoring de gateways B2B (Microsoft 365, Google Workspace).",
+      "Bug 2: interactions.email_message_id quedaba NULL aunque Resend retornaba ID. Sin él, no podíamos linkear webhook events (open/click/bounce) con la conversación en el dashboard ni hacer follow-up tracking.",
+      "Fix 1: usar `settings.APP_URL.rstrip('/')` directamente (la Tailscale URL ya usada en email.py:336 y el tracking pixel). URL ahora bien formada: `https://ender-rog.tail25dc73.ts.net/api/v1/webhooks/unsubscribe?lead_id=N`.",
+      "Fix 2: capturar `send_result` de `await outreach.send(...)` y persistir `provider_message_id` en `Interaction.email_message_id` + meta['provider']='resend'.",
+      "Caso disparador: lead 616 (evem@clx-global.com) — Resend confirmó `last_event=delivered` pero la usuaria nunca abrió. Probable filtro de spam corporativo en parte por la URL rota + dominio nuevo. Resto del improvement queda como future work (DKIM/SPF audit, dominio warming).",
+    ],
+  },
   {
     version: "0.7.35",
     date: "2026-05-20",
