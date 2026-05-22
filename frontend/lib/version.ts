@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.46";
+export const CURRENT_VERSION = "0.7.47";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,21 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.47",
+    date: "2026-05-21",
+    title: "Email outreach — stop loop infinito + cap 2 auto-replies/24h + format light theme matching reference design",
+    changes: [
+      "Bug crítico email loop: lead 615 (el dueño, enderjnets@gmail.com) recibió 7 emails en 36h por replies AI auto-generadas sin tope. Cualquier reply del usuario que pareciera 'interested/needs_info' disparaba otra reply del agent → cadena infinita potencial. Fix: cap MAX_AUTO_REPLIES_PER_24H=2 en webhooks.py:resend-inbound, count via SQL substring-match en interactions.meta auto_replied=true.",
+      "Bug crítico STOP detection: el agent NO detectaba si el usuario respondía 'STOP / UNSUBSCRIBE / remove me / no me interesa' — seguía auto-respondiendo. Fix: STOP_KEYWORDS list ES+EN, check antes del auto-reply, si match → lead.do_not_contact=true + return status='stopped'. Compliance TCPA/CAN-SPAM honra opt-out inmediato.",
+      "Bug Celery beat: tarea `execute-sequences-every-hour` tenía schedule=300.0 (5 min) en vez de 3600.0 — corría 12 veces por hora, multiplicando emails. Fix a 3600s real. También `process_follow_ups`: 300s → 1800s (30min, alinea con sequence runner).",
+      "Bug sequence runner: cuando 2 steps EMAIL eran consecutivos sin WAIT entre ellos, `next_step_at = now` disparaba el segundo en el beat siguiente (5min) — 2 emails al lead en 5 min. Fix: implicit 24h gap entre EMAIL steps consecutivos en scheduled.py:_execute_sequences_async.",
+      "Format email roto (image #44): el styler `_style_existing_p_tags` asignaba color #E2E8F0 (gris claro para dark-mode wrapper) a TODOS los <p> tags, incluyendo los emails cold-outreach que se mandan a Gmail (light mode) → texto casi invisible sobre fondo blanco. Fix: color neutro #333333 (sign-off #666). Igual en `format_plain_text_to_html`.",
+      "Wrapper `render_outreach_email` (AI Analysis email) reescrito de dark theme (bg #0B0F19, hero gradient header) → light theme (bg #FFFFFF, sin hero header, padding mínimo) matching el reference design de image #45: párrafos limpios + signature 'Eko AI Team / Denver, CO' + footer 'Unsubscribe | Reply STOP to opt out'.",
+      "Freno de emergencia DB ejecutado: pausadas las 6 sequence_enrollments activas (Landing Page Nurturing → meta.paused_reason=emergency_stop_v0_7_47), secuencia movida a DRAFT, 7 leads test/del usuario marcados do_not_contact (enderjnets@gmail.com, evem@clx-global.com, *@example.com).",
+      "Smoke tests verificados contra backend real: STOP → lead 615 do_not_contact=true en 1 request. Interés con 2 auto-replies previas → 'Auto-reply skipped: 2 already sent in last 24h' (log). Cap funcionando.",
+    ],
+  },
   {
     version: "0.7.46",
     date: "2026-05-21",

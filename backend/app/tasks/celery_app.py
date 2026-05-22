@@ -53,11 +53,13 @@ celery_app.conf.update(
     beat_schedule={
         "process-follow-ups-every-5-min": {
             "task": "app.tasks.scheduled.process_follow_ups",
-            "schedule": 300.0,  # 5 minutes
+            "schedule": 1800.0,  # 30 minutes (was 5min — too aggressive, lifted
+                                 # to align with the sequence runner cadence)
         },
         "execute-sequences-every-hour": {
             "task": "app.tasks.scheduled.execute_sequences",
-            "schedule": 300.0,  # 5 minutes
+            "schedule": 3600.0,  # 1 hour (was 300s / 5min — name was right but value
+                                 #         was wrong, causing every 5min email blasts)
         },
         "remind-scheduled-calls-daily": {
             "task": "app.tasks.scheduled.remind_scheduled_calls",

@@ -28,33 +28,27 @@ OUTREACH_EMAIL_HTML = """<!DOCTYPE html>
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:#0B0F19;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#E2E8F0;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0B0F19;">
+<body style="margin:0;padding:0;background-color:#FFFFFF;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#333333;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFFFF;">
     <tr>
-      <td align="center" style="padding:32px 16px;">
-        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#111827;border-radius:16px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;">
-          <!-- Header -->
+      <td align="left" style="padding:24px 16px;">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#FFFFFF;">
+          <!-- Body — plain-text style for inbox readability (matches reference design) -->
           <tr>
-            <td style="background:linear-gradient(135deg,#0B4FD8,#7C3AED);padding:28px 32px 24px;text-align:center;">
-              <h1 style="margin:0;font-size:26px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Eko AI</h1>
-              <p style="margin:6px 0 0;font-size:14px;color:rgba(255,255,255,0.85);">Automatización inteligente para tu negocio</p>
-            </td>
-          </tr>
-          <!-- Body -->
-          <tr>
-            <td style="padding:32px;">
+            <td style="padding:8px 4px 24px;">
               {email_content}
             </td>
           </tr>
-          <!-- Footer -->
+          <!-- Footer — minimal, light theme -->
           <tr>
-            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
-              <p style="margin:0 0 6px;font-size:12px;color:#64748B;line-height:1.5;">
-                [AI-generated message] — Eko AI Automation LLC, Denver, CO
+            <td style="padding:16px 4px 0;border-top:1px solid #E5E7EB;">
+              <p style="margin:12px 0 4px;font-size:13px;color:#666666;line-height:1.5;">
+                Eko AI Team<br>
+                Denver, CO
               </p>
-              <p style="margin:0;font-size:12px;color:#475569;line-height:1.5;">
-                <a href="{unsubscribe_url}" style="color:#3B82F6;text-decoration:underline;">Unsubscribe</a>
-                <span style="color:#475569;"> | </span>
+              <p style="margin:0;font-size:13px;color:#666666;line-height:1.5;">
+                <a href="{unsubscribe_url}" style="color:#666666;text-decoration:underline;">Unsubscribe</a>
+                <span> | </span>
                 Reply STOP to opt out
               </p>
             </td>
@@ -104,14 +98,21 @@ def _format_booking_links(html: str) -> str:
 
 
 def _style_existing_p_tags(html: str) -> str:
-    """Add inline styles to existing <p> tags that don't have them."""
+    """Add inline styles to existing <p> tags that don't have them.
+
+    Uses a neutral dark color (#333) that renders well on Gmail's white
+    background. Previously used #E2E8F0 (light gray for dark-theme HTML
+    wrapper), which made the body nearly invisible against an inbox in
+    light mode — exactly the 'apillotado/no se ve' look reported in image
+    #44.
+    """
     import re
 
     def add_style_to_p(match):
         tag = match.group(0)
         if 'style=' in tag:
             return tag  # Already has styles, leave it
-        return '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#E2E8F0;">'
+        return '<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#333333;">'
 
     return re.sub(r'<p(?![^>]*style=)[^>]*>', add_style_to_p, html, flags=re.IGNORECASE)
 
@@ -178,11 +179,11 @@ def format_plain_text_to_html(text: str) -> str:
 
         if is_signoff:
             html_parts.append(
-                f'<p style="margin:24px 0 0;font-size:15px;line-height:1.6;color:#94A3B8;">{para}</p>'
+                f'<p style="margin:24px 0 0;font-size:15px;line-height:1.6;color:#666666;">{para}</p>'
             )
         else:
             html_parts.append(
-                f'<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#E2E8F0;">{para}</p>'
+                f'<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#333333;">{para}</p>'
             )
 
     result = "\n".join(html_parts)

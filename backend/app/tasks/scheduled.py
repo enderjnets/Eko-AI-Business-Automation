@@ -270,7 +270,11 @@ async def _execute_sequences_async():
                     if next_step and next_step.step_type == SequenceStepType.WAIT:
                         enrollment.next_step_at = now + timedelta(hours=next_step.delay_hours or 24)
                     elif next_step:
-                        enrollment.next_step_at = now
+                        # Two EMAIL steps in a row without a WAIT between them
+                        # would otherwise fire back-to-back on the next beat
+                        # cycle. Insert an implicit 24h gap so we never email
+                        # the same lead twice in the same day from a sequence.
+                        enrollment.next_step_at = now + timedelta(hours=24)
                     else:
                         enrollment.status = "completed"
                         enrollment.completed_at = now

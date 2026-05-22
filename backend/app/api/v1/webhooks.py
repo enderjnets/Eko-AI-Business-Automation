@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 import httpx
 from fastapi import APIRouter, Request, Depends, Query, Response
-from sqlalchemy import select, cast, String
+from sqlalchemy import select, cast, String, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
@@ -1193,7 +1193,57 @@ async def resend_inbound_webhook(request: Request, db: AsyncSession = Depends(ge
     interest_keywords = ["interesa", "interesada", "interesado", "cómo funciona", "como funciona", "cuánto cuesta", "cuanto cuesta", "precio", "precios", "demo", "llamada", "reunión", "reunion", "agendar", "saber más", "me gustaría", "me gustaria", "interested", "interest", "how much", "price", "pricing", "cost", "call", "meeting", "schedule", "book", "learn more", "would like", "tell me", "next steps", "available", "chat", "talk", "info", "information", "details", "question", "questions", "help", "service"]
     has_interest_keywords = any(kw in body_lower for kw in interest_keywords)
     should_auto_reply = intent in ("interested", "needs_info") or (intent == "unclear" and has_interest_keywords)
-    
+
+    # ── STOP / UNSUBSCRIBE detection ───────────────────────────────────────
+    # If the recipient says STOP / UNSUBSCRIBE / REMOVE ME / lose interest
+    # in the reply body, immediately mark do_not_contact and skip auto-reply.
+    # This catches the cases TCPA/CAN-SPAM expect us to honor instantly.
+    STOP_KEYWORDS = [
+        "stop", "unsubscribe", "remove me", "opt out", "opt-out",
+        "no me interesa", "no me contacten", "no contacten", "déjame en paz",
+        "dejame en paz", "no quiero", "borrar", "borrame", "borrad",
+        "do not contact", "not interested", "leave me alone", "remove",
+    ]
+    has_stop_keyword = any(
+        f" {kw} " in f" {body_lower.strip()} " or
+        body_lower.strip().startswith(kw) or
+        body_lower.strip() == kw
+        for kw in STOP_KEYWORDS
+    )
+    if has_stop_keyword and lead and not lead.do_not_contact:
+        lead.do_not_contact = True
+        lead.next_follow_up_at = None
+        await db.commit()
+        logger.info(f"Lead {lead.id} marked do_not_contact (STOP keyword in reply)")
+        return {
+            "status": "stopped",
+            "lead_id": lead.id,
+            "reason": "user_requested_stop",
+        }
+
+    # ── Cap auto-replies per lead per 24h ──────────────────────────────────
+    # Without this, a reply-loop (autoreplier on the other side, or user
+    # testing) can fire infinite responses. We allow at most 2 auto-replies
+    # in any 24h window for a given lead.
+    MAX_AUTO_REPLIES_PER_24H = 2
+    recent_auto_count_q = await db.execute(
+        select(func.count(Interaction.id))
+        .where(Interaction.lead_id == lead.id)
+        .where(Interaction.direction == "outbound")
+        .where(Interaction.interaction_type == "email")
+        .where(Interaction.created_at >= datetime.utcnow() - timedelta(hours=24))
+        # Interaction.meta is `json` not `jsonb`, so cast to text and
+        # substring-match for "auto_replied": true.
+        .where(cast(Interaction.meta, String).like('%"auto_replied": true%'))
+    )
+    recent_auto_count = recent_auto_count_q.scalar() or 0
+    if recent_auto_count >= MAX_AUTO_REPLIES_PER_24H:
+        logger.info(
+            f"Auto-reply skipped for lead {lead.id}: "
+            f"{recent_auto_count} auto-replies already sent in last 24h"
+        )
+        should_auto_reply = False
+
     if auto_reply_enabled and should_auto_reply:
         try:
             # Refresh lead and interaction for auto-reply
