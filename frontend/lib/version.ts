@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.47";
+export const CURRENT_VERSION = "0.7.48";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,20 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.48",
+    date: "2026-05-21",
+    title: "Auto-reply email — párrafos legibles + quitar CTA card dark (matching image #45 reference)",
+    changes: [
+      "Después de v0.7.47 (light theme wrapper) el auto-reply todavía llegaba como una pared de texto sin saltos (image #46): un solo <p> de 6-7 líneas seguido del bloque dark 'Ready to see it in action?' con dos botones. Root cause encontrado: el system prompt del LLM en email_reply_agent.py NUNCA le pedía saltos de párrafo, y _inject_booking_cta() appendeaba un div con background:#0F172A que clashea con light theme.",
+      "Fix 1 (system prompt): agregada sección FORMATTING — CRITICAL al prompt en email_reply_agent.py — exige 3-5 párrafos cortos separados por \\n\\n en el JSON body, 1-2 oraciones por párrafo, plain text only (no HTML, no markdown, no bullets), y especifica que el booking link + phone van inline en prosa (no como botones).",
+      "Fix 2 (sin CTA dark): removidas las 2 invocaciones de _inject_booking_cta() — una en el path normal LLM, otra en el fallback. La función queda definida pero unused (zero invocaciones). Decisión del usuario via AskUserQuestion: el bloque visual extra es redundante porque el LLM ya incluye link+phone en la prosa.",
+      "Fix 3 (safety net): nueva _ensure_paragraph_breaks(body) — strip HTML tags leaked, normaliza newlines, si ya hay \\n\\n lo respeta, si NO los hay (LLM rebelde) hace split por sentence boundaries (. ? !) y agrupa en pares como párrafos. Garantiza que el HTML final siempre tenga ≥2 <p> blocks.",
+      "Fallback path: cambiado de '\\n'.join() a '\\n\\n'.join() entre body_parts (opener / body / cta / signoff / team) para que también el camino sin LLM produzca párrafos separados.",
+      "Smoke test verificado en producción: webhook /resend-inbound con prompt 'cómo funciona la automatización?' → LLM devolvió 6 párrafos con \\n\\n, _body_to_html los wrappeó en 6 <p style='color:#333' margin:0 0 16px>, sin div dark, signature al final. Resend send_id 3d0c38fa-0977-... Idéntico visualmente a image #45.",
+      "NO se tocó outreach_email.py ni email.py — el wrapper light theme + _body_to_html ya estaban correctos en v0.7.47, solo faltaba que el upstream les diera párrafos separados.",
+    ],
+  },
   {
     version: "0.7.47",
     date: "2026-05-21",

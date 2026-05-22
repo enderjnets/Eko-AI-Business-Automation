@@ -17,6 +17,55 @@ def _build_booking_link(lead: Lead) -> str:
     return f"{frontend_url}/book-demo?email={email}&name={name}", phone_number
 
 
+def _ensure_paragraph_breaks(body: str) -> str:
+    """Guarantee the reply has visible paragraph spacing.
+
+    The LLM is instructed to insert a blank line (\\n\\n) between
+    paragraphs, but providers sometimes flatten newlines or return a
+    single wall of prose. _body_to_html() in the sender splits on
+    \\n\\n to build <p> blocks — if there are none, the entire email
+    renders as one giant paragraph (image #46 bug).
+
+    Rules applied here:
+      1. Strip HTML tags the LLM may have leaked in (the renderer is
+         the only place allowed to emit HTML).
+      2. Normalise line endings.
+      3. If the body already has at least one blank line, return it
+         (LLM did its job).
+      4. Otherwise, split on sentence boundaries (". ", "? ", "! ")
+         and regroup into chunks of ~2 sentences, joined by \\n\\n.
+    """
+    import re
+
+    if not body:
+        return ""
+
+    cleaned = re.sub(r"<[^>]+>", "", body)
+    cleaned = cleaned.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+    # Treat double-newline OR single-newline-between-sentences as separators
+    if "\n\n" in cleaned:
+        # collapse runs of >2 newlines back to exactly 2
+        return re.sub(r"\n{3,}", "\n\n", cleaned)
+
+    # No paragraph breaks at all — split sentences and group in pairs.
+    # Keep the punctuation on each sentence; tolerate Spanish "¿"/"¡".
+    sentences = re.split(r"(?<=[\.\?\!])\s+", cleaned)
+    sentences = [s.strip() for s in sentences if s.strip()]
+    if len(sentences) <= 1:
+        return cleaned  # nothing to split, leave as-is
+
+    chunks = []
+    i = 0
+    while i < len(sentences):
+        # take up to 2 sentences per paragraph
+        chunk = " ".join(sentences[i : i + 2]).strip()
+        if chunk:
+            chunks.append(chunk)
+        i += 2
+    return "\n\n".join(chunks)
+
+
 def _inject_booking_cta(body: str, booking_link: str, phone_number: str, language: str = "en") -> tuple[str, bool]:
     """
     Post-process the AI body. If it suggests a meeting but doesn't contain
@@ -206,10 +255,22 @@ RULES:
 - If the lead has objections, address them with data or examples.
 - If the lead asks for information, provide it concisely.
 - Sign as "Eko AI Team" or similar professional signature.
-- IMPORTANT: If you suggest a meeting, call, or demo, you MUST include BOTH of these options:
+- IMPORTANT: If you suggest a meeting, call, or demo, you MUST include BOTH of these options inline in the prose:
   (a) This booking link so the lead can schedule directly: {booking_link}
   (b) This phone number they can call anytime — our AI assistant answers 24/7: {phone_number}
-  Present them as friendly buttons or links within the email body.
+  Write them as plain text/links within a paragraph. Do NOT add HTML buttons or styled cards — the email rendering layer takes care of styling.
+
+FORMATTING — CRITICAL (this controls how the email is rendered for the reader):
+- Break the body into 3 to 5 SHORT paragraphs separated by a blank line.
+- In the JSON `body` string, use literal `\\n\\n` between paragraphs (a real blank line). Never return a single wall of text.
+- Each paragraph = 1 to 2 sentences max, focused on ONE idea.
+- Suggested structure:
+    1) Greeting + acknowledge their reply.
+    2) Brief answer or context relevant to what they asked.
+    3) Value insight or score commentary (1 short sentence).
+    4) Clear CTA paragraph with the booking link AND phone number inline.
+    5) Sign-off "Eko AI Team" on its own paragraph.
+- Plain text only. No HTML tags, no markdown, no bullet/numbered lists, no emojis-as-icons. The renderer will turn each paragraph into a styled `<p>` block automatically.
 
 Respond ONLY with a valid JSON with this structure:
 {{"subject": "...", "body": "...", "tone": "...", "confidence": 0.0-1.0, "suggested_next_action": "..."}}"""
@@ -249,8 +310,16 @@ Generate the reply now."""
         result = json.loads(text)
         body = result.get("body", "")
 
-        # Post-process: inject CTA with both phone + link if meeting was suggested
-        body, suggested_meeting = _inject_booking_cta(body, booking_link, phone_number, language=language)
+        # Post-process: ensure paragraphs are split. The user explicitly
+        # vetoed the dark CTA card (image #46) — the LLM is now told to
+        # include the booking link + phone inline in prose, so we no
+        # longer need _inject_booking_cta(). We still want a heuristic
+        # paragraph split as a safety net in case the LLM ignores the
+        # \\n\\n formatting rule.
+        body = _ensure_paragraph_breaks(body)
+        suggested_meeting = bool(
+            booking_link and (booking_link in body or "/book-demo" in body)
+        )
 
         return {
             "subject": result.get("subject", f"Re: {inbound_email.subject or ''}"),
@@ -356,11 +425,16 @@ Generate the reply now."""
 
         custom_str = f"\n{custom_instructions}\n" if custom_instructions else ""
 
-        body_parts = [tone_opener, "", tone_body, custom_str, length_text, "", fb["signoff"], fb["team"]]
-        body = "\n".join(p for p in body_parts if p)
-
-        # Inject localized CTA in fallback too
-        body, suggested_meeting = _inject_booking_cta(body, booking_link, phone_number, language=lang)
+        # Use \n\n between sections so _body_to_html splits them into
+        # separate <p> blocks (image-#45 style). The CTA injection is
+        # disabled by user preference — the booking link + phone are
+        # included inline in length_text and fb["signoff"] sections.
+        body_parts = [tone_opener, tone_body, custom_str, length_text, fb["signoff"], fb["team"]]
+        body = "\n\n".join(p.strip() for p in body_parts if p and p.strip())
+        body = _ensure_paragraph_breaks(body)
+        suggested_meeting = bool(
+            booking_link and (booking_link in body or "/book-demo" in body)
+        )
 
         return {
             "subject": f"Re: {inbound_email.subject or ''}",
