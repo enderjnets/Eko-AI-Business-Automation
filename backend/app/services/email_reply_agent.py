@@ -7,13 +7,19 @@ from app.models.lead import Lead, Interaction
 
 
 def _build_booking_link(lead: Lead) -> str:
-    """Build a pre-filled booking link for the lead."""
+    """Build a pre-filled booking link for the lead.
+
+    Query params are URL-encoded so the link is a single token without
+    spaces — important for the email renderer's markdown-link regex and
+    for any client that splits URLs on whitespace.
+    """
+    from urllib.parse import quote_plus
     from app.config import get_settings
     settings = get_settings()
     frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3001')
     phone_number = getattr(settings, 'VAPI_INBOUND_PHONE_NUMBER', '')
-    email = lead.email or ""
-    name = lead.business_name or ""
+    email = quote_plus(lead.email or "")
+    name = quote_plus(lead.business_name or "")
     return f"{frontend_url}/book-demo?email={email}&name={name}", phone_number
 
 
@@ -258,7 +264,19 @@ RULES:
 - IMPORTANT: If you suggest a meeting, call, or demo, you MUST include BOTH of these options inline in the prose:
   (a) This booking link so the lead can schedule directly: {booking_link}
   (b) This phone number they can call anytime — our AI assistant answers 24/7: {phone_number}
-  Write them as plain text/links within a paragraph. Do NOT add HTML buttons or styled cards — the email rendering layer takes care of styling.
+- LINK FORMAT (very important): NEVER paste the raw booking URL as visible
+  text — that prints a long ugly string in the inbox. Instead, use
+  MARKDOWN link syntax with a short, friendly anchor in the email's
+  language. Examples:
+    English:  "You can book your demo [here]({booking_link})."
+    Spanish:  "Puedes [agendar tu demo aquí]({booking_link})."
+    French:   "Vous pouvez [réserver votre démo ici]({booking_link})."
+  The anchor text MUST be 2-4 words, action-oriented. The URL goes
+  inside parentheses, never bare in the visible text.
+- For the phone number, write it as plain text (e.g. "+1-256-364-1727")
+  — do NOT wrap it in markdown.
+- Do NOT add HTML tags, buttons, or styled cards. The rendering layer
+  styles everything; raw HTML in your output will be stripped.
 
 FORMATTING — CRITICAL (this controls how the email is rendered for the reader):
 - Break the body into 3 to 5 SHORT paragraphs separated by a blank line.

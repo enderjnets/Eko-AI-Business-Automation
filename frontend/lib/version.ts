@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.48";
+export const CURRENT_VERSION = "0.7.49";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,19 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.49",
+    date: "2026-05-21",
+    title: "Auto-reply email — enmascarar booking URL larga con anchor text amigable ('agendar tu demo aquí')",
+    changes: [
+      "Usuario aprobó v0.7.48 (image #47) pero pidió quitar la URL larga visible 'https://ender-rog.tail25dc73.ts.net/book-demo?email=enderjnets@gmail.com&name=Ender Ocando' que se ve fea en la prosa. Solución: hacer que el LLM use markdown syntax [anchor](url) y convertirlo a <a> tag en el renderer.",
+      "Fix 1 (system prompt en email_reply_agent.py): nueva sección LINK FORMAT — instruye al LLM a NUNCA pegar la URL cruda; usar markdown `[anchor en 2-4 palabras](url)` con ejemplos por idioma (English 'book your demo here', Español 'agendar tu demo aquí', French 'réserver votre démo ici'). Phone number queda plain text.",
+      "Fix 2 (email.py:_body_to_html): nuevo bloque pre-paragraph que (a) detecta markdown `[text](url)` con regex `\\[([^\\]]+)\\]\\(([^)]+)\\)` y lo convierte a `<a href='url' style='color:#2563EB;underline'>text</a>`. La regex permite espacios DENTRO de la URL para tolerar el caso `name=First Last` que algunos LLMs no encodean.",
+      "Fix 3 (autolink fallback): si el LLM ignora el markdown y pega URL cruda, regex de http(s) detecta y construye anchor; para URLs de booking/cal.com muestra anchor compacto sin protocol+query (`ender-rog.tail25dc73.ts.net/book-demo`) en lugar de la URL completa. href siempre preserva los query params completos.",
+      "Fix 4 (_build_booking_link en email_reply_agent.py): ahora usa `urllib.parse.quote_plus` sobre email y business_name para que la URL nunca tenga espacios literales. Antes generaba `?email=enderjnets@gmail.com&name=Ender Ocando` (con espacio que romía algunos parsers); ahora `?email=enderjnets%40gmail.com&name=Ender+Ocando`.",
+      "Smoke test verificado: LLM real generó `[agendar tu demo aquí](https://ender-rog.tail25dc73.ts.net/book-demo?email=enderjnets%40gmail.com&name=Ender++Ocando)` → renderer produjo anchor con text='agendar tu demo aquí' + href completo con pre-fill. Match exacto con lo que el usuario pidió.",
+    ],
+  },
   {
     version: "0.7.48",
     date: "2026-05-21",

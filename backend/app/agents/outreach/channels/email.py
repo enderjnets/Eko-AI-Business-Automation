@@ -320,7 +320,53 @@ Return ONLY a JSON object with:
             from app.templates.emails.outreach_email import _style_existing_p_tags
             body = _style_existing_p_tags(body)
         else:
-            # Pure plain text — convert to minimal HTML paragraphs
+            # Pure plain text — convert to minimal HTML paragraphs.
+            # First: convert markdown-style [anchor](url) to styled <a> tags
+            # so the booking link renders as friendly text instead of the
+            # full pre-fill URL. Done before paragraph wrapping so that any
+            # surrounding prose stays intact.
+            import re as _re
+
+            def _mdlink(m):
+                text = m.group(1).strip()
+                url = m.group(2).strip()
+                return (
+                    f'<a href="{url}" style="color:#2563EB;text-decoration:underline;">'
+                    f'{text}</a>'
+                )
+
+            # Allow spaces inside the URL (the booking link has name=First Last)
+            # which is technically invalid but the LLM sometimes outputs it that
+            # way — Gmail tolerates URLs with literal spaces.
+            body = _re.sub(r"\[([^\]]+)\]\(([^)]+)\)", _mdlink, body)
+
+            # Also linkify any remaining raw http(s) URLs as a safety net,
+            # so emails always have clickable links even if the LLM ignores
+            # the markdown instruction. Anchor text = the URL itself, but
+            # truncated to ~50 chars for the booking pre-fill case.
+            def _autolink(m):
+                url = m.group(1)
+                # Strip trailing punctuation often glued to URLs in prose
+                trail = ""
+                while url and url[-1] in ".,;:!?)":
+                    trail = url[-1] + trail
+                    url = url[:-1]
+                # Booking links: show short friendly anchor instead of full URL
+                if "/book-demo" in url or "cal.com" in url:
+                    display = url.split("?")[0]
+                    # Strip protocol for compactness
+                    display = display.replace("https://", "").replace("http://", "")
+                    if len(display) > 50:
+                        display = display[:47] + "..."
+                else:
+                    display = url
+                return (
+                    f'<a href="{url}" style="color:#2563EB;text-decoration:underline;">'
+                    f'{display}</a>{trail}'
+                )
+
+            body = _re.sub(r"(?<!href=\")(https?://[^\s<>\"\')\]]+)", _autolink, body)
+
             paragraphs = body.split("\n\n")
             html_paras = []
             for p in paragraphs:
