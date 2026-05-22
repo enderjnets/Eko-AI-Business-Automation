@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.49";
+export const CURRENT_VERSION = "0.7.50";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,23 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.50",
+    date: "2026-05-22",
+    title: "Inbox — observer-first redesign: search + needs review + AI activity stats + timeline AI/Human/Lead distinction",
+    changes: [
+      "Contexto: el usuario del dashboard NO va a enviar emails — el 100% lo maneja la IA. El Inbox debe sentirse como un mail-client de OBSERVACIÓN, donde el usuario pueda auditar lo que la IA está haciendo, encontrar threads específicos, y solo intervenir cuando algo necesita revisión.",
+      "Backend (emails.py): nuevo param `q` en `/emails/inbox` que hace ILIKE OR-match contra subject/content/lead.email/lead.business_name. Nuevo param `filter=needs_review` que filtra threads donde el LATEST es inbound con señales malas (intent ∈ {objection, complaint, unclear} OR sentiment=negative OR priority=high). Nuevo endpoint `GET /emails/stats` con métricas del día (sent_today, received_today, auto_replies_today, needs_review_count, reply_rate_today, total_threads). Nuevo `POST /{id}/mark-unread` (faltaba — solo había mark-read).",
+      "Frontend search bar: input con icon Search + debounce 350ms + clear button (X). Se inyecta como `?q=` al backend; count y items consistent.",
+      "Frontend stats card: grid 4-col en la parte superior del Inbox con AI auto-replies/sent del día, replies recibidas, reply rate %, y un botón 'Need your eyes' que activa el filter needs_review cuando hay threads pendientes (con badge naranja).",
+      "Frontend filter pill nueva: 'Needs review' (orange) junto a All/Unread/High priority. Click setea filter=needs_review y el backend hace el match correcto.",
+      "Timeline visual upgrade: 3 tipos de bubble distinguibles: (a) Lead → izquierda gris (icon MessageSquare), (b) AI auto-reply → derecha violeta + icon Sparkles + label 'AI Auto-reply', (c) Humano → derecha azul + icon Edit3 + label 'Nosotros'. Cada bubble outbound muestra delivery indicator inline (sent/delivered=verde✓, error/bounced=rojo, draft=amarillo).",
+      "Mark unread añadido: toggle inteligente — si está leído muestra icon Mail + click → marca unread; si está unread muestra icon MailOpen + click → marca read. UI se actualiza optimistically.",
+      "Simulate Reply button oculto en producción (`process.env.NODE_ENV !== 'production'`). Era una herramienta de dev que el usuario del dashboard no necesita.",
+      "Conversation endpoint ahora devuelve `email_status` + `meta` por mensaje para que el frontend pueda diferenciar AI vs humano y mostrar el delivery status correcto.",
+      "+8 i18n keys EN + 8 ES bajo `inbox.filter.needs_review` / `inbox.search.placeholder` / `inbox.stats.*` / `inbox.action.mark_unread`.",
+    ],
+  },
   {
     version: "0.7.49",
     date: "2026-05-21",

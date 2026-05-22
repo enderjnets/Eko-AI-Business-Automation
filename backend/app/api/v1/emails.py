@@ -1,8 +1,8 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select, desc, or_, func
+from sqlalchemy import select, desc, or_, and_, func, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
@@ -97,8 +97,10 @@ async def generate_and_send_email(
 @router.get("/inbox")
 async def get_inbox(
     status: Optional[str] = None,  # "unread", "read", "all"
-    direction: Optional[str] = None,  # "inbound", "outbound", "all"
+    direction: Optional[str] = None,  # "inbound", "outbound", "draft", "all"
     lead_id: Optional[int] = None,
+    q: Optional[str] = None,  # search query across subject/content/lead email/business name
+    filter: Optional[str] = None,  # "needs_review" | "high_priority" | None
     limit: int = 50,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
@@ -106,9 +108,18 @@ async def get_inbox(
 ):
     """
     Get email interactions (inbox, sent, or all).
-    
+
     Returns interactions with interaction_type='email',
     enriched with lead info and AI analysis.
+
+    Filters:
+    - `q`: free-text search, ILIKE-matched against subject, body,
+      lead.email and lead.business_name.
+    - `filter=needs_review`: surfaces threads where the AI is unsure or
+      the lead is unhappy — latest message is inbound AND
+      (intent IN objection/complaint/unclear OR sentiment=negative OR
+       priority=high).
+    - `filter=high_priority`: just meta.priority='high'.
     """
     # Build direction filter for subquery
     direction_filter = [Interaction.interaction_type == "email"]
@@ -145,7 +156,7 @@ async def get_inbox(
     
     if lead_id:
         query = query.where(Interaction.lead_id == lead_id)
-    
+
     if status == "unread":
         query = query.where(
             or_(
@@ -155,19 +166,93 @@ async def get_inbox(
         )
     elif status == "read":
         query = query.where(Interaction.meta.op("?")("read") == True)
+
+    # Free-text search across subject, content, lead email, and business name.
+    # Cast meta to text only for sentiment/intent matching elsewhere — here we
+    # use plain ILIKE on text columns + lead fields. Use a single OR group so
+    # the term can match any of the four columns.
+    if q and q.strip():
+        like = f"%{q.strip()}%"
+        query = query.where(
+            or_(
+                Interaction.subject.ilike(like),
+                Interaction.content.ilike(like),
+                Lead.email.ilike(like),
+                Lead.business_name.ilike(like),
+            )
+        )
+
+    # "Needs review" surfaces threads where the AI is unsure or the lead is
+    # unhappy. Definition: latest message is inbound (waiting on us) AND
+    # (intent suggests trouble OR sentiment is negative OR priority=high).
+    # high_priority is a softer filter, just looking at priority=high.
+    if filter == "needs_review":
+        query = query.where(
+            Interaction.direction == "inbound",
+            or_(
+                cast(Interaction.meta, String).ilike('%"intent": "objection"%'),
+                cast(Interaction.meta, String).ilike('%"intent": "complaint"%'),
+                cast(Interaction.meta, String).ilike('%"intent": "unclear"%'),
+                cast(Interaction.meta, String).ilike('%"sentiment": "negative"%'),
+                cast(Interaction.meta, String).ilike('%"priority": "high"%'),
+            ),
+        )
+    elif filter == "high_priority":
+        query = query.where(
+            cast(Interaction.meta, String).ilike('%"priority": "high"%')
+        )
     
-    # Count total leads with email interactions
+    # Count must match the main query exactly: distinct leads whose LATEST
+    # interaction (per latest_subq) matches all of the filters. Mirror the
+    # main query's join and WHERE clauses so total = number of rows the user
+    # actually sees, not lifetime counts.
     count_query = (
         select(func.count(func.distinct(Interaction.lead_id)))
-        .where(Interaction.interaction_type == "email")
+        .join(Lead, Interaction.lead_id == Lead.id)
+        .join(
+            latest_subq,
+            (Interaction.lead_id == latest_subq.c.lead_id)
+            & (Interaction.created_at == latest_subq.c.latest_at),
+        )
+        .where(*direction_filter)
     )
-    if direction == "inbound":
-        count_query = count_query.where(Interaction.direction == "inbound")
-    elif direction == "outbound":
-        count_query = count_query.where(Interaction.direction == "outbound")
-    elif direction == "draft":
-        count_query = count_query.where(Interaction.email_status == "draft")
-    
+    if lead_id:
+        count_query = count_query.where(Interaction.lead_id == lead_id)
+    if status == "unread":
+        count_query = count_query.where(
+            or_(
+                Interaction.meta.is_(None),
+                Interaction.meta.op("?")("read") == False,
+            )
+        )
+    elif status == "read":
+        count_query = count_query.where(Interaction.meta.op("?")("read") == True)
+    if q and q.strip():
+        like = f"%{q.strip()}%"
+        count_query = count_query.where(
+            or_(
+                Interaction.subject.ilike(like),
+                Interaction.content.ilike(like),
+                Lead.email.ilike(like),
+                Lead.business_name.ilike(like),
+            )
+        )
+    if filter == "needs_review":
+        count_query = count_query.where(
+            Interaction.direction == "inbound",
+            or_(
+                cast(Interaction.meta, String).ilike('%"intent": "objection"%'),
+                cast(Interaction.meta, String).ilike('%"intent": "complaint"%'),
+                cast(Interaction.meta, String).ilike('%"intent": "unclear"%'),
+                cast(Interaction.meta, String).ilike('%"sentiment": "negative"%'),
+                cast(Interaction.meta, String).ilike('%"priority": "high"%'),
+            ),
+        )
+    elif filter == "high_priority":
+        count_query = count_query.where(
+            cast(Interaction.meta, String).ilike('%"priority": "high"%')
+        )
+
     count_result = await db.execute(count_query)
     total = count_result.scalar() or 0
     
@@ -259,9 +344,137 @@ async def mark_reply_read(
     meta["read"] = True
     meta["read_at"] = datetime.utcnow().isoformat()
     interaction.meta = meta
-    
+
     await db.commit()
     return {"status": "marked_as_read"}
+
+
+@router.post("/{interaction_id}/mark-unread")
+async def mark_reply_unread(
+    interaction_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Re-mark an inbound email as unread (so it shows in the Unread tab)."""
+    result = await db.execute(
+        select(Interaction).where(Interaction.id == interaction_id)
+    )
+    interaction = result.scalar_one_or_none()
+    if not interaction:
+        raise HTTPException(status_code=404, detail="Reply not found")
+
+    meta = interaction.meta or {}
+    meta["read"] = False
+    meta.pop("read_at", None)
+    interaction.meta = meta
+
+    await db.commit()
+    return {"status": "marked_as_unread"}
+
+
+@router.get("/stats")
+async def get_inbox_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Aggregate inbox metrics for the dashboard observer view.
+
+    Returns today's AI email activity counts so the user can see at a
+    glance what the AI is doing across all conversations.
+    """
+    now = datetime.now(timezone.utc)
+    start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    async def _count(*predicates) -> int:
+        q = select(func.count(Interaction.id)).where(
+            Interaction.interaction_type == "email", *predicates
+        )
+        r = await db.execute(q)
+        return r.scalar() or 0
+
+    sent_today = await _count(
+        Interaction.direction == "outbound",
+        Interaction.created_at >= start_of_day,
+    )
+    received_today = await _count(
+        Interaction.direction == "inbound",
+        Interaction.created_at >= start_of_day,
+    )
+    auto_replies_today = await _count(
+        Interaction.direction == "outbound",
+        Interaction.created_at >= start_of_day,
+        cast(Interaction.meta, String).ilike('%"auto_replied": true%'),
+    )
+
+    # Threads that need human attention right now: the LATEST interaction
+    # in the thread is inbound with negative-ish signals. We build a
+    # latest-per-lead subquery (email-only) and join to find the head row.
+    latest_email_subq = (
+        select(
+            Interaction.lead_id,
+            func.max(Interaction.created_at).label("latest_at"),
+        )
+        .where(Interaction.interaction_type == "email")
+        .group_by(Interaction.lead_id)
+        .subquery()
+    )
+    needs_review_q = (
+        select(func.count(func.distinct(Interaction.lead_id)))
+        .join(
+            latest_email_subq,
+            (Interaction.lead_id == latest_email_subq.c.lead_id)
+            & (Interaction.created_at == latest_email_subq.c.latest_at),
+        )
+        .where(
+            Interaction.interaction_type == "email",
+            Interaction.direction == "inbound",
+            or_(
+                cast(Interaction.meta, String).ilike('%"intent": "objection"%'),
+                cast(Interaction.meta, String).ilike('%"intent": "complaint"%'),
+                cast(Interaction.meta, String).ilike('%"intent": "unclear"%'),
+                cast(Interaction.meta, String).ilike('%"sentiment": "negative"%'),
+                cast(Interaction.meta, String).ilike('%"priority": "high"%'),
+            ),
+        )
+    )
+    needs_review_count = (await db.execute(needs_review_q)).scalar() or 0
+
+    # Unread inbound count (mirrors the inbox endpoint).
+    unread_q = (
+        select(func.count(Interaction.id))
+        .where(
+            Interaction.interaction_type == "email",
+            Interaction.direction == "inbound",
+            or_(
+                Interaction.meta.is_(None),
+                Interaction.meta.op("?")("read") == False,
+            ),
+        )
+    )
+    unread_count = (await db.execute(unread_q)).scalar() or 0
+
+    # Total active threads (distinct leads with email interactions ever).
+    total_threads_q = select(func.count(func.distinct(Interaction.lead_id))).where(
+        Interaction.interaction_type == "email"
+    )
+    total_threads = (await db.execute(total_threads_q)).scalar() or 0
+
+    # Reply rate today (= received / sent, capped at 100%).
+    if sent_today > 0:
+        reply_rate_today = min(100, round((received_today / sent_today) * 100))
+    else:
+        reply_rate_today = 0
+
+    return {
+        "sent_today": sent_today,
+        "received_today": received_today,
+        "auto_replies_today": auto_replies_today,
+        "needs_review_count": needs_review_count,
+        "unread_count": unread_count,
+        "total_threads": total_threads,
+        "reply_rate_today": reply_rate_today,
+        "as_of": now.isoformat(),
+    }
 
 
 class SimulateReplyRequest(BaseModel):

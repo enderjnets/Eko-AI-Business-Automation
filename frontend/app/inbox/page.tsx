@@ -28,6 +28,11 @@ import {
   Edit3,
   ArrowLeft,
   Trash2,
+  Search,
+  AlertTriangle,
+  Eye,
+  TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { emailsApi } from "@/lib/api";
@@ -70,15 +75,32 @@ interface ConversationItem {
   subject: string;
   content: string;
   created_at: string;
+  email_status?: string | null;
+  meta?: {
+    auto_replied?: boolean;
+    ai_generated?: boolean;
+    [key: string]: any;
+  };
   lead_unread_count?: number;
   lead_total_count?: number;
 }
 
 export default function InboxPage() {
   const [items, setItems] = useState<InboxItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [stats, setStats] = useState<{
+    sent_today: number;
+    received_today: number;
+    auto_replies_today: number;
+    needs_review_count: number;
+    unread_count: number;
+    total_threads: number;
+    reply_rate_today: number;
+  } | null>(null);
   const { t } = useT();
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "unread" | "high_priority">("all");
+  const [filter, setFilter] = useState<"all" | "unread" | "high_priority" | "needs_review">("all");
   const [folder, setFolder] = useState<"inbox" | "sent" | "all" | "drafts">("inbox");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [markingRead, setMarkingRead] = useState<number | null>(null);
@@ -126,31 +148,48 @@ export default function InboxPage() {
     try {
       const params: any = {};
       if (filter === "unread") params.status = "unread";
+      if (filter === "high_priority") params.filter = "high_priority";
+      if (filter === "needs_review") params.filter = "needs_review";
       if (folder === "inbox") params.direction = "inbound";
       else if (folder === "sent") params.direction = "outbound";
       else if (folder === "drafts") params.direction = "draft";
       // folder === "all" → no direction filter
+      if (searchQuery.trim()) params.q = searchQuery.trim();
       const res = await emailsApi.inbox(params);
-      let data = res.data?.items || [];
-      if (filter === "high_priority") {
-        data = data.filter((i: InboxItem) => i.priority === "high");
-      }
-      setItems(data);
+      setItems(res.data?.items || []);
     } catch (err) {
       console.error("Failed to load inbox:", err);
     } finally {
       setLoading(false);
     }
-  }, [filter, folder]);
+  }, [filter, folder, searchQuery]);
+
+  const loadStats = useCallback(async () => {
+    try {
+      const res = await emailsApi.stats();
+      setStats(res.data);
+    } catch (err) {
+      console.error("Failed to load stats:", err);
+    }
+  }, []);
 
   useEffect(() => {
     loadInbox();
+    loadStats();
     // Auto-refresh every 30 seconds for real-time inbox
     const interval = setInterval(() => {
       loadInbox();
+      loadStats();
     }, 30000);
     return () => clearInterval(interval);
-  }, [loadInbox]);
+  }, [loadInbox, loadStats]);
+
+  // Debounce search input: wait 350ms after user stops typing before
+  // firing the inbox query so we don't hit the backend on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput), 350);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const handleMarkRead = async (id: number) => {
     setMarkingRead(id);
@@ -158,6 +197,20 @@ export default function InboxPage() {
       await emailsApi.markRead(id);
       setItems((prev) =>
         prev.map((item) => (item.id === id ? { ...item, read: true } : item))
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setMarkingRead(null);
+    }
+  };
+
+  const handleMarkUnread = async (id: number) => {
+    setMarkingRead(id);
+    try {
+      await emailsApi.markUnread(id);
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, read: false } : item))
       );
     } catch (err) {
       console.error(err);
@@ -416,7 +469,7 @@ export default function InboxPage() {
       <Navbar />
       <main className="pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-eko-blue/10 text-eko-blue">
               <Inbox className="w-5 h-5" />
@@ -432,14 +485,100 @@ export default function InboxPage() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleSimulateReply}
-            disabled={simulating}
-            className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 transition-colors disabled:opacity-50"
-          >
-            {simulating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            {t("inbox.action.simulate_reply")}
-          </button>
+          {/* Dev-only — simulating a reply is for testing locally, not a tool
+              the dashboard user should use in production. */}
+          {process.env.NODE_ENV !== "production" && (
+            <button
+              onClick={handleSimulateReply}
+              disabled={simulating}
+              className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 transition-colors disabled:opacity-50"
+              title="Dev-only: simulate an inbound email"
+            >
+              {simulating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {t("inbox.action.simulate_reply")}
+            </button>
+          )}
+        </div>
+
+        {/* AI activity stats — observer view */}
+        {stats && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <Sparkles className="w-3.5 h-3.5 text-eko-blue" />
+                {t("inbox.stats.auto_replies")}
+              </div>
+              <div className="mt-1 text-xl font-semibold text-white">
+                {stats.auto_replies_today}
+                <span className="text-xs text-gray-500 ml-1.5 font-normal">
+                  / {stats.sent_today} {t("inbox.stats.sent")}
+                </span>
+              </div>
+            </div>
+            <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <Mail className="w-3.5 h-3.5 text-eko-green" />
+                {t("inbox.stats.received")}
+              </div>
+              <div className="mt-1 text-xl font-semibold text-white">
+                {stats.received_today}
+              </div>
+            </div>
+            <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <TrendingUp className="w-3.5 h-3.5 text-purple-400" />
+                {t("inbox.stats.reply_rate")}
+              </div>
+              <div className="mt-1 text-xl font-semibold text-white">
+                {stats.reply_rate_today}%
+              </div>
+            </div>
+            <button
+              onClick={() => setFilter("needs_review")}
+              className={`rounded-lg border p-3 text-left transition-colors ${
+                stats.needs_review_count > 0
+                  ? "border-orange-500/30 bg-orange-500/5 hover:bg-orange-500/10"
+                  : "border-white/5 bg-white/[0.02] hover:bg-white/[0.05]"
+              }`}
+            >
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <AlertTriangle
+                  className={`w-3.5 h-3.5 ${
+                    stats.needs_review_count > 0 ? "text-orange-400" : "text-gray-500"
+                  }`}
+                />
+                {t("inbox.stats.needs_review")}
+              </div>
+              <div
+                className={`mt-1 text-xl font-semibold ${
+                  stats.needs_review_count > 0 ? "text-orange-300" : "text-white"
+                }`}
+              >
+                {stats.needs_review_count}
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* Search bar */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder={t("inbox.search.placeholder")}
+            className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-eko-blue/50"
+          />
+          {searchInput && (
+            <button
+              onClick={() => setSearchInput("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-500 hover:text-white hover:bg-white/5"
+              aria-label="Clear search"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Bulk actions bar */}
@@ -482,17 +621,33 @@ export default function InboxPage() {
 
         {/* Filters */}
         <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1 mb-6 w-fit">
-          {(["all", "unread", "high_priority"] as const).map((f) => (
+          {(["all", "unread", "high_priority", "needs_review"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-md text-sm capitalize transition-colors ${
+              className={`px-3 py-1.5 rounded-md text-sm capitalize transition-colors flex items-center gap-1.5 ${
                 filter === f
-                  ? "bg-white/10 text-white"
+                  ? f === "needs_review"
+                    ? "bg-orange-500/20 text-orange-200"
+                    : "bg-white/10 text-white"
                   : "text-gray-400 hover:text-white"
               }`}
             >
-              {f === "high_priority" ? t("inbox.filter.high_priority") : f === "unread" ? t("inbox.filter.unread") : t("inbox.filter.all")}
+              {f === "needs_review" && (
+                <AlertTriangle className="w-3.5 h-3.5" />
+              )}
+              {f === "high_priority"
+                ? t("inbox.filter.high_priority")
+                : f === "unread"
+                ? t("inbox.filter.unread")
+                : f === "needs_review"
+                ? t("inbox.filter.needs_review")
+                : t("inbox.filter.all")}
+              {f === "needs_review" && stats && stats.needs_review_count > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-orange-500/30 text-orange-100 text-[10px] font-medium">
+                  {stats.needs_review_count}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -642,23 +797,29 @@ export default function InboxPage() {
                             <Trash2 className="w-4 h-4" />
                           )}
                         </button>
-                        {!item.read && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMarkRead(item.id);
-                            }}
-                            disabled={markingRead === item.id}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-eko-blue hover:bg-eko-blue/10 transition-colors"
-                            title={t("inbox.action.mark_read")}
-                          >
-                            {markingRead === item.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <MailOpen className="w-4 h-4" />
-                            )}
-                          </button>
-                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            item.read
+                              ? handleMarkUnread(item.id)
+                              : handleMarkRead(item.id);
+                          }}
+                          disabled={markingRead === item.id}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-eko-blue hover:bg-eko-blue/10 transition-colors"
+                          title={
+                            item.read
+                              ? t("inbox.action.mark_unread")
+                              : t("inbox.action.mark_read")
+                          }
+                        >
+                          {markingRead === item.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : item.read ? (
+                            <Mail className="w-4 h-4" />
+                          ) : (
+                            <MailOpen className="w-4 h-4" />
+                          )}
+                        </button>
                         {isExpanded ? (
                           <ChevronUp className="w-4 h-4 text-gray-500" />
                         ) : (
@@ -693,41 +854,102 @@ export default function InboxPage() {
                           </div>
                         ) : conversation.length > 0 ? (
                           <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-                            {conversation.map((msg) => (
-                              <div
-                                key={msg.id}
-                                className={`flex ${
-                                  msg.direction === "outbound" ? "justify-end" : "justify-start"
-                                }`}
-                              >
+                            {conversation.map((msg) => {
+                              // Three speaker kinds, two sides:
+                              //  - lead  → inbound, left, neutral
+                              //  - AI    → outbound + meta.auto_replied|ai_generated, right, violet
+                              //  - human → outbound w/o ai flags, right, blue
+                              const isInbound = msg.direction === "inbound";
+                              const isAi =
+                                !isInbound &&
+                                (msg.meta?.auto_replied ||
+                                  msg.meta?.ai_generated);
+                              const label = isInbound
+                                ? t("inbox.thread.client")
+                                : isAi
+                                ? "AI Auto-reply"
+                                : t("inbox.thread.us");
+                              const tone = isInbound
+                                ? "bg-white/5 border border-white/10 text-gray-200 rounded-bl-md"
+                                : isAi
+                                ? "bg-purple-500/15 border border-purple-400/30 text-gray-100 rounded-br-md"
+                                : "bg-blue-500/15 border border-blue-400/30 text-gray-100 rounded-br-md";
+                              const Icon = isInbound
+                                ? MessageSquare
+                                : isAi
+                                ? Sparkles
+                                : Edit3;
+                              const status = msg.email_status;
+                              return (
                                 <div
-                                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
-                                    msg.direction === "outbound"
-                                      ? "bg-purple-600/20 border border-purple-500/30 text-gray-200 rounded-br-md"
-                                      : "bg-white/5 border border-white/10 text-gray-300 rounded-bl-md"
+                                  key={msg.id}
+                                  className={`flex ${
+                                    isInbound ? "justify-start" : "justify-end"
                                   }`}
                                 >
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-[10px] font-medium uppercase tracking-wider text-gray-500">
-                                      {msg.direction === "outbound" ? t("inbox.thread.us") : t("inbox.thread.client")}
-                                    </span>
-                                    <span className="text-[10px] text-gray-600">
-                                      {new Date(msg.created_at).toLocaleString("es-ES", {
-                                        day: "numeric",
-                                        month: "short",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </span>
-                                  </div>
-                                  <p className="font-medium text-xs mb-1 opacity-80">{msg.subject || t("inbox.no_subject")}</p>
                                   <div
-                                    className="whitespace-pre-wrap prose prose-invert prose-sm max-w-none"
-                                    dangerouslySetInnerHTML={{ __html: msg.content }}
-                                  />
+                                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${tone}`}
+                                  >
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Icon
+                                        className={`w-3 h-3 ${
+                                          isInbound
+                                            ? "text-gray-400"
+                                            : isAi
+                                            ? "text-purple-300"
+                                            : "text-blue-300"
+                                        }`}
+                                      />
+                                      <span className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
+                                        {label}
+                                      </span>
+                                      <span className="text-[10px] text-gray-500">
+                                        {new Date(msg.created_at).toLocaleString("es-ES", {
+                                          day: "numeric",
+                                          month: "short",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </span>
+                                      {!isInbound && status && (
+                                        <span
+                                          className={`ml-auto text-[10px] flex items-center gap-1 ${
+                                            status === "delivered" ||
+                                            status === "sent"
+                                              ? "text-eko-green"
+                                              : status === "error" ||
+                                                status === "bounced"
+                                              ? "text-red-400"
+                                              : status === "draft"
+                                              ? "text-yellow-400"
+                                              : "text-gray-500"
+                                          }`}
+                                          title={status}
+                                        >
+                                          {status === "delivered" ||
+                                          status === "sent" ? (
+                                            <CheckCircle className="w-2.5 h-2.5" />
+                                          ) : status === "error" ||
+                                            status === "bounced" ? (
+                                            <AlertCircle className="w-2.5 h-2.5" />
+                                          ) : (
+                                            <Clock className="w-2.5 h-2.5" />
+                                          )}
+                                          {status}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="font-medium text-xs mb-1 opacity-80">
+                                      {msg.subject || t("inbox.no_subject")}
+                                    </p>
+                                    <div
+                                      className="whitespace-pre-wrap prose prose-invert prose-sm max-w-none"
+                                      dangerouslySetInnerHTML={{ __html: msg.content }}
+                                    />
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         ) : (
                           <p className="text-sm text-gray-500 italic">{t("inbox.thread.empty")}</p>

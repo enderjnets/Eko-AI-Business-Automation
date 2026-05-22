@@ -124,12 +124,22 @@ export const emailsApi = {
     api.post(`/emails/${leadId}/send`, { subject, body }),
   generateAndSend: (leadId: number, context?: string) =>
     api.post(`/emails/${leadId}/generate-and-send`, { campaign_context: context }),
-  inbox: (params?: { status?: string; direction?: string; lead_id?: number; limit?: number; offset?: number }) =>
-    api.get("/emails/inbox", { params }),
+  inbox: (params?: {
+    status?: string;
+    direction?: string;
+    lead_id?: number;
+    q?: string;
+    filter?: string;
+    limit?: number;
+    offset?: number;
+  }) => api.get("/emails/inbox", { params }),
+  stats: () => api.get("/emails/stats"),
   replyManual: (interactionId: number, data: { subject: string; body: string }) =>
     api.post(`/emails/${interactionId}/reply-manual`, data),
   markRead: (interactionId: number) =>
     api.post(`/emails/${interactionId}/mark-read`),
+  markUnread: (interactionId: number) =>
+    api.post(`/emails/${interactionId}/mark-unread`),
   simulateReply: (leadId: number, subject: string, body: string, fromEmail?: string) =>
     api.post("/emails/simulate-reply", { lead_id: leadId, subject, body, from_email: fromEmail }),
   aiReply: (interactionId: number, data: { tone?: string; max_length?: string; custom_instructions?: string }) =>
