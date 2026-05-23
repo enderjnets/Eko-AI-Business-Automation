@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.55";
+export const CURRENT_VERSION = "0.7.56";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,21 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.56",
+    date: "2026-05-23",
+    title: "Fix CRÍTICO: STOP-keyword false-positive marcaba DNC a TODO lead que respondiera (quoted email del propio sistema)",
+    changes: [
+      "Caso real: Maikol Garces (lead 618 / Commercial Cleaning Services) respondió 'hola y como puedes ayudarme' al AI Analysis. El sistema NO le respondió porque lo marcó do_not_contact=true por STOP keyword.",
+      "Root cause: Gmail (y todos los mail clients) incluyen el email previo QUOTED en cada reply. Nuestro propio AI Analysis email termina con footer 'Reply STOP to opt out' (CAN-SPAM compliance). El check `'stop' in body_lower` matcheaba esa palabra DENTRO del quoted content, no del reply real del lead → false positive → DNC + return 'stopped' sin auto-reply.",
+      "Implicación: TODO lead que respondiera era marcado DNC silenciosamente. El bug llevaba ahí desde v0.7.47 (cuando se agregó STOP detection).",
+      "Fix (webhooks.py:resend-inbound): nuevo helper `_strip_quoted_reply(body)` que detecta el inicio del quoted block via regex de markers comunes (`On X wrote:`, `El X escribió:`, `Em X escreveu:`, `Le X a écrit:`, `-----Original Message-----`, `From:`, `<blockquote>`, `> ` plain-text quote prefix) y trunca todo desde ahí. STOP detection + interest keyword detection ahora operan sobre el `reply_only` limpio.",
+      "Smoke tests unitarios pasados en 6 casos: Maikol real reply (gmail ES) → cleaned a 'hola y como puedes ayudarme', NO contiene 'stop'. Outlook EN, Outlook legacy, plain text >quote, genuine STOP solo, STOP + quote — todos correctos. Genuine STOP requests (con o sin quote) siguen detectándose.",
+      "Smoke real contra webhook: payload con el reply EXACTO de Maikol → response status='processed' intent='interested' (no 'stopped'). Auto-reply 295 disparado con Resend ID `8b0b0a15-b639-492b-a4dc-1bb06f3f94d1`: '¡Hola Maikol! Gracias por responder. La automatización puede resolver exactamente los problemas que detectamos en tu negocio de limpieza comercial en Minnesota...'",
+      "Bonus: agregadas 'ayudar', 'ayudame', 'ayúdame', 'puedes ayudar' a la lista de interest keywords para mejorar la clasificación de leads que preguntan en español neutro.",
+      "Reverted DNC del lead 618 (false-positive). Su reply finalmente recibió respuesta.",
+    ],
+  },
   {
     version: "0.7.55",
     date: "2026-05-23",

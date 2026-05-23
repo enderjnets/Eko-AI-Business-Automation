@@ -1208,17 +1208,54 @@ async def resend_inbound_webhook(request: Request, db: AsyncSession = Depends(ge
     
     # --- AUTO-REPLY MODE ---
     import os
+    import re as _re
     auto_reply_enabled = os.getenv("AUTO_REPLY_ENABLED", "false").lower() == "true"
     intent = analysis.get("intent", "")
-    body_lower = body_for_analysis.lower()
-    interest_keywords = ["interesa", "interesada", "interesado", "cómo funciona", "como funciona", "cuánto cuesta", "cuanto cuesta", "precio", "precios", "demo", "llamada", "reunión", "reunion", "agendar", "saber más", "me gustaría", "me gustaria", "interested", "interest", "how much", "price", "pricing", "cost", "call", "meeting", "schedule", "book", "learn more", "would like", "tell me", "next steps", "available", "chat", "talk", "info", "information", "details", "question", "questions", "help", "service"]
+
+    # ── Strip quoted email text BEFORE keyword analysis ────────────────────
+    # Gmail/Outlook/etc. include the entire previous email quoted in any
+    # reply. Our own outbound emails end with "Reply STOP to opt out" in
+    # the footer — if we lowercase the whole body and match "stop", every
+    # reply triggers a STOP false-positive (lead 618 got DNC'd this way
+    # 2026-05-23). Same problem with interest keywords matching the AI
+    # Analysis email content rather than the lead's actual reply.
+    #
+    # Heuristic: find the START of the quoted block (the "On X wrote:" /
+    # "El X escribió:" header that Gmail inserts, OR a <blockquote> /
+    # "-----Original Message-----" boundary), cut everything from there
+    # to the end. Falls back to the full body if no marker is found.
+    _QUOTE_MARKERS = [
+        # Look BACKWARDS from a quote-trailer keyword to capture the
+        # ENTIRE line that contains it (Gmail-style: "El sáb, 23 may
+        # 2026 a la(s) 2:48 p.m., Eko AI (\ncontact@biz.ekoai...) escribió:").
+        # `re.DOTALL` makes [\s\S] redundant but we use it for clarity.
+        r"(?:^|\n)\s*on\s[\s\S]{0,200}?wrote:\s*$",
+        r"(?:^|\n)\s*el\s[\s\S]{0,200}?escribi[oó]:\s*$",
+        r"(?:^|\n)\s*em\s[\s\S]{0,200}?escreveu:\s*$",
+        r"(?:^|\n)\s*le\s[\s\S]{0,200}?a\s+écrit:\s*$",
+        r"-----\s*original\s+message\s*-----",
+        r"(?:^|\n)from:\s",
+        r"<blockquote",
+        r"(?:^|\n)\s*>\s",
+    ]
+    _quote_re = _re.compile("|".join(_QUOTE_MARKERS), _re.IGNORECASE | _re.MULTILINE)
+
+    def _strip_quoted_reply(body: str) -> str:
+        if not body:
+            return ""
+        m = _quote_re.search(body)
+        return body[: m.start()].strip() if m else body.strip()
+
+    reply_only = _strip_quoted_reply(body_for_analysis)
+    body_lower = reply_only.lower()
+    interest_keywords = ["interesa", "interesada", "interesado", "cómo funciona", "como funciona", "cuánto cuesta", "cuanto cuesta", "precio", "precios", "demo", "llamada", "reunión", "reunion", "agendar", "saber más", "me gustaría", "me gustaria", "interested", "interest", "how much", "price", "pricing", "cost", "call", "meeting", "schedule", "book", "learn more", "would like", "tell me", "next steps", "available", "chat", "talk", "info", "information", "details", "question", "questions", "help", "service", "ayudar", "ayudame", "ayúdame", "puedes ayudar"]
     has_interest_keywords = any(kw in body_lower for kw in interest_keywords)
     should_auto_reply = intent in ("interested", "needs_info") or (intent == "unclear" and has_interest_keywords)
 
     # ── STOP / UNSUBSCRIBE detection ───────────────────────────────────────
-    # If the recipient says STOP / UNSUBSCRIBE / REMOVE ME / lose interest
-    # in the reply body, immediately mark do_not_contact and skip auto-reply.
-    # This catches the cases TCPA/CAN-SPAM expect us to honor instantly.
+    # Operates on the reply-only body (quoted text stripped above) so the
+    # footer "Reply STOP to opt out" from our own previous emails doesn't
+    # trigger a false-positive opt-out on every legitimate reply.
     STOP_KEYWORDS = [
         "stop", "unsubscribe", "remove me", "opt out", "opt-out",
         "no me interesa", "no me contacten", "no contacten", "déjame en paz",
