@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.53";
+export const CURRENT_VERSION = "0.7.54";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,19 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.54",
+    date: "2026-05-23",
+    title: "TTS — voz femenina Sarah/Bella unificada para EN+ES + circuit breaker ElevenLabs quota",
+    changes: [
+      "Reportado: el voice note del email AI Analysis a Maikol (lead 618) no se generó. Investigación: el código TTS YA usaba ElevenLabs (no MiniMax como pensábamos), pero (a) el voice ID para español era 'Fernando Martínez' (masculino) heredado de BitTrader y (b) la cuenta ElevenLabs llegó al límite del plan (183994 chars usados, 14 credits remaining).",
+      "Fix 1 (voz unificada): `ELEVENLABS_VOICE_MAP` ahora usa `EXAVITQu4vr4xnSDxMaL` (Sarah/Bella, femenina, cálida, conversacional) para AMBOS idiomas. Es la misma voz que usa VAPI inbound calls, así mantenemos identidad de marca consistente. El modelo `eleven_multilingual_v2` maneja el acento/intonación nativamente en EN y ES.",
+      "Fix 2 (circuit breaker): nuevo módulo `_is_tts_quota_breaker_open()` + `_trip_tts_quota_breaker()` en `tts_generator.py`, espejo del breaker de Resend de `email.py`. Cuando ElevenLabs retorna HTTP 401 con `quota_exceeded`, se setea la key Redis `tts:quota_exhausted:elevenlabs` con TTL de 24h. Las siguientes llamadas TTS short-circuitan sin pegarle a ElevenLabs → evita decenas de 401s y ruido en logs mientras el usuario upgrade/renueva el plan.",
+      "Logger pasó de `print()` a `logging.getLogger()` para que los warnings entren al pipeline estándar del backend.",
+      "Smoke verificado: voice map confirmado (es == en == Sarah). Llamada con quota agotada → HTTP 401 detectado → breaker TRIPPED (TTL 86400s). Segunda llamada → short-circuit antes del HTTP request, log 'Quota breaker open, skipping ElevenLabs call'.",
+      "Acción manual pendiente del usuario: upgrade/renueva el plan ElevenLabs para que el TTS vuelva a generar audio en los próximos welcome emails. Mientras tanto el email se manda igual sin voice note (graceful degradation, no bloquea nada).",
+    ],
+  },
   {
     version: "0.7.53",
     date: "2026-05-23",

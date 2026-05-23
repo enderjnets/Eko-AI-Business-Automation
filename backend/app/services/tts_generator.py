@@ -1,35 +1,102 @@
 """Text-to-Speech generator for AI Analysis audio notes.
 
-Uses ElevenLabs TTS with the same voices as VAPI calls and BitTrader content.
+Uses ElevenLabs TTS with a single multilingual female voice (Sarah/Bella)
+for both English and Spanish — keeps the brand voice consistent across
+languages. Includes a Redis-backed quota breaker so a single
+`quota_exceeded` response from ElevenLabs short-circuits every subsequent
+TTS attempt for the rest of the billing window, instead of hammering the
+API and filling the logs with 401s.
 """
 
 import os
+import logging
 from typing import Optional
+from datetime import datetime, timezone, timedelta
+
 import httpx
 
 from app.config import get_settings
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
-# ElevenLabs voice mapping by language
-# Rachel = EXAVITQu4vr4xnSDxMaL (same as VAPI calls)
-# Fernando Martínez = dlGxemPxFMTY7iXagmOj (BitTrader Spanish content)
+# ElevenLabs voice IDs. We use the SAME female voice for EN and ES so the
+# brand sounds consistent in both languages (multilingual_v2 handles the
+# accent / intonation natively). Sarah / Bella was chosen because it is
+# already the voice used by VAPI inbound calls and has the warmest,
+# most business-conversational tone in the multilingual library.
+SARAH_BELLA = "EXAVITQu4vr4xnSDxMaL"
+
 ELEVENLABS_VOICE_MAP = {
-    "es": "dlGxemPxFMTY7iXagmOj",   # Fernando Martínez — BitTrader Spanish
-    "en": "EXAVITQu4vr4xnSDxMaL",  # Rachel — same as VAPI calls
+    "en": SARAH_BELLA,
+    "es": SARAH_BELLA,
 }
+DEFAULT_VOICE = SARAH_BELLA
 
-DEFAULT_VOICE = "EXAVITQu4vr4xnSDxMaL"
+
+# ── Redis quota breaker ────────────────────────────────────────────────
+# Mirrors the Resend quota breaker pattern from
+# `app/agents/outreach/channels/email.py`. Once ElevenLabs returns 401
+# with quota_exceeded, set this Redis key with a TTL of 24h (best-effort
+# guess — most plans reset monthly but a 24h re-check is conservative).
+_QUOTA_KEY = "tts:quota_exhausted:elevenlabs"
+_QUOTA_TTL_SECONDS = 24 * 60 * 60
+
+
+def _redis_client():
+    try:
+        import redis
+        return redis.from_url(settings.REDIS_URL, decode_responses=True)
+    except Exception as e:
+        logger.warning(f"TTS quota breaker: redis unavailable ({e})")
+        return None
+
+
+def _is_tts_quota_breaker_open() -> bool:
+    r = _redis_client()
+    if not r:
+        return False
+    try:
+        return bool(r.get(_QUOTA_KEY))
+    except Exception as e:
+        logger.warning(f"TTS quota breaker: redis read failed ({e})")
+        return False
+
+
+def _trip_tts_quota_breaker(reason: str) -> None:
+    r = _redis_client()
+    if not r:
+        return
+    try:
+        r.set(_QUOTA_KEY, reason[:200], ex=_QUOTA_TTL_SECONDS)
+        until = (datetime.now(timezone.utc) + timedelta(seconds=_QUOTA_TTL_SECONDS)).isoformat()
+        logger.warning(
+            f"TTS circuit breaker TRIPPED: {reason}. "
+            f"All TTS attempts paused for 24h (until {until})."
+        )
+    except Exception as e:
+        logger.warning(f"TTS quota breaker: failed to set redis key ({e})")
 
 
 async def generate_tts_audio(text: str, language: str = "en", output_path: str = "") -> Optional[str]:
     """Generate TTS audio using ElevenLabs and save to output_path.
 
-    Returns the output_path on success, None on failure.
+    Returns the output_path on success, None on failure. Failure modes
+    handled gracefully (no exception bubbles up):
+      • API key missing → None + warning
+      • Quota breaker open → None (no API call made)
+      • 401 quota_exceeded → trip breaker + None
+      • Other HTTP / network errors → None + warning
     """
     api_key = settings.ELEVENLABS_API_KEY or os.environ.get("ELEVENLABS_API_KEY", "")
     if not api_key:
-        print("[TTS] ELEVENLABS_API_KEY not configured")
+        logger.warning("[TTS] ELEVENLABS_API_KEY not configured")
+        return None
+
+    # Short-circuit if a recent call already exhausted the plan quota —
+    # avoids dozens of 401s per hour while the user upgrades their plan.
+    if _is_tts_quota_breaker_open():
+        logger.info("[TTS] Quota breaker open, skipping ElevenLabs call")
         return None
 
     voice_id = ELEVENLABS_VOICE_MAP.get(language[:2].lower(), DEFAULT_VOICE)
@@ -57,14 +124,26 @@ async def generate_tts_audio(text: str, language: str = "en", output_path: str =
             with open(output_path, "wb") as f:
                 f.write(response.content)
 
-            print(f"[TTS] Audio saved: {output_path} ({len(response.content)} bytes)")
+            logger.info(f"[TTS] Audio saved: {output_path} ({len(response.content)} bytes)")
             return output_path
 
     except httpx.HTTPStatusError as e:
-        print(f"[TTS] HTTP error {e.response.status_code}: {e.response.text}")
+        # Detect ElevenLabs quota exhausted ('quota_exceeded' code) and
+        # trip the breaker so the next ~24h of TTS calls short-circuit.
+        body_text = ""
+        try:
+            body_text = e.response.text.lower()
+        except Exception:
+            pass
+        is_quota = e.response.status_code == 401 and (
+            "quota_exceeded" in body_text or "exceeds your quota" in body_text
+        )
+        logger.warning(f"[TTS] HTTP error {e.response.status_code}: {e.response.text[:200]}")
+        if is_quota:
+            _trip_tts_quota_breaker(f"HTTP 401 quota_exceeded: {body_text[:160]}")
         return None
     except Exception as e:
-        print(f"[TTS] Error: {e}")
+        logger.warning(f"[TTS] Error: {e}")
         return None
 
 
