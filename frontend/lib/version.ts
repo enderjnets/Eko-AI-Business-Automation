@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.52";
+export const CURRENT_VERSION = "0.7.53";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,21 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.53",
+    date: "2026-05-23",
+    title: "Language propagation form → emails: si el lead llena el form en español, toda comunicación va en español (y EN si EN)",
+    changes: [
+      "Reportado: aunque la landing page tiene toggle EN/ES, los emails de TODOS los leads salían en inglés.",
+      "Diagnóstico (3 bugs en cadena): (1) frontend `LandingPage.tsx` no incluía el campo `language` en el POST body — el toggle UI nunca llegaba al backend. (2) Backend `PublicLeadCreate` schema no aceptaba un campo `language`, así que aún si frontend lo mandaba sería rechazado. (3) El `ResearchAgent.enrich()` sobreescribía `lead.language` con el idioma detectado del WEBSITE del lead — si la web estaba en inglés, ganaba el inglés aunque el form fuera en español.",
+      "Fix 1 frontend (`components/LandingPage.tsx`): `useT()` ahora también extrae `lang`; el handleSubmit incluye `language: lang` (EN/ES) en el JSON del POST.",
+      "Fix 2 backend (`schemas/lead.py`): `PublicLeadCreate.language: Optional[str] = Field(None, max_length=10)` agregado.",
+      "Fix 3 backend (`api/v1/leads.py:/leads/public`): persistir `lead.language = (lead_data.language or 'en').strip().lower()[:2]` + guardar `form_language` en `source_data` para auditoría.",
+      "Fix 4 backend (`agents/research/agent.py`): el website analyzer ya no sobreescribe `lead.language` si existe `source_data.form_language` — la preferencia explícita del form SIEMPRE gana sobre el website detection. Si no hay form preference, mantiene el fallback al website.",
+      "Smoke verificado end-to-end (2 leads de prueba): POST con language='es' → DB lead.language='es' + source_data.form_language='es' → email subject 'Tu análisis de automatización para Cafetería ES'. POST con language='en' → subject 'Your AI automation analysis for Cafeteria EN'. Ambos correctos.",
+      "Paths que ya consumían `lead.language` correctamente (no necesitaron cambios): nurture sequence (`EmailOutreach.generate_email` con 'CRITICAL: Write the ENTIRE email in {lang_name}'), auto-reply (`generate_ai_reply` con fallback chain detected_lang → lead.language → 'en'), cold outreach. AI Analysis email (lead_analysis_generator + scheduled.py subject switch). El fix de hoy los 'desbloquea' al garantizar que `lead.language` refleje la preferencia real del usuario.",
+    ],
+  },
   {
     version: "0.7.52",
     date: "2026-05-23",

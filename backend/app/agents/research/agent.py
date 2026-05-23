@@ -75,11 +75,24 @@ class ResearchAgent:
                 enrichment.has_online_ordering = website_data.get("has_online_ordering")
                 enrichment.has_contact_form = website_data.get("has_contact_form")
 
-                # Detect and store language
+                # Detect website language. The user's explicit preference (from
+                # the landing-page form UI, stored in source_data.form_language)
+                # ALWAYS wins — if a Spanish-speaking visitor filled out the
+                # form in Spanish we communicate in Spanish even if their
+                # website happens to be in English. Only fall back to the
+                # website-detected language when no explicit form preference
+                # exists.
                 detected_lang = website_data.get("detected_language", "en")
-                if detected_lang:
+                source_data = lead.source_data if isinstance(lead.source_data, dict) else {}
+                form_lang = source_data.get("form_language")
+                if form_lang:
+                    logger.info(
+                        f"Lead language stays '{lead.language}' (form preference: '{form_lang}'); "
+                        f"website detected '{detected_lang}'"
+                    )
+                elif detected_lang:
                     lead.language = detected_lang
-                    logger.info(f"Lead language set to '{detected_lang}' from website analysis")
+                    logger.info(f"Lead language set to '{detected_lang}' from website (no form preference)")
 
                 # Use email found on website if lead has none
                 if not lead.email and website_data.get("email_found"):

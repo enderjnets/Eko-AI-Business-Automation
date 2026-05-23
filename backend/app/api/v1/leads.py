@@ -537,6 +537,12 @@ async def create_public_lead(
     if not business_name:
         business_name = "Unknown Business"
 
+    # Language preference comes from the landing-page UI (EN / ES toggle).
+    # Normalize to 2 letters lowercase, fall back to "en". This value
+    # drives the LLM language for every email sent to this lead
+    # (AI Analysis, nurture sequence, auto-reply).
+    lang_code = (lead_data.language or "en").strip().lower()[:2] or "en"
+
     lead = Lead(
         business_name=business_name,
         email=lead_data.email,
@@ -545,6 +551,7 @@ async def create_public_lead(
         city=lead_data.city,
         state=lead_data.state,
         category=lead_data.category,
+        language=lang_code,
         source=LeadSource.LANDING_PAGE if landing_page_id else LeadSource.MANUAL,
         landing_page_id=landing_page_id,
         status=LeadStatus.DISCOVERED,
@@ -555,6 +562,7 @@ async def create_public_lead(
             "captured_at": datetime.utcnow().isoformat(),
             "first_name": lead_data.first_name,
             "last_name": lead_data.last_name,
+            "form_language": lang_code,
         },
     )
     db.add(lead)

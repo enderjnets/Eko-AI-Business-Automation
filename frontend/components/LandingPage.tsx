@@ -46,7 +46,7 @@ const staggerContainer = {
 };
 
 export default function LandingPage() {
-  const { t } = useT();
+  const { t, lang } = useT();
 
   const [form, setForm] = useState({
     first_name: "",
@@ -96,6 +96,7 @@ export default function LandingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          language: lang, // EN/ES — drives the LLM language for ALL emails to this lead
           notes: `Lead captured from landing page. Website: ${form.website}. Industry: ${form.category || "N/A"}`,
         }),
       });

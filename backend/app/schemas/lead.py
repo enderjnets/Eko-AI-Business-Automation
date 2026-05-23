@@ -175,6 +175,10 @@ class PublicLeadCreate(BaseModel):
     state: Optional[str] = None
     category: Optional[str] = None
     notes: Optional[str] = None
+    # 2-letter language code captured from the landing-page UI (en / es).
+    # Drives the LLM language for the AI Analysis email, the nurture
+    # sequence and any auto-reply. If absent, falls back to "en".
+    language: Optional[str] = Field(None, max_length=10)
 
 
 # ---------------------------------------------------------------------------
