@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.54";
+export const CURRENT_VERSION = "0.7.55";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,21 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.55",
+    date: "2026-05-23",
+    title: "Content Studio — hero clip ahora se genera con Kling text-to-video (en vez de FLUX imagen + Ken Burns)",
+    changes: [
+      "Upgrade visual del Content Studio: el PRIMER clip de cada short ahora se genera con Kling AI text-to-video (videos REALES con motion fluido) en vez de FLUX imagen estática + zoom Ken Burns. Los clips siguientes mantienen FLUX+KB porque Kling toma 1-3 min por clip y consume créditos pagos — el balance es: máximo impacto visual en el opener (lo que más se ve en autoplay) sin explotar el costo total del video.",
+      "Nuevo módulo `~/EkoContentStudio/kling_client.py`: JWT HS256 con `KLING_ACCESS_KEY` + `KLING_SECRET_KEY`, helpers `submit_text2video(prompt, duration, mode, aspect_ratio, model_name)`, `poll_task(task_id)` (poll every 10s, ceiling 4min), `generate_video(prompt, output_path)` (end-to-end submit + poll + download). Endpoint: `POST /v1/videos/text2video` + `GET /v1/videos/text2video/{task_id}`.",
+      "Wire en `video_producer.py`: nueva función `_try_kling_hero_clip(prompt, clip_path, duration_s=5)` que se llama SOLO para el primer clip (`i==1`). Si KLING_* env vars no configuradas, o si Kling falla/timeout, fallback silencioso a FLUX+KB (no rompe el pipeline). Output: clip 5s vertical 9:16 directamente al mismo path que el legacy hf_clip_1.mp4.",
+      "Deps agregadas al `requirements.txt` de eko-pipeline: `PyJWT>=2.8.0` y `httpx>=0.27.0`.",
+      "docker-compose actualizado: volumes mount para `kling_client.py` + `video_producer.py`, env `KLING_ACCESS_KEY` y `KLING_SECRET_KEY`. **Bug fix lateral**: paths del mount cambiados de `~/EkoContentStudio/...` a `/home/enderj/EkoContentStudio/...` (path absoluto) porque docker-compose con sudo expande `~` a `/root/...` y los nuevos archivos no estaban ahí → mount failed. Los paths que ya estaban ahí también se actualizaron por consistencia.",
+      "Verificado end-to-end: probe POST /v1/videos/text2video con la key real retornó `task_status=succeed`, video 5.1s @ 9:16, 1 crédito consumido, total ~5 min. Submit desde el container live retornó task_id (`887268139585638497`). PyJWT 2.13.0 disponible.",
+      "TTS de Kling NO se integró: confirmado vía probe que el endpoint POST /v1/audio/text2speech retorna 404 (la feature text-to-audio solo existe en la UI web de Kling, no en su API pública). El TTS de emails sigue con ElevenLabs Sarah/Bella (v0.7.54).",
+      "⚠️ La key compartida `AmrPJCrQtgKNfTpeaHDBYRE3Lg834a4Y` fue expuesta en chat — rotar manualmente apenas posible. Está en .env del ROG, docker-compose env, y mi historial de conversación.",
+    ],
+  },
   {
     version: "0.7.54",
     date: "2026-05-23",
