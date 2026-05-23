@@ -457,10 +457,33 @@ Denver, CO<br>
                 "html": tracking_body,
                 "tags": email_tags,
             }
-            
+
+            # ── Deliverability headers ──────────────────────────────────
+            # Gmail & Yahoo require one-click unsubscribe (RFC 8058) for
+            # bulk-ish senders since Feb 2024 — without these headers the
+            # provider drops the message straight into Spam. We always set
+            # them, even on transactional/auto-reply paths, because the
+            # cost of including them is zero and they only help.
+            # Reply-To matches From so any human reply lands back in our
+            # Resend inbound webhook and is auto-handled by the AI.
+            app_url = settings.APP_URL.rstrip("/")
+            list_unsubscribe_targets = []
+            if lead_id:
+                list_unsubscribe_targets.append(
+                    f"<{app_url}/api/v1/webhooks/unsubscribe?lead_id={lead_id}>"
+                )
+            # mailto fallback for clients that don't support http one-click
+            list_unsubscribe_targets.append(
+                "<mailto:unsubscribe@biz.ekoaiautomation.com?subject=Unsubscribe>"
+            )
+
+            params["headers"] = {
+                "List-Unsubscribe": ", ".join(list_unsubscribe_targets),
+                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            }
+
             # Add threading headers for email clients (Gmail, Outlook)
             if in_reply_to:
-                params["headers"] = params.get("headers", {})
                 params["headers"]["In-Reply-To"] = in_reply_to
                 if references:
                     existing_refs = " ".join(references)

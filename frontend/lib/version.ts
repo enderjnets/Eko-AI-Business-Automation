@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.51";
+export const CURRENT_VERSION = "0.7.52";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,19 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.52",
+    date: "2026-05-23",
+    title: "Email deliverability — List-Unsubscribe header (RFC 8058 one-click) + POST handler para Gmail/Yahoo (fix spam)",
+    changes: [
+      "Reportado por el usuario: las últimas 2 personas que recibieron emails los vieron en la bandeja de Spam de Gmail.",
+      "Auditoría: SPF (`v=spf1 include:_spf.resend.com ~all`), DKIM (selector `resend._domainkey` con clave RSA válida) y DMARC (`v=DMARC1; p=quarantine; pct=100`) están bien configurados. Pero faltaba el header **List-Unsubscribe** que Gmail y Yahoo EXIGEN desde febrero 2024 (RFC 8058) — sin él los mensajes caen automáticamente en spam.",
+      "Fix de código (backend/app/agents/outreach/channels/email.py): cada email outbound ahora incluye los headers `List-Unsubscribe: <https://.../unsubscribe?lead_id=N>, <mailto:unsubscribe@biz.ekoaiautomation.com?subject=Unsubscribe>` y `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. Pasado en `params['headers']` a `resend.Emails.send()` — Resend los respeta tal cual.",
+      "Fix backend (api/v1/webhooks.py): nuevo `POST /api/v1/webhooks/unsubscribe?lead_id=N` para soportar el flow one-click. Cuando el usuario clickea 'Unsubscribe' en el header de Gmail, Gmail hace POST a este endpoint sin requerir confirmación del usuario. El handler comparte lógica con el GET via `_do_unsubscribe(lead_id, channel, db)`. Idempotente — re-unsubscribir el mismo lead no error ni duplica interaction.",
+      "Smoke verificado: stub resend.Emails.send confirmó que params incluyen ambos headers correctamente. Los emails que salgan a partir de ahora deberían tener entregabilidad significativamente mejor.",
+      "Acción manual pendiente del usuario (requiere acceso DNS): el dominio `biz.ekoaiautomation.com` fue creado 2026-04-25 (28 días — MUY nuevo). Tiene reputation casi-cero. Recomendación: cambiar el record DMARC de `p=quarantine` a `p=none` por las próximas 4-6 semanas mientras se acumula reputation; después subir gradualmente a quarantine. Record actual TXT en `_dmarc.biz.ekoaiautomation.com`: `v=DMARC1; p=quarantine; rua=mailto:dmarc@biz.ekoaiautomation.com; pct=100` → cambiar `p=quarantine` por `p=none`.",
+    ],
+  },
   {
     version: "0.7.51",
     date: "2026-05-23",

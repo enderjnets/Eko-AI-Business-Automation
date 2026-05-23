@@ -244,35 +244,56 @@ async def calcom_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     return {"status": "ok"}
 
 
-@router.get("/unsubscribe")
-async def unsubscribe_lead(
-    lead_id: int = Query(...),
-    db: AsyncSession = Depends(get_db),
-):
-    """Unsubscribe a lead from emails (CAN-SPAM compliance)."""
+async def _do_unsubscribe(lead_id: int, channel: str, db: AsyncSession):
+    """Shared unsubscribe logic — used by both the GET (link-click) and the
+    POST (RFC 8058 one-click) handlers. Idempotent: re-unsubscribing the
+    same lead does not error and does not duplicate the interaction.
+    """
     result = await db.execute(select(Lead).where(Lead.id == lead_id))
     lead = result.scalar_one_or_none()
-    
-    if lead:
+    if not lead:
+        return {"status": "error", "message": "Lead not found"}
+
+    if not lead.do_not_contact:
         lead.do_not_contact = True
         lead.consent_status = "opted_out"
-        
         interaction = Interaction(
             lead_id=lead.id,
             interaction_type="email",
             direction="inbound",
             subject="Unsubscribe request",
-            content="Lead opted out via unsubscribe link",
+            content=f"Lead opted out via unsubscribe link ({channel})",
         )
         db.add(interaction)
         await db.commit()
-        
-        return {
-            "status": "unsubscribed",
-            "message": "You have been unsubscribed from future communications.",
-        }
-    
-    return {"status": "error", "message": "Lead not found"}
+    return {
+        "status": "unsubscribed",
+        "message": "You have been unsubscribed from future communications.",
+    }
+
+
+@router.get("/unsubscribe")
+async def unsubscribe_lead(
+    lead_id: int = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Unsubscribe a lead from emails via clicking the link in the email
+    footer (CAN-SPAM compliance)."""
+    return await _do_unsubscribe(lead_id, channel="link", db=db)
+
+
+@router.post("/unsubscribe")
+async def unsubscribe_lead_one_click(
+    lead_id: int = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """RFC 8058 one-click unsubscribe endpoint. Gmail/Yahoo POST here when
+    the user clicks the inbox "Unsubscribe" button driven by the
+    `List-Unsubscribe-Post: List-Unsubscribe=One-Click` header on the
+    outbound email. Must accept POST with no body validation and respond
+    within 30s, otherwise the provider keeps showing the spam-warning UI.
+    """
+    return await _do_unsubscribe(lead_id, channel="one_click", db=db)
 
 
 @router.get("/track/open")
