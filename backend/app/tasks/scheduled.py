@@ -710,6 +710,66 @@ async def _backup_processed_leads_async():
         return {"success": True, "file": filename, "count": len(leads_data), "path": filepath}
 
 
+async def _retry_failed_welcome_emails_async():
+    """Re-dispatch enrich_and_welcome_lead for recent leads whose welcome
+    email never went out (e.g. Resend quota was exhausted at the time and
+    the original task ended with status='email_failed').
+
+    Safe to run hourly. Short-circuits if the email circuit breaker is
+    still open. Skips DNC leads, very old leads, and leads that already
+    have an outbound email interaction in DB.
+    """
+    # Avoid circular import — the breaker helper is in the channels module
+    from app.agents.outreach.channels.email import _is_quota_breaker_open
+
+    if _is_quota_breaker_open():
+        return {"skipped": "quota_breaker_open"}
+
+    async with AsyncSessionLocal() as db:
+        cutoff = datetime.utcnow() - timedelta(days=7)
+        sub_outbound = (
+            select(Interaction.lead_id)
+            .where(
+                Interaction.interaction_type == "email",
+                Interaction.direction == "outbound",
+            )
+            .subquery()
+        )
+        # Eligible: lead has email, not DNC, created in last 7 days, status
+        # advanced past DISCOVERED (i.e. enrichment ran), and NO outbound
+        # email interaction yet. Limit to 25 per run so we don't blow the
+        # quota again.
+        q = await db.execute(
+            select(Lead.id)
+            .where(Lead.email.isnot(None))
+            .where(Lead.do_not_contact == False)
+            .where(Lead.created_at >= cutoff)
+            .where(
+                Lead.status.in_([
+                    LeadStatus.ENRICHED,
+                    LeadStatus.SCORED,
+                    LeadStatus.CONTACTED,
+                ])
+            )
+            .where(Lead.id.notin_(select(sub_outbound.c.lead_id)))
+            .order_by(Lead.created_at.desc())
+            .limit(25)
+        )
+        lead_ids = [row[0] for row in q.all()]
+
+    if not lead_ids:
+        return {"retried": 0}
+
+    retried = 0
+    for lid in lead_ids:
+        try:
+            enrich_and_welcome_lead.delay(lid)
+            retried += 1
+        except Exception as e:
+            logger.warning(f"Retry dispatch failed for lead {lid}: {e}")
+    return {"retried": retried, "lead_ids": lead_ids}
+
+
 # ---------------------------------------------------------------------------
 # Celery tasks
 # ---------------------------------------------------------------------------
@@ -804,6 +864,22 @@ def execute_sequences():
         return result
     except Exception as e:
         logger.error(f"[Celery] Sequence execution failed: {e}")
+        raise
+
+
+@celery_app.task
+def retry_failed_welcome_emails():
+    """Scheduled task: re-dispatch enrich_and_welcome_lead for recent
+    leads whose welcome email never went out (Resend quota exhausted, etc.).
+    Runs hourly; short-circuits if the quota breaker is still open.
+    """
+    logger.info("[Celery] Checking for stuck welcome emails to retry...")
+    try:
+        result = asyncio.run(_retry_failed_welcome_emails_async())
+        logger.info(f"[Celery] Retry welcome emails complete: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"[Celery] Retry welcome emails failed: {e}")
         raise
 
 

@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.50";
+export const CURRENT_VERSION = "0.7.51";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,19 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.51",
+    date: "2026-05-23",
+    title: "Welcome email retry hourly + reenvío manual al lead 618 + audit del spike de Resend quota",
+    changes: [
+      "Caso del usuario: Maikol Garces (fxmaikoll@gmail.com, lead 618) llenó el form del www y NO recibió su email de AI Analysis. Investigación read-only mostró que el envío a Resend a las 2026-05-22 15:26:25 UTC retornó 'You have reached your daily email sending quota' → el circuit breaker en email.py:_trip_quota_breaker se abrió → la Celery task `enrich_and_welcome_lead` terminó con status='email_failed' y NO reintentó.",
+      "Phase A (fix puntual): re-dispatché `enrich_and_welcome_lead.delay(618)` después de que el breaker de Resend se cerrara a UTC midnight. Email salió OK: Interaction id=281, email_status='sent', Resend message_id 333bbd4b-9bbf-4ced-a344-8458965f5329, subject 'Your AI automation analysis for maikol garces'. Maikol ya recibió su email.",
+      "Phase B (auto-retry permanente): nueva Celery task `retry_failed_welcome_emails` (en backend/app/tasks/scheduled.py) que cada hora escanea leads creados en últimos 7 días con email + no-DNC + status en {ENRICHED, SCORED, CONTACTED} + SIN outbound email en DB. Limit 25 por run para no re-quemar el quota. Short-circuit si el breaker sigue abierto. Agregado al beat_schedule en celery_app.py como `retry-failed-welcome-emails-hourly` (3600s). Smoke verificado con fake lead 621 → `{retried: 1, lead_ids: [621]}`.",
+      "Phase C (audit del spike): logs de las últimas 24h mostraron 50 emails outbound disparados a 5 test leads (auditor-test, audit-fixed, spa-test, stripe-test + enderjnets) en ventana 02:10-02:50 UTC del 2026-05-22. La task `execute_sequences` los procesó cada 5 min, cada run mandó 5 emails y luego loggeó 'Sequence execution complete: 0 sent, 0 skipped, 5 errors' — el send a Resend OCURRIÓ (consumió cuota) pero el commit DB falló después → enrollment nunca avanzó → loop infinito hasta que en mi sesión anterior borré las 4 enrollments problemáticas. Desde entonces 0 sends desde sequences (confirmado en logs subsiguientes). Resend free tier ~100/día explica que el quota se agote.",
+      "Vulnerabilidad latente identificada (no fixeada este sprint): `_execute_sequences_async` manda el email ANTES de commitear el avance del enrollment. Si el commit falla, el email sale pero el enrollment queda stuck → re-procesa en el próximo beat → re-envía. Fix futuro recomendado: hacer commit del avance ANTES del send (riesgo: si commit OK pero send falla, lead pierde un email; menor que el riesgo actual).",
+      "Sin cambios en outreach format / Inbox — sigue como v0.7.50.",
+    ],
+  },
   {
     version: "0.7.50",
     date: "2026-05-22",

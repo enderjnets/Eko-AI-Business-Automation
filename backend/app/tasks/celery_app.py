@@ -93,5 +93,11 @@ celery_app.conf.update(
             "task": "app.tasks.scheduled.send_payment_reminders",
             "schedule": crontab(hour=10, minute=0),  # 10am MT
         },
+        "retry-failed-welcome-emails-hourly": {
+            "task": "app.tasks.scheduled.retry_failed_welcome_emails",
+            "schedule": 3600.0,  # hourly — re-dispatches enrich_and_welcome_lead
+                                 # for leads whose welcome email was blocked
+                                 # by an open Resend quota breaker
+        },
     },
 )
