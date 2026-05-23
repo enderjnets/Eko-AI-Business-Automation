@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.56";
+export const CURRENT_VERSION = "0.7.57";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,19 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.57",
+    date: "2026-05-23",
+    title: "Deliverability boost — multipart text/plain + Reply-To explícito + Feedback-ID header",
+    changes: [
+      "Reportado: Maikol dice que los emails siguen cayendo en spam aunque v0.7.52 agregó List-Unsubscribe. Diagnóstico: List-Unsubscribe estaba OK, pero faltaban 3 cosas que mejoran deliverability.",
+      "Fix 1 (multipart): nuevo helper `_html_to_plain_text(body)` que strip tags HTML + normaliza whitespace para construir un twin text/plain. Resend recibe ahora `params['text']` además de `params['html']` → mensaje multipart RFC 2046. Gmail/Outlook lo prefieren mucho más que html-only, especialmente para auto-replies conversacionales que se ven raros como HTML estilizado.",
+      "Fix 2 (Reply-To explícito): `params['reply_to'] = self.from_email`. Antes Resend infería un Reply-To del From pero algunos filtros penalizan cuando NO es explícito. Ahora cualquier reply del lead vuelve al mismo mailbox que registramos como From.",
+      "Fix 3 (Feedback-ID header): nuevo header `Feedback-ID: eko-ai:{tag}:biz.ekoaiautomation.com`. Gmail Postmaster Tools usa este header para agrupar complaints por categoría → permite ver deliverability stats per template-type (lead_id, ai_analysis, landing_page, etc.) sin polucionar el namespace de tags Resend.",
+      "Smoke verificado: params dict ahora tiene keys ['from','to','reply_to','subject','html','tags','text','headers']. Headers incluyen List-Unsubscribe + List-Unsubscribe-Post + Feedback-ID + In-Reply-To. text/plain auto-derivado correctamente de un body con párrafos y URL inline.",
+      "⚠️ Acción manual TODAVÍA pendiente (impacto mayor que estos fixes): cambiar el record DMARC `_dmarc.biz.ekoaiautomation.com` de `p=quarantine` a `p=none` durante el período warm-up del dominio (~4-6 semanas). Sin ese cambio, los emails siguen cayendo en spam ante cualquier edge case de validación SPF/DKIM porque el dominio es muy nuevo (28+ días) y no tiene reputation acumulada.",
+    ],
+  },
   {
     version: "0.7.56",
     date: "2026-05-23",

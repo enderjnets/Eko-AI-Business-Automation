@@ -60,6 +60,35 @@ def _trip_quota_breaker(reason: str) -> None:
         logger.warning(f"Email circuit breaker: failed to set redis key ({e})")
 
 
+def _html_to_plain_text(body: str) -> str:
+    """Strip HTML tags + collapse whitespace for a multipart text/plain
+    twin of the html body. Best-effort — keeps line breaks from <br>
+    and <p>/<div> so the result reads naturally. Used to satisfy
+    Gmail/Outlook deliverability preference for multipart messages."""
+    if not body:
+        return ""
+    import re as _re
+    s = body
+    # Block-level tags → newlines so paragraphs don't collapse
+    s = _re.sub(r"(?i)<br\s*/?>", "\n", s)
+    s = _re.sub(r"(?i)</(p|div|li|tr|h[1-6])>", "\n", s)
+    # Strip remaining tags
+    s = _re.sub(r"<[^>]+>", "", s)
+    # Decode the most common HTML entities by hand (avoid bs4 dep)
+    s = (
+        s.replace("&nbsp;", " ")
+         .replace("&amp;", "&")
+         .replace("&lt;", "<")
+         .replace("&gt;", ">")
+         .replace("&quot;", '"')
+         .replace("&#39;", "'")
+    )
+    # Collapse multiple blank lines + trim
+    s = _re.sub(r"[ \t]+", " ", s)
+    s = _re.sub(r"\n{3,}", "\n\n", s)
+    return s.strip()
+
+
 # Email templates library — optimized based on 2025-2026 B2B benchmarks
 # Key principles: <125 words, <7 word subject lines, value-first, 1 CTA, human tone
 EMAIL_TEMPLATES = {
@@ -450,13 +479,24 @@ Denver, CO<br>
                 else:
                     tracking_body = self._add_tracking_pixel(html_body, lead_id, f"lead_{lead_id}")
             
+            # Build a text/plain twin for the HTML body. Multipart
+            # text+html scores MUCH better with Gmail/Outlook spam
+            # filters than html-only — especially for conversational
+            # auto-replies that look unnatural rendered as styled HTML.
+            # If body is already a complete HTML doc we skip the
+            # auto-derived plain version (the wrapper isn't conversational).
+            text_plain = _html_to_plain_text(body if not is_full_html else "")
+
             params = {
                 "from": self.from_email,
                 "to": [to_email],
+                "reply_to": self.from_email,  # explicit Reply-To = From → ISPs less suspicious
                 "subject": subject,
                 "html": tracking_body,
                 "tags": email_tags,
             }
+            if text_plain:
+                params["text"] = text_plain
 
             # ── Deliverability headers ──────────────────────────────────
             # Gmail & Yahoo require one-click unsubscribe (RFC 8058) for
@@ -464,8 +504,6 @@ Denver, CO<br>
             # provider drops the message straight into Spam. We always set
             # them, even on transactional/auto-reply paths, because the
             # cost of including them is zero and they only help.
-            # Reply-To matches From so any human reply lands back in our
-            # Resend inbound webhook and is auto-handled by the AI.
             app_url = settings.APP_URL.rstrip("/")
             list_unsubscribe_targets = []
             if lead_id:
@@ -480,6 +518,9 @@ Denver, CO<br>
             params["headers"] = {
                 "List-Unsubscribe": ", ".join(list_unsubscribe_targets),
                 "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+                # Feedback-ID groups complaints for postmaster tools so
+                # we can see per-template / per-lead deliverability stats.
+                "Feedback-ID": f"eko-ai:{(email_tags[0]['value'] if email_tags else 'misc')}:biz.ekoaiautomation.com",
             }
 
             # Add threading headers for email clients (Gmail, Outlook)
