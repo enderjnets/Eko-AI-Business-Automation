@@ -7564,6 +7564,24 @@ user's niche and prompt — do NOT default to the same 4 every time):
 10. **Unified Inbox** — All channels threaded per customer, AI summarization,
     hot-lead flags, suggested replies.
 
+11. **Accounting Vertical Pack** (Growth — Contable) — Local invoice OCR
+    (PDF/XML/photo, 500 docs/mo), native ERP integrations (Contasol, Anfix, SII,
+    Alegra), offline bank reconciliation agent, monthly VAT/income-tax templates,
+    pre-trained expense categorization. Use when the user mentions
+    contadores / accountants / asesoría / despacho contable.
+
+12. **Real Estate Vertical Pack** (Growth — Inmobiliario) — WhatsApp Business API
+    (1 number, 2,000 conversations/mo), lead capture and scoring from WhatsApp +
+    web, Idealista / Fotocasa integration, post-visit follow-up sequences,
+    auto-classification of rent/buy/valuation inquiries. Use when the user
+    mentions inmobiliaria / real estate / agente inmobiliario / brokers.
+
+13. **Legal & Clinic Vertical Pack** (Growth — Legal/Clínico) — Document manager
+    with auto-tagging and search, contract OCR + clause extraction, local
+    e-signature (no cloud), immutable GDPR/HIPAA audit log, DPIA templates,
+    auto-anonymization filters. Use when the user mentions abogado / bufete /
+    legal / clínica / consultorio / law firm / healthcare practice.
+
 ═══════════════════════════════════════════════════════════════════════════════
 PER-SECTION COPY RULES — apply ALL of these
 ═══════════════════════════════════════════════════════════════════════════════

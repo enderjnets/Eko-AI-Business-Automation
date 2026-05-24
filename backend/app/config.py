@@ -87,6 +87,25 @@ class Settings(BaseSettings):
     STRIPE_PRICE_GROWTH: str = ""
     STRIPE_PRICE_ENTERPRISE: str = ""
 
+    # Pricing v2 (Council 2026-05-24). Backwards-compat: if any *_MONTHLY/_ANNUAL is empty,
+    # the resolver in checkout.py falls back to the legacy STRIPE_PRICE_STARTER/GROWTH/ENTERPRISE above.
+    STRIPE_PRICE_STARTER_MONTHLY: str = ""
+    STRIPE_PRICE_STARTER_ANNUAL: str = ""
+    STRIPE_PRICE_GROWTH_ACCOUNTING_MONTHLY: str = ""
+    STRIPE_PRICE_GROWTH_ACCOUNTING_ANNUAL: str = ""
+    STRIPE_PRICE_GROWTH_REALESTATE_MONTHLY: str = ""
+    STRIPE_PRICE_GROWTH_REALESTATE_ANNUAL: str = ""
+    STRIPE_PRICE_GROWTH_LEGALHEALTH_MONTHLY: str = ""
+    STRIPE_PRICE_GROWTH_LEGALHEALTH_ANNUAL: str = ""
+    STRIPE_PRICE_ENTERPRISE_MONTHLY: str = ""
+    STRIPE_PRICE_ENTERPRISE_ANNUAL: str = ""
+    # Add-ons (recurring monthly except where noted)
+    STRIPE_PRICE_ADDON_WHITELABEL: str = ""
+    STRIPE_PRICE_ADDON_WHATSAPP_EXTRA: str = ""
+    STRIPE_PRICE_ADDON_CUSTOM_INTEGRATION_SETUP: str = ""  # one-time $500
+    STRIPE_PRICE_ADDON_CUSTOM_INTEGRATION_RECURRING: str = ""  # +$50/mo
+    STRIPE_PRICE_ONPREM_SETUP: str = ""  # one-time $1,500
+
     # Compliance
     DNC_SYNC_CRON: str = "0 2 1 * *"
     MAX_CONTACT_ATTEMPTS: int = 5

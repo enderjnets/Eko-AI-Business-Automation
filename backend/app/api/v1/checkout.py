@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+# Legacy map kept for backwards-compat (callers that pass only `plan` without billing_cycle/vertical).
 STRIPE_PLAN_PRICE_MAP = {
     "starter": settings.STRIPE_PRICE_STARTER,
     "growth": settings.STRIPE_PRICE_GROWTH,
@@ -32,10 +33,44 @@ STRIPE_PLAN_PRICE_MAP = {
 PLAN_NAMES = {
     "starter": "Eko AI Starter",
     "growth": "Eko AI Growth",
+    "growth_accounting": "Eko AI Growth — Contable",
+    "growth_realestate": "Eko AI Growth — Inmobiliario",
+    "growth_legalhealth": "Eko AI Growth — Legal / Clínico",
     "enterprise": "Eko AI Enterprise",
 }
 
-SETUP_FEE_CENTS = 49900
+# Setup fee removed for pricing v2 (became an add-on "On-premise setup $1,500"). Constant kept
+# at zero so any historical reference does not crash; the line item is not appended anymore.
+SETUP_FEE_CENTS = 0
+
+# Valid pricing v2 inputs
+VALID_BILLING_CYCLES = ("monthly", "annual")
+VALID_GROWTH_VERTICALS = ("accounting", "realestate", "legalhealth")
+
+
+def _resolve_price_id(plan: str, billing_cycle: str, vertical: str | None) -> tuple[str | None, str]:
+    """Resolve a Stripe price ID for the given (plan, billing_cycle, vertical).
+
+    Returns (price_id, normalized_plan_key). Falls back to legacy STRIPE_PRICE_* if v2 env vars
+    are not configured. Returns (None, key) when no price is available so the caller can 503 cleanly.
+    """
+    key = plan
+    if plan == "growth" and vertical:
+        key = f"growth_{vertical}"
+
+    # v2 lookup (monthly/annual variant)
+    attr = f"STRIPE_PRICE_{key.upper()}_{billing_cycle.upper()}"
+    v2 = getattr(settings, attr, "") or ""
+    if v2:
+        return v2, key
+
+    # Fallback to legacy single-price map (no cycle/vertical distinction)
+    legacy_key = "growth" if plan == "growth" else plan
+    legacy = STRIPE_PLAN_PRICE_MAP.get(legacy_key, "") or ""
+    if legacy:
+        return legacy, legacy_key
+
+    return None, key
 
 
 class CheckoutSessionRequest(BaseModel):
@@ -43,6 +78,9 @@ class CheckoutSessionRequest(BaseModel):
     plan: str  # starter, growth, enterprise
     success_url: Optional[str] = None
     cancel_url: Optional[str] = None
+    # Pricing v2 (optional, defaults preserve legacy behaviour for older callers)
+    billing_cycle: Optional[str] = None  # "monthly" | "annual" — defaults to monthly
+    vertical: Optional[str] = None  # required for plan="growth" under v2: accounting | realestate | legalhealth
 
 
 class CheckoutSessionResponse(BaseModel):
@@ -64,13 +102,33 @@ async def create_checkout_session(
     request: CheckoutSessionRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a Stripe Checkout Session for subscription + setup fee."""
+    """Create a Stripe Checkout Session for subscription.
+
+    Pricing v2: setup fee removed (became an add-on). billing_cycle + vertical are optional;
+    when omitted, falls back to legacy single-price map for backwards-compat with old callers.
+    """
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(status_code=500, detail="Stripe not configured")
 
-    price_id = STRIPE_PLAN_PRICE_MAP.get(request.plan)
+    billing_cycle = (request.billing_cycle or "monthly").lower()
+    if billing_cycle not in VALID_BILLING_CYCLES:
+        raise HTTPException(status_code=400, detail=f"Invalid billing_cycle: {billing_cycle}")
+
+    vertical = (request.vertical or None)
+    if vertical is not None and vertical not in VALID_GROWTH_VERTICALS:
+        raise HTTPException(status_code=400, detail=f"Invalid vertical: {vertical}")
+
+    price_id, plan_key = _resolve_price_id(request.plan, billing_cycle, vertical)
     if not price_id:
-        raise HTTPException(status_code=400, detail=f"Invalid plan or Stripe price not configured: {request.plan}")
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"Stripe price not configured for plan='{request.plan}' "
+                f"billing_cycle='{billing_cycle}' vertical='{vertical}'. "
+                f"Set STRIPE_PRICE_{plan_key.upper()}_{billing_cycle.upper()} or the legacy "
+                f"STRIPE_PRICE_{request.plan.upper()} env var."
+            ),
+        )
 
     # Get lead
     result = await db.execute(select(Lead).where(Lead.id == request.lead_id))
@@ -104,19 +162,14 @@ async def create_checkout_session(
                     "price": price_id,
                     "quantity": 1,
                 },
-                {
-                    "price_data": {
-                        "currency": "usd",
-                        "product_data": {"name": "Setup Fee"},
-                        "unit_amount": SETUP_FEE_CENTS,
-                    },
-                    "quantity": 1,
-                },
             ],
             subscription_data={
                 "metadata": {
                     "lead_id": str(lead.id),
                     "plan": request.plan,
+                    "plan_key": plan_key,
+                    "billing_cycle": billing_cycle,
+                    "vertical": vertical or "",
                     "business_name": lead.business_name or "",
                 },
             },
@@ -125,25 +178,29 @@ async def create_checkout_session(
             metadata={
                 "lead_id": str(lead.id),
                 "plan": request.plan,
+                "plan_key": plan_key,
+                "billing_cycle": billing_cycle,
+                "vertical": vertical or "",
                 "business_name": lead.business_name or "",
                 "type": "subscription_signup",
             },
         )
 
-        # Record payment intent (setup fee portion tracked in webhook)
+        # Record payment intent (real amount filled by webhook on checkout.session.completed)
         payment = Payment(
             lead_id=lead.id,
             stripe_checkout_session_id=session.id,
             stripe_customer_id=customer_id,
-            amount_cents=SETUP_FEE_CENTS,  # will be updated by webhook with actual total
+            amount_cents=0,
             currency="usd",
-            plan_name=request.plan,
+            plan_name=plan_key,
             payment_type=PaymentType.SETUP,
             status=PaymentStatus.PENDING,
             meta={
-                "plan_name": PLAN_NAMES.get(request.plan, request.plan),
+                "plan_name": PLAN_NAMES.get(plan_key, request.plan),
                 "stripe_price_id": price_id,
-                "setup_cents": SETUP_FEE_CENTS,
+                "billing_cycle": billing_cycle,
+                "vertical": vertical or "",
             },
         )
         db.add(payment)

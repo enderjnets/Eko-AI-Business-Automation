@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.60";
+export const CURRENT_VERSION = "0.8.0";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,23 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.8.0",
+    date: "2026-05-24",
+    title: "Pricing v2 — Council recommendations (Starter $249 / Growth $749 verticals / Enterprise $1,999 + add-ons + ROI calc)",
+    changes: [
+      "Nuevos precios Council: Starter $249/mes (era $99), Growth $749/mes (era $199), Enterprise $1.999/mes (era $299). Anual con 20% off (antes 17%). Clientes actuales mantienen su pricing — fundador comunica manualmente.",
+      "Growth pasa a tres sabores verticales con el mismo precio: Contable (OCR facturas + ERPs Contasol/Anfix/SII/Alegra + conciliación bancaria offline), Inmobiliario (WhatsApp Business API + Idealista/Fotocasa + scoring), Legal/Clínico (gestor documental + OCR contratos + e-signature local + audit log GDPR/HIPAA). Cambio de vertical permitido con 30 días de preaviso.",
+      "Enterprise combina los 3 sabores de Growth + agentes/usuarios ilimitados + 100K runs/mes base (+$200 cada 50K extra) + multi-tenant + white-label + 24/7 + on-premise install GRATIS año 1.",
+      "Setup fee $499 ELIMINADO del checkout. Pasa a ser un add-on opcional: On-premise install $1.500 one-time (gratis año 1 en Enterprise).",
+      "Cuatro add-ons monetizables disponibles desde el portal: White-label $150/mes, número WhatsApp extra $50/mes, integración custom $500 setup + $50/mes, On-premise install $1.500 one-time.",
+      "Calculadora de ROI en la página de pricing: input horas ahorradas/mes + tarifa horaria → renderiza ahorro USD/mes + factor sobre Growth ($749). Input clampado a 0-200h para evitar NaN.",
+      "FAQ inline con 6 preguntas reales (hardware necesario, cambio de vertical, mensual vs anual, prueba gratis, dónde viven los datos, qué pasa con mi plan actual $99). Reemplaza el viejo CTA-solo.",
+      "Backend Stripe acepta nuevo schema { plan, billing_cycle, vertical? } sin romper clientes que mandan solo { plan } — fallback automático a STRIPE_PRICE_STARTER/GROWTH/ENTERPRISE legacy. 15 nuevas env vars STRIPE_PRICE_*_MONTHLY/ANNUAL documentadas en .env.example.",
+      "Nuevo script scripts/create_stripe_products.py idempotente con --dry-run que crea los 17 prices (12 planes + 5 add-ons) y los imprime listos para pegar en .env. Lookup por metadata.eko_id, refuse a sk_live_ sin --live explícito.",
+      "Backup pre-implementación: tag v0.7.60-stable creado y pusheado. Rollback de un comando: `git checkout v0.7.60-stable && docker compose build frontend && docker compose up -d`.",
+    ],
+  },
   {
     version: "0.7.60",
     date: "2026-05-24",
