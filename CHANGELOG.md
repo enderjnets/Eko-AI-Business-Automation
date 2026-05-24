@@ -1,3 +1,43 @@
+## [0.8.0] — 2026-05-24
+
+### Pricing v2 — Council recommendations (Starter $249 / Growth $749 verticals / Enterprise $1,999)
+
+Implementación completa del nuevo pricing dictaminado por el Council multi-LLM (DeepSeek-V4-Pro chairman + Llama 3.3 + Qwen 3.5 + Kimi 2.6) sobre 3 nichos verticales validados (contables, inmobiliarias, legales/clínicas).
+
+#### Cambios
+
+- **Nuevos precios**: Starter $249/mes (era $99), Growth $749/mes (era $199), Enterprise $1.999/mes (era $299). Anual 20% off (era 17%).
+- **Growth con 3 sabores verticales al mismo precio**: Contable, Inmobiliario, Legal/Clínico — el cliente elige uno al contratar, cambiable con 30 días de preaviso. Tabs en la card de Growth, features distintas por vertical, mismo $749.
+- **Enterprise** ahora combina los 3 sabores de Growth + ilimitados + on-premise install GRATIS año 1 + 24/7 con account manager.
+- **Setup fee $499 eliminado** del checkout. Pasa a ser un add-on opcional: "On-premise install $1.500 one-time" (gratis año 1 en Enterprise).
+- **4 add-ons monetizables**: White-label $150/mes, WhatsApp extra $50/mes, Custom integration $500+$50/mes, On-premise install $1.500.
+- **ROI calculator** en la página: horas ahorradas/mes × tarifa horaria → USD/mes + factor sobre Growth.
+- **FAQ inline** con 6 preguntas (hardware, switch de vertical, mensual vs anual, prueba gratis, dónde viven los datos, qué pasa con mi plan actual $99). Reemplaza el viejo CTA-solo.
+- **Backend Stripe**: nuevo schema `{ plan, billing_cycle, vertical? }` con backwards-compat total (fallback automático a `STRIPE_PRICE_STARTER/GROWTH/ENTERPRISE` legacy si las nuevas env vars `*_MONTHLY/_ANNUAL` no están seteadas).
+- **15 nuevas env vars** documentadas en `.env.example` para los 12 prices de planes + 5 add-ons.
+- **Script de provisioning** `scripts/create_stripe_products.py` idempotente (lookup por `metadata.eko_id`) con modo `--dry-run`. Crea los 17 prices y los imprime listos para pegar en `.env`. Refuse a sk_live_ sin `--live` explícito.
+- **Clientes actuales NO se migran automáticamente** — el fundador comunica manualmente. La logic de checkout solo afecta nuevos signups.
+
+#### Cómo desplegar
+
+```bash
+# 1. Backup ya creado: git tag v0.7.60-stable (rollback en 3 min)
+# 2. Activar prices nuevos en Stripe:
+STRIPE_SECRET_KEY=sk_... python3 scripts/create_stripe_products.py
+# 3. Copiar los IDs impresos al .env
+# 4. Rebuild + restart
+docker compose build frontend && docker compose up -d frontend
+docker compose restart eko-backend
+```
+
+#### Rollback
+
+```bash
+git checkout v0.7.60-stable && docker compose build frontend && docker compose up -d frontend
+```
+
+---
+
 
 
 ## [0.7.44] — 2026-05-20

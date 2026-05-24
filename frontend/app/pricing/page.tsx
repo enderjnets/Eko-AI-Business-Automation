@@ -8,10 +8,11 @@ import {
   Check,
   ArrowRight,
   Sparkles,
-  Building2,
   Phone,
   Users,
   MessageSquare,
+  Plus,
+  Minus,
 } from "lucide-react";
 import {
   SiTwilio,
@@ -24,6 +25,9 @@ import {
 } from "react-icons/si";
 import { useT } from "@/contexts/I18nProvider";
 import LanguageSelector from "@/components/LanguageSelector";
+import ROICalculator from "@/components/pricing/ROICalculator";
+import AddonsSection from "@/components/pricing/AddonsSection";
+import GrowthVerticalTabs from "@/components/pricing/GrowthVerticalTabs";
 
 const CAL_URL = "https://cal.com/ender-ocando-lfxtkn/15min";
 
@@ -40,41 +44,46 @@ const staggerContainer = {
   },
 };
 
-// Annual pricing = ~17% off the monthly equivalent (≈ 2 months free per year).
-const ANNUAL_DISCOUNT = 0.17;
+// Pricing v2 (Council 2026-05-24): annual = 20% off the monthly equivalent
+// (you pay ~10 months for 12). Matches Stripe "save 2 months" framing.
+const ANNUAL_DISCOUNT = 0.20;
 const toAnnualMonthly = (monthly: number) =>
   Math.round(monthly * (1 - ANNUAL_DISCOUNT));
 
-// Plans authored against real platform capabilities. Voice minutes + AI reply
-// quotas reflect realistic capacity per tier; "Unlimited contacts" matches
-// industry expectation (e.g. GoHighLevel). Free trial only on Starter to drive
-// frictionless top-of-funnel; higher tiers require a sales conversation.
+// Pricing v2 (Council 2026-05-24). Starter horizontal, Growth has 3 verticals at the same
+// price ($749), Enterprise combines all 3. Hardware runs client-side → high margin model.
+// Existing customers stay on legacy pricing — only NEW signups see these tiers.
 const PLANS = [
   {
     id: "starter",
-    monthly: 99,
+    monthly: 249,
     popular: false,
     trial: true,
     features: 7,
+    hasVerticals: false,
     href: CAL_URL,
   },
   {
     id: "growth",
-    monthly: 199,
+    monthly: 749,
     popular: true,
     trial: false,
-    features: 9,
+    features: 7, // common features only; verticals rendered by GrowthVerticalTabs
+    hasVerticals: true,
     href: CAL_URL,
   },
   {
     id: "enterprise",
-    monthly: 299,
+    monthly: 1999,
     popular: false,
     trial: false,
     features: 9,
+    hasVerticals: false,
     href: CAL_URL,
   },
 ] as const;
+
+const FAQ_KEYS = ["q1", "q2", "q3", "q4", "q5", "q6"] as const;
 
 // Native integrations strip. VAPI uses lucide Phone as proxy (no SiVapi).
 const INTEGRATIONS = [
@@ -88,9 +97,48 @@ const INTEGRATIONS = [
   { Icon: SiHubspot, label: "HubSpot", color: "#FF7A59" },
 ];
 
+type FaqKey = (typeof FAQ_KEYS)[number];
+
+function FAQItem({
+  qKey,
+  aKey,
+  isOpen,
+  onToggle,
+}: {
+  qKey: string;
+  aKey: string;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const { t } = useT();
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-white/[0.03] transition-colors"
+        aria-expanded={isOpen}
+      >
+        <span className="text-sm font-medium text-white">{t(qKey as never)}</span>
+        {isOpen ? (
+          <Minus className="w-4 h-4 text-eko-violet shrink-0" aria-hidden />
+        ) : (
+          <Plus className="w-4 h-4 text-gray-500 shrink-0" aria-hidden />
+        )}
+      </button>
+      {isOpen && (
+        <div className="px-5 pb-4 -mt-1 text-sm text-gray-400 leading-relaxed">
+          {t(aKey as never)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PricingPage() {
   const { t } = useT();
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
+  const [openFaq, setOpenFaq] = useState<FaqKey | null>("q1");
 
   return (
     <div className="min-h-screen bg-eko-noir">
@@ -172,31 +220,7 @@ export default function PricingPage() {
         </motion.div>
       </section>
 
-      {/* Setup Fee Banner */}
-      <section className="pb-8 px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.6 }}
-          className="max-w-2xl mx-auto"
-        >
-          <div className="flex items-start gap-4 p-5 rounded-xl bg-gold/5 border border-gold/20">
-            <Building2 className="w-8 h-8 text-gold shrink-0 mt-0.5" />
-            <div>
-              <p className="text-white font-medium mb-1">
-                {t("pricing.setup.label")}{" "}
-                <span className="text-gold">{t("pricing.setup.price")}</span>
-              </p>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                {t("pricing.setup.desc")}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* Billing cycle toggle (Monthly / Annual save 17%) */}
+      {/* Billing cycle toggle (Monthly / Annual save 20%) */}
       <section className="pb-10 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-center">
           <div
@@ -327,14 +351,19 @@ export default function PricingPage() {
                   </div>
                 </div>
 
-                <ul className="space-y-3 mb-8 flex-1">
-                  {featureKeys.map((key) => (
+                <ul className="space-y-3 mb-4 flex-1">
+                  {(plan.hasVerticals
+                    ? Array.from({ length: 7 }, (_, i) => `pricing.growth.common.f${i + 1}`)
+                    : featureKeys
+                  ).map((key) => (
                     <li key={key} className="flex items-start gap-3">
                       <Check className="w-4 h-4 text-eko-green shrink-0 mt-0.5" />
                       <span className="text-gray-300 text-sm">{t(key as never)}</span>
                     </li>
                   ))}
                 </ul>
+
+                {plan.hasVerticals && <GrowthVerticalTabs />}
 
                 <a
                   href={plan.href}
@@ -354,6 +383,14 @@ export default function PricingPage() {
           })}
         </motion.div>
       </section>
+
+      {/* ROI Calculator (pricing v2) */}
+      <section className="pb-16 px-4 sm:px-6 lg:px-8">
+        <ROICalculator />
+      </section>
+
+      {/* Add-ons (pricing v2) */}
+      <AddonsSection />
 
       {/* Integrations strip */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 border-t border-white/5">
@@ -388,26 +425,43 @@ export default function PricingPage() {
         </motion.div>
       </section>
 
-      {/* FAQ Teaser CTA */}
+      {/* FAQ inline (pricing v2) — 6 real questions + CTA at the end */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white/[0.02] border-y border-white/5">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto text-center"
+          className="max-w-3xl mx-auto"
         >
-          <h2 className="text-2xl font-bold text-white mb-4">{t("pricing.faq.title")}</h2>
-          <p className="text-gray-400 mb-6">{t("pricing.faq.subtitle")}</p>
-          <a
-            href={CAL_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-eko-violet text-white font-semibold hover:bg-eko-violet-dark transition-colors"
-          >
-            <Zap className="w-4 h-4" />
-            {t("pricing.faq.cta")}
-          </a>
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">{t("pricing.faq.title")}</h2>
+            <p className="text-gray-400">{t("pricing.faq.subtitle")}</p>
+          </div>
+
+          <div className="space-y-2 mb-8">
+            {FAQ_KEYS.map((qk) => (
+              <FAQItem
+                key={qk}
+                qKey={`pricing.faq.${qk}.q`}
+                aKey={`pricing.faq.${qk}.a`}
+                isOpen={openFaq === qk}
+                onToggle={() => setOpenFaq(openFaq === qk ? null : qk)}
+              />
+            ))}
+          </div>
+
+          <div className="text-center">
+            <a
+              href={CAL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-eko-violet text-white font-semibold hover:bg-eko-violet-dark transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              {t("pricing.faq.cta")}
+            </a>
+          </div>
         </motion.div>
       </section>
 
