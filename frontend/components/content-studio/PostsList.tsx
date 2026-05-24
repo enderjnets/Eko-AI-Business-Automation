@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Loader2,
   Trash2,
@@ -13,6 +13,7 @@ import {
   CheckCircle,
   ImageOff,
   Play,
+  Sparkles,
 } from "lucide-react";
 import VideoModal from "./VideoModal";
 import RateLimitBanner from "./RateLimitBanner";
@@ -65,6 +66,17 @@ export default function PostsList() {
   const [modalVideoUrl, setModalVideoUrl] = useState("");
   const [modalProxyUrl, setModalProxyUrl] = useState("");
   const [modalTitle, setModalTitle] = useState("");
+  const [failedImgIds, setFailedImgIds] = useState<Set<string>>(new Set());
+  const [cleaning, setCleaning] = useState(false);
+
+  const markImgFailed = useCallback((postId: string) => {
+    setFailedImgIds((prev) => {
+      if (prev.has(postId)) return prev;
+      const next = new Set(prev);
+      next.add(postId);
+      return next;
+    });
+  }, []);
 
   const allPosts = data?.posts || [];
   const posts = useMemo(
@@ -73,6 +85,29 @@ export default function PostsList() {
         ? allPosts
         : allPosts.filter((p) => p.status === filter),
     [allPosts, filter]
+  );
+
+  // A post is considered "expired" for cleanup purposes when:
+  //   - Buffer marked it status=error (publish failed because source was gone)
+  //   - OR its thumbnail URL is set but the <img> failed to load (catbox-style
+  //     temp file already deleted)
+  const expiredIds = useMemo(() => {
+    return allPosts
+      .filter((p) => {
+        if (p.status === "error") return true;
+        const thumb = p.assets?.[0]?.thumbnail;
+        return !!thumb && failedImgIds.has(p.id);
+      })
+      .map((p) => p.id);
+  }, [allPosts, failedImgIds]);
+
+  const isExpiredPost = useCallback(
+    (post: BufferPost): boolean => {
+      if (post.status === "error") return true;
+      const thumb = post.assets?.[0]?.thumbnail;
+      return !!thumb && failedImgIds.has(post.id);
+    },
+    [failedImgIds]
   );
 
   const handleDelete = async (id: string) => {
@@ -86,6 +121,54 @@ export default function PostsList() {
       patchBufferPost(id, null);
     } catch (e: any) {
       alert("Error borrando: " + e.message);
+    }
+  };
+
+  const handleCleanExpired = async () => {
+    const ids = expiredIds;
+    if (ids.length === 0) return;
+    const confirmed = confirm(
+      `¿Borrar ${ids.length} post${ids.length === 1 ? "" : "s"} con media expirada de Buffer? Esta acción no se puede deshacer.`
+    );
+    if (!confirmed) return;
+    setCleaning(true);
+    try {
+      const res = await fetch("/content-api/posts/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      const r = await res.json();
+      if (!res.ok) throw new Error(r.error || `HTTP ${res.status}`);
+      const deleted: string[] = r.deleted || [];
+      for (const id of deleted) {
+        patchBufferPost(id, null);
+      }
+      // Drop now-stale failed-img entries
+      setFailedImgIds((prev) => {
+        const next = new Set(prev);
+        for (const id of deleted) next.delete(id);
+        return next;
+      });
+      // Re-fetch authoritative snapshot in the background
+      refresh().catch(() => {});
+      const failedCount = (r.failed || []).length;
+      const total = r.total ?? ids.length;
+      if (r.rate_limited) {
+        alert(
+          `Limpieza parcial: ${deleted.length}/${total} borrados. Buffer está rate-limitado — esperá unos minutos y reintentá para los ${failedCount} restantes.`
+        );
+      } else if (failedCount > 0) {
+        alert(
+          `${deleted.length}/${total} borrados. ${failedCount} fallaron — revisar consola para detalles.`
+        );
+        // eslint-disable-next-line no-console
+        console.warn("bulk-delete failures", r.failed);
+      }
+    } catch (e: any) {
+      alert("Error limpiando expirados: " + (e.message || "desconocido"));
+    } finally {
+      setCleaning(false);
     }
   };
 
@@ -161,10 +244,25 @@ export default function PostsList() {
             </span>
           </button>
         ))}
+        {expiredIds.length > 0 && (
+          <button
+            onClick={handleCleanExpired}
+            disabled={cleaning}
+            className="ml-auto px-3 py-1.5 rounded-lg text-xs font-medium text-red-300 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+            title="Borrar de Buffer todos los posts cuya media expiró"
+          >
+            {cleaning ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5" />
+            )}
+            Limpiar {expiredIds.length} expirado{expiredIds.length === 1 ? "" : "s"}
+          </button>
+        )}
         <button
           onClick={refresh}
           disabled={loading}
-          className="ml-auto p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
+          className={`${expiredIds.length > 0 ? "" : "ml-auto"} p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50`}
           title="Refrescar"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -204,7 +302,12 @@ export default function PostsList() {
             ? `/content-api/proxy-image?url=${encodeURIComponent(thumbnail)}`
             : null;
           const hasVideo = !!post.assets?.[0]?.source;
-          const isExpired = post.status === "error";
+          const hasThumbnailUrl = !!thumbnail;
+          const expired = isExpiredPost(post);
+          // Only allow opening the player when the post has a playable source
+          // AND its media hasn't been flagged as expired. Avoids the "video
+          // not available" modal flash for legacy zombie posts.
+          const clickable = hasVideo && !expired;
 
           return (
             <div
@@ -212,10 +315,13 @@ export default function PostsList() {
               className="rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden hover:border-white/10 transition-colors"
             >
               <ThumbnailArea
+                postId={post.id}
                 proxyUrl={proxyUrl}
-                hasVideo={hasVideo}
-                isExpired={isExpired}
-                onClick={() => hasVideo && openVideoModal(post)}
+                clickable={clickable}
+                hasThumbnailUrl={hasThumbnailUrl}
+                isExpired={expired}
+                onClick={() => clickable && openVideoModal(post)}
+                onImgFailed={markImgFailed}
               />
 
               <div className="p-4">
@@ -232,6 +338,15 @@ export default function PostsList() {
                 </div>
 
                 <p className="text-sm line-clamp-3 mb-2">{post.text}</p>
+
+                {post.error?.message && (
+                  <div className="mb-2 px-2 py-1.5 rounded-md bg-red-500/5 border border-red-500/15 text-[10px] text-red-300/90 leading-snug">
+                    <span className="font-medium text-red-300">Motivo:</span>{" "}
+                    {post.error.message.length > 140
+                      ? post.error.message.slice(0, 140) + "…"
+                      : post.error.message}
+                  </div>
+                )}
 
                 <div className="flex items-center gap-1 text-[10px] text-gray-500 mb-3">
                   {post.dueAt && post.status === "scheduled" && (
@@ -272,7 +387,20 @@ export default function PostsList() {
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
-                  {post.externalLink && (
+                  {/* For published posts, the externalLink is the most useful affordance — */}
+                  {/* surface it as a labelled button rather than a cramped icon. */}
+                  {post.externalLink && post.status === "sent" ? (
+                    <a
+                      href={post.externalLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-eko-green bg-eko-green/10 border border-eko-green/20 hover:bg-eko-green/20 transition-colors inline-flex items-center gap-1"
+                      title="Abrir el post en la red social"
+                    >
+                      Ver en plataforma
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : post.externalLink ? (
                     <a
                       href={post.externalLink}
                       target="_blank"
@@ -282,7 +410,7 @@ export default function PostsList() {
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
-                  )}
+                  ) : null}
                   <button
                     onClick={() => handleDelete(post.id)}
                     className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors ml-auto"
@@ -308,38 +436,52 @@ export default function PostsList() {
 }
 
 function ThumbnailArea({
+  postId,
   proxyUrl,
-  hasVideo,
+  clickable,
+  hasThumbnailUrl,
   isExpired,
   onClick,
+  onImgFailed,
 }: {
+  postId: string;
   proxyUrl: string | null;
-  hasVideo: boolean;
+  clickable: boolean;
+  hasThumbnailUrl: boolean;
   isExpired: boolean;
   onClick: () => void;
+  onImgFailed: (postId: string) => void;
 }) {
+  // imgValid tracks whether the <img> successfully loaded. The proxy now
+  // returns real HTTP errors (404 / 502) instead of a 1x1 PNG, so onError
+  // fires correctly when the upstream media is gone.
   const [imgValid, setImgValid] = useState(true);
 
-  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    if (img.naturalWidth < 2 && img.naturalHeight < 2) {
-      setImgValid(false);
-    }
+  const handleError = () => {
+    setImgValid(false);
+    onImgFailed(postId);
   };
 
   const showPlaceholder = !proxyUrl || !imgValid;
-  const showExpiredOverlay = showPlaceholder && isExpired;
+  // A post that *claims* a thumbnail URL but whose image failed to load is
+  // treated as expired even when the post status is "sent" — typical when
+  // the original asset lived on a temporary file host (litter.catbox.moe).
+  const placeholderLabel = showPlaceholder
+    ? isExpired || hasThumbnailUrl
+      ? "Media expirado"
+      : null
+    : null;
 
   return (
     <div
       className={`aspect-video bg-black/30 relative overflow-hidden group ${
-        hasVideo ? "cursor-pointer" : ""
+        clickable ? "cursor-pointer" : ""
       }`}
-      onClick={onClick}
-      role={hasVideo ? "button" : undefined}
-      tabIndex={hasVideo ? 0 : undefined}
+      onClick={clickable ? onClick : undefined}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
       onKeyDown={
-        hasVideo
+        clickable
           ? (e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
@@ -354,14 +496,13 @@ function ThumbnailArea({
           src={proxyUrl}
           alt=""
           className={`w-full h-full object-cover transition-transform duration-300 ${
-            hasVideo ? "group-hover:scale-105" : ""
+            clickable ? "group-hover:scale-105" : ""
           }`}
-          onLoad={handleLoad}
-          onError={() => setImgValid(false)}
+          onError={handleError}
         />
       )}
 
-      {hasVideo && imgValid && (
+      {clickable && imgValid && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
             <Play className="w-5 h-5 text-white ml-0.5" fill="white" />
@@ -372,9 +513,13 @@ function ThumbnailArea({
       {showPlaceholder && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
           <ImageOff className="w-8 h-8 text-gray-600" />
-          {showExpiredOverlay && (
+          {placeholderLabel ? (
             <span className="text-[10px] text-red-400/80 font-medium">
-              Media expirado
+              {placeholderLabel}
+            </span>
+          ) : (
+            <span className="text-[10px] text-gray-500 font-medium">
+              Sin media
             </span>
           )}
         </div>

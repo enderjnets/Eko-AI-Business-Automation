@@ -1,8 +1,7 @@
 import { getCached, setCache } from "./api-cache";
+import { getBufferKey } from "./buffer-key";
 
 const BUFFER_API_URL = "https://api.buffer.com";
-const BUFFER_API_KEY = "au7VyBXcqYkOpftcaLuE7awhoSHBoXEAM-WPJWh06Fv";
-
 // Cache GraphQL responses for 30s to avoid Buffer rate limits
 export async function bufferGraphQL(query: string, variables?: Record<string, any>) {
   const cacheKey = "buffer:gql:" + Buffer.from(query).toString("base64").slice(0, 64);
@@ -13,7 +12,7 @@ export async function bufferGraphQL(query: string, variables?: Record<string, an
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${BUFFER_API_KEY}`,
+      Authorization: `Bearer ${getBufferKey()}`,
     },
     body: JSON.stringify({ query, variables }),
   });

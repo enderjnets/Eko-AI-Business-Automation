@@ -261,6 +261,7 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://eko-backend:8000}
       - INTERNAL_API_URL=http://eko-backend:8000
+      - BUFFER_API_KEY=${BUFFER_API_KEY}
     depends_on:
       - backend
 

@@ -5,9 +5,7 @@
  * - Returns { data, stale, rateLimited, resetAt } so UI can render banners
  */
 import { getCached, setCache } from "@/lib/api-cache";
-
-const BUFFER_API_KEY =
-  process.env.BUFFER_API_KEY || "au7VyBXcqYkOpftcaLuE7awhoSHBoXEAM-WPJWh06Fv";
+import { getBufferKey } from "@/lib/buffer-key";
 
 const FRESH_TTL_MS = 5 * 60 * 1000;        // 5 min
 const STALE_TTL_MS = 24 * 60 * 60 * 1000;  // 24h
@@ -80,7 +78,7 @@ async function rawQuery<T>(query: string): Promise<T> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${BUFFER_API_KEY}`,
+      Authorization: `Bearer ${getBufferKey()}`,
     },
     body: JSON.stringify({ query }),
     cache: "no-store",

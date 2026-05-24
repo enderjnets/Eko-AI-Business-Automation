@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.57";
+export const CURRENT_VERSION = "0.7.60";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,41 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.60",
+    date: "2026-05-24",
+    title: "Posts UI: error.message visible + Ver en plataforma destacado + cleanup tests 2099",
+    changes: [
+      "Cards en estado error ahora muestran un banner rojo con el mensaje específico de la plataforma (Motivo: video too large, media expirada, account private, etc) en vez de solo el label genérico Media expirado. Permite distinguir de un vistazo si la falla fue por media corrupta vs restricción de cuenta.",
+      "Posts con status=sent y externalLink ahora muestran un botón etiquetado verde Ver en plataforma ↗ en lugar del icono pequeño junto al lápiz/tacho. Para posts en otros estados con externalLink (raro), se conserva el icono pequeño.",
+      "Borrados 2 posts smoke-test programados para 2099-12-31 (legacy data residual).",
+      "Diagnóstico completo del publish flow documentado en docs/buffer-publish-diagnostic-2026-05-23.md: Buffer no está roto, los posts sent SÍ se subieron a las redes (externalLinks 200 OK); el motivo por el cual los profiles públicos muestran 0 es restricción platform-side (TikTok auto-oculta, IG/FB requieren warm-up orgánico) — no es bug nuestro.",
+    ],
+  },
+  {
+    version: "0.7.59",
+    date: "2026-05-23",
+    title: "Posts tab: botón Limpiar expirados + CSRF/Origin guard en mutativos + cards no-clicables si media expiró",
+    changes: [
+      "Nuevo botón Limpiar N expirados en el toolbar del tab Posts. Detecta posts con status=error o thumbnail rota (failed onError) y los borra de Buffer en bloque viâ POST /content-api/posts/bulk-delete. Confirm modal + optimistic remove + refresh + reporte parcial si Buffer rate-limita.",
+      "Nuevo endpoint /content-api/posts/bulk-delete: serial loop con 400ms gap, max 50 ids/call, retorna {deleted, failed, rate_limited, total}. Detecta RATE_LIMIT_EXCEEDED y aborta limpio para que el cliente pueda reintentar el resto después del cool-off.",
+      "Cards con media expirada ya NO abren VideoModal al click (antes abrían un modal con video no disponible). Cursor cambia a default cuando no es clicable; clicks/Enter/Space ignorados en cards expirados.",
+      "SECURITY: Origin/Referer allowlist en los 4 endpoints mutativos del Content Studio (publish, edit, delete, bulk-delete). Sin header válido → 403. Cierra CSRF cross-site donde otro sitio en el browser del usuario disparaba mutaciones via fetch. Allowlist editable en frontend/lib/origin-check.ts.",
+      "Tracking de fallas de imagen escala arriba del componente: PostsList mantiene Set<postId> de cards cuyas imágenes dispararon onError, lo que permite contar expirados sin esperar al render hijo (necesario para que el botón cleanup conozca el total exacto).",
+    ],
+  },
+  {
+    version: "0.7.58",
+    date: "2026-05-23",
+    title: "Content Studio Posts: previsualizaciones rotas + hardening de proxy (SSRF/credential leak)",
+    changes: [
+      "Posts tab: cards con thumbnails caídos ahora muestran etiqueta clara (Media expirado vs Sin media) en vez de un icono mudo. Causa raíz: posts antiguos publicados vía litter.catbox.moe (temp host) cuyo source ya expiró — Buffer respondía 422 al intentar generar el thumbnail.",
+      "/content-api/proxy-image: rewrite completo. Antes devolvía un PNG 1x1 transparente con HTTP 200 cuando el upstream fallaba — la UI dependía de detectar pixeles para distinguir, frágil. Ahora devuelve 404 + header X-Eko-Proxy-Status (expired/missing/blocked) → onError dispara natural.",
+      "SECURITY: cierra SSRF abierta en /content-api/proxy-image y /content-api/proxy-video. Antes el endpoint aceptaba CUALQUIER URL y, en el caso de proxy-image, le anexaba el Bearer token de Buffer — un atacante podía exfiltrar la credencial apuntando el proxy a su propio servidor. Ahora hay allowlist de hosts (Buffer + dominios propios) y el Bearer solo se envía cuando el host es realmente de Buffer.",
+      "SECURITY: timeout (8s img / 30s video), cap de tamaño (25MB img / 250MB video), Content-Type validation. Bloquea ataques de memoria-exhaustion vía URLs que sirvan blobs gigantes.",
+      "Refactor: BUFFER_API_KEY estaba hardcodeada en 6 archivos. Centralizada en frontend/lib/buffer-key.ts (getBufferKey + isBufferHost + isSelfHost) → ahora hay UN solo lugar donde rotar. Movida también a .env como BUFFER_API_KEY.",
+    ],
+  },
   {
     version: "0.7.57",
     date: "2026-05-23",

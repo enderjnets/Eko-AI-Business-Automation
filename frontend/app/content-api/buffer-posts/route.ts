@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCached, setCache } from "@/lib/api-cache";
-
-const BUFFER_API_KEY = "au7VyBXcqYkOpftcaLuE7awhoSHBoXEAM-WPJWh06Fv";
+import { getBufferKey } from "@/lib/buffer-key";
 
 async function bufferGraphQL(query: string) {
   const cacheKey = "buffer:gql:" + Buffer.from(query).toString("base64").slice(0, 64);
@@ -12,7 +11,7 @@ async function bufferGraphQL(query: string) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${BUFFER_API_KEY}`,
+      Authorization: `Bearer ${getBufferKey()}`,
     },
     body: JSON.stringify({ query }),
   });

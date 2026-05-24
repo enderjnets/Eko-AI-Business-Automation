@@ -25,9 +25,8 @@
  *   }
  */
 import { NextRequest, NextResponse } from "next/server";
-
-const BUFFER_API_KEY =
-  process.env.BUFFER_API_KEY || "au7VyBXcqYkOpftcaLuE7awhoSHBoXEAM-WPJWh06Fv";
+import { isAllowedOrigin } from "@/lib/origin-check";
+import { getBufferKey } from "@/lib/buffer-key";
 
 interface PublishChannel {
   id: string;
@@ -87,7 +86,7 @@ async function bufferMutation(query: string): Promise<any> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${BUFFER_API_KEY}`,
+      Authorization: `Bearer ${getBufferKey()}`,
     },
     body: JSON.stringify({ query }),
   });
@@ -185,6 +184,12 @@ async function publishToChannel(
 }
 
 export async function POST(request: NextRequest) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json(
+      { error: "cross-origin request blocked" },
+      { status: 403 }
+    );
+  }
   try {
     const body = (await request.json()) as PublishBody;
 
