@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.60";
+export const CURRENT_VERSION = "0.7.61";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,17 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.7.61",
+    date: "2026-05-25",
+    title: "Dev tooling: stack docker aislado (eko-main) para trabajar la rama main en paralelo",
+    changes: [
+      "Nuevo docker-compose.main.yml (proyecto eko-main): backend/frontend/db/redis propios en puertos 8010/3003/5433/6380, totalmente aislados de producción (3001/8000/5432/6379) y del preview de pricing-v2 (:3002). Permite correr y probar la rama main en paralelo sin tocar datos ni servicios LIVE.",
+      "Sin celery worker/beat y con AUTO_REPLY_ENABLED=false a propósito: el preview nunca duplica jobs programados ni envía emails salientes contra servicios externos de producción.",
+      "Alias de red eko-backend dentro del proyecto eko-main para que el rewrite hardcoded de next.config.js (/api -> http://eko-backend:8000) resuelva al backend aislado en vez del de producción.",
+      "Cambio infra-only: no toca código de la app. Setup completo documentado en EKO_PARALLEL_CONTEXT.md para la sesión paralela de realtors/pricing-v2.",
+    ],
+  },
   {
     version: "0.7.60",
     date: "2026-05-24",

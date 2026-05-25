@@ -1,0 +1,100 @@
+# Isolated preview stack for the `main` branch worktree (~/Eko-AI-main).
+# Runs fully separate from production: own db/redis/backend/frontend + ports.
+#   docker compose -p eko-main -f docker-compose.main.yml up -d
+# Production stack (docker-compose.yml, project eko-ai-bussinnes-automation)
+# is untouched. Celery worker/beat are intentionally omitted so the preview
+# never duplicates scheduled jobs or sends outbound email.
+version: "3.9"
+
+services:
+  db:
+    image: ankane/pgvector:latest
+    container_name: eko-db-main
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-eko}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-eko_ai}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    command: postgres -c max_connections=200
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eko} -d ${POSTGRES_DB:-eko_ai}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: eko-redis-main
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: eko-backend-main
+    env_file:
+      - .env
+    restart: unless-stopped
+    # Network alias so the frontend's hardcoded next.config rewrite
+    # (http://eko-backend:8000) resolves to THIS backend inside the
+    # isolated eko-main network.
+    networks:
+      default:
+        aliases:
+          - eko-backend
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-eko}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-eko_ai}
+      - REDIS_URL=redis://redis:6379/0
+      - APP_URL=http://10.0.0.240:8010
+      - FRONTEND_URL=http://10.0.0.240:3003
+      - CORS_ORIGINS=http://10.0.0.240:3003,http://localhost:3003,http://localhost:3000
+      - ENVIRONMENT=development
+      - AUTO_REPLY_ENABLED=false
+      - AUTO_CREATE_LEAD_FROM_INBOUND=false
+    ports:
+      - "8010:8000"
+    volumes:
+      - ./backend:/app
+      - ./backups:/app/backups
+      - /home/enderj/.local/share/uv/tools/kimi-cli:/opt/kimi-cli
+      - /home/enderj/.kimi:/root/.kimi
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://10.0.0.240:3003
+    container_name: eko-frontend-main
+    restart: unless-stopped
+    ports:
+      - "3003:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://10.0.0.240:3003
+      - INTERNAL_API_URL=http://eko-backend:8000
+      - BUFFER_API_KEY=${BUFFER_API_KEY}
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  redisdata:

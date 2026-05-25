@@ -1,5 +1,20 @@
 
 
+## [0.7.61] — 2026-05-25
+
+### Dev tooling — stack docker aislado (`eko-main`) para trabajo en paralelo de la rama main
+
+Montaje para correr la rama `main` en paralelo con `feature/pricing-v2` sin que se pisen, usando git worktree (`~/Eko-AI-main`) + un stack docker totalmente aislado.
+
+#### Cambios
+
+**`docker-compose.main.yml`** (nuevo, proyecto compose `eko-main`):
+
+- backend/frontend/db/redis propios en puertos `8010/3003/5433/6380`, aislados de producción (`3001/8000/5432/6379`) y del preview de pricing-v2 (`:3002`).
+- Sin celery worker/beat y con `AUTO_REPLY_ENABLED=false` a propósito: el preview nunca duplica jobs programados ni manda emails salientes contra servicios externos de producción.
+- Alias de red `eko-backend` dentro del proyecto para que el rewrite hardcoded de `next.config.js` (`/api` → `http://eko-backend:8000`) resuelva al backend aislado.
+- Cambio **infra-only**: no toca código de la app. Setup completo y gotchas (static/audio faltante, clonar schema de prod por el índice duplicado de `landing_page`) documentados en `EKO_PARALLEL_CONTEXT.md`.
+
 ## [0.7.44] — 2026-05-20
 
 ### Home corporativa — agregados campos Nombre + Apellido al form de contacto
