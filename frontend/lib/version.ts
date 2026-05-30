@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "0.7.61";
+export const CURRENT_VERSION = "0.8.0";
 
 export interface VersionEntry {
   version: string;
@@ -8,6 +8,18 @@ export interface VersionEntry {
 }
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "0.8.0",
+    date: "2026-05-30",
+    title: "Control Plane — registro y monitoreo de instancias de productos (A + D)",
+    changes: [
+      "Automation se convierte en control plane multi-producto: nueva sección admin /admin/control (superuser-only) para registrar Productos e Instancias deployadas, ver salud de la flota y ejecutar acciones remotas auditadas (reiniciar / migrar / redeploy).",
+      "Backend: modelos cp_products / cp_instances / cp_health_checks / cp_action_logs (create_all, sin Alembic), API /api/v1/control-plane/* gateada por get_current_superadmin, cliente httpx control_plane_client.py sobre Tailscale, y poller Celery-beat cada 5min que escribe health checks y alerta por Telegram (notify_eko_rog) en transición sano→caído.",
+      "Seguridad: service_key / agent_key cifradas en reposo con Fernet (app/core/crypto.py, derivado de SECRET_KEY), nunca devueltas por la API; acciones destructivas siempre auditadas en cp_action_logs con confirmación en UI.",
+      "Frontend: vista flota con StatCards + tabla de instancias, detalle por instancia con gráfica de latencia (Recharts), visor de logs, botones de acción con polling del action_id e historial de auditoría. Enlace en Navbar gateado por user.is_superuser.",
+      "Degrada con gracia: monitorea instancias aunque los endpoints del producto (B) y el control-agent (C) todavía no estén desplegados. El contrato exacto de B+C queda especificado en docs/control-plane-realtors-agent-spec.md para la sesión de Realtors.",
+    ],
+  },
   {
     version: "0.7.61",
     date: "2026-05-25",

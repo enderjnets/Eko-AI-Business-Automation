@@ -1,5 +1,30 @@
 
 
+## [0.8.0] — 2026-05-30
+
+### Control Plane multi-producto — registro y monitoreo de instancias (componentes A + D)
+
+Automation deja de ser sólo la plataforma de prospección y pasa a ser el **control plane** desde el que Ender administra todos los productos de automatización (el primero, Eko AI Realtors). Como cada producto es *single-tenant-per-deployment* (un cliente = un stack Docker aislado), "un cliente" en el control plane = **una instancia deployada**. Esta etapa entrega el registro + observabilidad + acciones remotas auditadas (componentes **A** backend y **D** frontend de Automation). Los endpoints del producto (**B**) y el sidecar `control-agent` (**C**) viven en el repo de Realtors y quedan especificados en `docs/control-plane-realtors-agent-spec.md`.
+
+#### Backend (`backend/`)
+
+- **Modelos** (`app/models/control_plane.py`, registrados en `main.py`, creados por `Base.metadata.create_all` — sin Alembic): `cp_products`, `cp_instances` (con `plan`/`status` listos para enganchar billing a futuro), `cp_health_checks` (timeline up/down) y `cp_action_logs` (auditoría obligatoria de acciones destructivas).
+- **Cifrado** (`app/core/crypto.py`): `service_key`/`agent_key` cifradas en reposo con Fernet (clave derivada de `SECRET_KEY`); nunca se devuelven por la API ni se loguean.
+- **API** (`app/api/v1/admin_control.py`, prefijo `/api/v1/control-plane`): CRUD de productos/instancias, health on-demand, métricas, logs y acciones `restart|migrate|redeploy`. Todo gateado por la nueva dependencia `get_current_superadmin` (`app/core/security.py`) — superuser-only, más estricto que `get_current_admin`.
+- **Cliente saliente** (`app/services/control_plane_client.py`): httpx async sobre Tailscale (`X-Control-Key` al producto, `X-Agent-Key` al agente); degrada con gracia (nunca rompe) cuando una instancia no responde.
+- **Poller + acciones async** (`app/tasks/control_plane.py` + beat cada `CONTROL_PLANE_POLL_INTERVAL`=300s): escribe `cp_health_checks`, actualiza `last_health`/`status`, y alerta por Telegram (`notify_eko_rog`) sólo en la transición sano→caído. Acciones largas corren en Celery con polling del `action_id`.
+- **Config** (`app/config.py`): `CONTROL_PLANE_ENABLED`, `CONTROL_PLANE_POLL_INTERVAL`. `cryptography` explícito en `requirements.txt`.
+
+#### Frontend (`frontend/`)
+
+- Nueva sección `app/admin/control/` (layout guard superuser-only): vista flota con `StatCard` + tabla de instancias (badge de estado, cliente, producto, plan, último health) y detalle por instancia con gráfica de latencia (Recharts), visor de logs, botones de acción con confirmación + polling e historial de auditoría.
+- `lib/api.ts`: nuevo `controlPlaneApi`. `contexts/AuthContext.tsx`: `is_superuser` en la interfaz `User`. `components/Navbar.tsx`: enlace "Control Plane" gateado por `user.is_superuser`.
+
+#### Pendiente (fases siguientes, dejado enganchado)
+
+- B (endpoints `/admin/status` + auth de servicio en Realtors) y C (`control-agent`): ver `docs/control-plane-realtors-agent-spec.md`.
+- Provisioning automático del stack y billing centralizado Stripe (los campos `plan`/`status` ya están en `cp_instances`).
+
 ## [0.7.61] — 2026-05-25
 
 ### Dev tooling — stack docker aislado (`eko-main`) para trabajo en paralelo de la rama main

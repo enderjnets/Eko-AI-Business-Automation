@@ -113,6 +113,10 @@ class Settings(BaseSettings):
     # Observability
     SENTRY_DSN: str = ""
 
+    # Control Plane (multi-product instance monitoring)
+    CONTROL_PLANE_ENABLED: bool = True
+    CONTROL_PLANE_POLL_INTERVAL: int = 300  # seconds between health polls
+
     @field_validator("SECRET_KEY")
     @classmethod
     def validate_secret_key(cls, v: str, info) -> str:

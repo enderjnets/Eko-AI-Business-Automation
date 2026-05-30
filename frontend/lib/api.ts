@@ -386,6 +386,85 @@ export const viewsApi = {
   delete: (id: string) => api.delete(`/views/${id}`),
 };
 
+// ─────────────────────────────────────────────────────────────
+// Control Plane API (superuser-only — product/instance management)
+// ─────────────────────────────────────────────────────────────
+
+export interface ControlPlaneProduct {
+  id: number;
+  key: string;
+  name: string;
+  description?: string | null;
+  default_ports?: Record<string, any> | null;
+  created_at: string;
+  instance_count: number;
+}
+
+export interface ControlPlaneInstance {
+  id: number;
+  product_id: number;
+  product_key?: string | null;
+  product_name?: string | null;
+  client_name: string;
+  base_url: string;
+  agent_url?: string | null;
+  host?: string | null;
+  plan?: string | null;
+  notes?: string | null;
+  status: "active" | "suspended" | "provisioning" | "error" | "unknown";
+  last_health?: Record<string, any> | null;
+  last_seen_at?: string | null;
+  has_service_key: boolean;
+  has_agent_key: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ControlPlaneHealthCheck {
+  id: number;
+  ok: boolean;
+  latency_ms?: number | null;
+  payload?: Record<string, any> | null;
+  checked_at: string;
+}
+
+export interface ControlPlaneActionLog {
+  id: number;
+  instance_id: number;
+  actor_user_id?: number | null;
+  action: string;
+  status: "pending" | "running" | "success" | "error";
+  output?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const controlPlaneApi = {
+  stats: () => api.get("/control-plane/stats"),
+  // Products
+  listProducts: () => api.get<ControlPlaneProduct[]>("/control-plane/products"),
+  createProduct: (data: { key: string; name: string; description?: string; default_ports?: Record<string, any> }) =>
+    api.post<ControlPlaneProduct>("/control-plane/products", data),
+  updateProduct: (id: number, data: any) => api.patch<ControlPlaneProduct>(`/control-plane/products/${id}`, data),
+  deleteProduct: (id: number) => api.delete(`/control-plane/products/${id}`),
+  // Instances
+  listInstances: (params?: { product_id?: number; status?: string }) =>
+    api.get<ControlPlaneInstance[]>("/control-plane/instances", { params }),
+  getInstance: (id: number) => api.get(`/control-plane/instances/${id}`),
+  createInstance: (data: any) => api.post<ControlPlaneInstance>("/control-plane/instances", data),
+  updateInstance: (id: number, data: any) => api.patch<ControlPlaneInstance>(`/control-plane/instances/${id}`, data),
+  deleteInstance: (id: number) => api.delete(`/control-plane/instances/${id}`),
+  // Observability
+  pollHealth: (id: number) => api.get(`/control-plane/instances/${id}/health`),
+  metrics: (id: number) => api.get(`/control-plane/instances/${id}/metrics`),
+  logs: (id: number, params?: { service?: string; lines?: number }) =>
+    api.get(`/control-plane/instances/${id}/logs`, { params }),
+  // Actions
+  triggerAction: (id: number, action: "restart" | "migrate" | "redeploy") =>
+    api.post(`/control-plane/instances/${id}/actions/${action}`),
+  listActions: (id: number) => api.get<ControlPlaneActionLog[]>(`/control-plane/instances/${id}/actions`),
+};
+
 export const dynamicDataApi = {
   list: (objectName: string, params?: { search?: string; limit?: number; offset?: number; filters?: Record<string, any>; sorts?: { field: string; direction: string }[] }) =>
     api.get<{ total: number; items: DynamicRecord[] }>(`/data/${objectName}`, { params }),

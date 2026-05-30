@@ -11,6 +11,7 @@ celery_app = Celery(
     backend=settings.REDIS_URL,
     include=[
         "app.tasks.scheduled",
+        "app.tasks.control_plane",
     ],
 )
 
@@ -98,6 +99,10 @@ celery_app.conf.update(
             "schedule": 3600.0,  # hourly — re-dispatches enrich_and_welcome_lead
                                  # for leads whose welcome email was blocked
                                  # by an open Resend quota breaker
+        },
+        "control-plane-poll-instances": {
+            "task": "app.tasks.control_plane.poll_instances",
+            "schedule": float(settings.CONTROL_PLANE_POLL_INTERVAL),  # default 300s
         },
     },
 )

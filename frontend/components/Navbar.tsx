@@ -23,6 +23,7 @@ import {
   Layers,
   LayoutTemplate,
   Clapperboard,
+  Server,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -221,6 +222,19 @@ export default function Navbar() {
                         <span>{t(link.labelKey)}</span>
                       </Link>
                     ))}
+                    {user?.is_superuser && (
+                      <Link
+                        href="/admin/control"
+                        className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors border-t border-white/10 ${
+                          isActive("/admin/control")
+                            ? "text-white bg-white/10"
+                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                        }`}
+                      >
+                        <Server className="w-4 h-4" />
+                        <span>Control Plane</span>
+                      </Link>
+                    )}
                   </div>
                 )}
               </div>
@@ -312,6 +326,19 @@ export default function Navbar() {
                     </Link>
                   ))}
                 </>
+              )}
+              {user?.is_superuser && (
+                <Link
+                  href="/admin/control"
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    isActive("/admin/control")
+                      ? "text-white bg-white/10"
+                      : "text-gray-400 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <Server className="w-4 h-4" />
+                  <span>Control Plane</span>
+                </Link>
               )}
             </div>
           </div>
