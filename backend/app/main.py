@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-from app.api.v1 import leads, campaigns, emails, analytics, webhooks, crm, sequences, auth, calendar, phone_calls, settings as settings_router, deals, proposals, voice_agent, checkout, webhooks_stripe, metadata_objects, metadata_fields, views, dynamic_data, workspaces, landing_pages
+from app.api.v1 import leads, campaigns, emails, analytics, webhooks, crm, sequences, auth, calendar, phone_calls, settings as settings_router, deals, proposals, voice_agent, checkout, webhooks_stripe, metadata_objects, metadata_fields, views, dynamic_data, workspaces, landing_pages, admin_control
 
 # Ensure all models are registered in Base.metadata
 from app.models.lead import Lead  # noqa: F401
@@ -47,6 +47,7 @@ from app.models.view import View, ViewField, ViewFilter, ViewSort  # noqa: F401
 from app.models.workspace import Workspace, WorkspaceMember  # noqa: F401
 from app.models.landing_page import LandingPage  # noqa: F401
 from app.models.landing_page_visit import LandingPageVisit  # noqa: F401
+from app.models.control_plane import Product, ProductInstance, InstanceHealthCheck, InstanceActionLog  # noqa: F401
 from app.db.base import init_db
 
 settings = get_settings()
@@ -133,6 +134,9 @@ app.include_router(metadata_fields.router, prefix="/api/v1/metadata/fields", tag
 app.include_router(views.router, prefix="/api/v1/views", tags=["views"])
 app.include_router(dynamic_data.router, prefix="/api/v1/data", tags=["dynamic-data"])
 app.include_router(landing_pages.router, prefix="/api/v1/landing-pages", tags=["landing-pages"])
+
+# Control plane (multi-product instance monitoring) — superuser-only
+app.include_router(admin_control.router, prefix="/api/v1/control-plane", tags=["control-plane"])
 
 
 @app.get("/health")

@@ -153,3 +153,17 @@ async def get_current_admin(current_user: User = Depends(get_current_user)) -> U
             detail="Admin access required",
         )
     return current_user
+
+
+async def get_current_superadmin(current_user: User = Depends(get_current_user)) -> User:
+    """Stricter than get_current_admin: platform-level control plane access.
+
+    Only superusers (Ender) may register/monitor product instances or trigger
+    remote actions — admin/manager workspace roles are not enough.
+    """
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Superuser access required",
+        )
+    return current_user

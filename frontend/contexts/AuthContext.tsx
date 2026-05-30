@@ -10,6 +10,7 @@ interface User {
   full_name: string | null;
   role: string;
   is_active: boolean;
+  is_superuser?: boolean;
 }
 
 interface AuthContextType {
