@@ -170,3 +170,7 @@ curl -sS "http://100.88.47.99:3100/api/companies/a5151f95-51cd-4d2d-a35b-7d7cb4f
 ---
 
 *Last updated: 2026-04-29 by Kimi Code CLI (EKO-1754)*
+
+## Client portal — 2026-09-23
+
+Public navigation links to https://clients.ekoaiautomation.com/ on desktop and mobile. Authentication and client project assignments live in the separate portal; do not publish project names or move CRM authentication into this link.

@@ -749,6 +749,7 @@ export const translations = {
     "home.nav.how_it_works": "How it works",
     "home.nav.industries": "Industries",
     "home.nav.pricing": "Pricing",
+  "home.nav.client_login": "Client login",
     "home.nav.book_demo": "Book Demo",
 
     "home.hero.badge": "AI-Powered Business Automation",
@@ -1672,6 +1673,7 @@ export const translations = {
     "home.nav.how_it_works": "Cómo funciona",
     "home.nav.industries": "Industrias",
     "home.nav.pricing": "Precios",
+  "home.nav.client_login": "Acceso de clientes",
     "home.nav.book_demo": "Agenda tu Demo",
 
     "home.hero.badge": "Automatización con Inteligencia Artificial para cualquier negocio",

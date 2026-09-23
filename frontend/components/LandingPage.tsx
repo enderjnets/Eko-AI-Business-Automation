@@ -131,6 +131,9 @@ export default function LandingPage() {
             <Link href="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">
               {t("home.nav.pricing")}
             </Link>
+            <a href="https://clients.ekoaiautomation.com/" className="text-sm text-gray-300 hover:text-white rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-eko-violet focus-visible:outline-offset-4">
+              {t("home.nav.client_login")}
+            </a>
             <LanguageSelector />
             <a
               href={CAL_URL}
@@ -153,6 +156,11 @@ export default function LandingPage() {
               {t("home.nav.book_demo")}
             </a>
           </div>
+        </div>
+        <div className="md:hidden px-4 pb-2 text-right">
+          <a href="https://clients.ekoaiautomation.com/" className="text-sm text-gray-300 hover:text-white rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-eko-violet focus-visible:outline-offset-4">
+            {t("home.nav.client_login")}
+          </a>
         </div>
       </nav>
 
