@@ -1,3 +1,7 @@
+## 2026-09-23 — Client login as a button
+
+"Client login" / "Acceso de clientes" is now an outlined button: next to Book Demo on desktop, and in its own row under the header on mobile so both languages fit (checked at 1440, 1024, 390 and 320 px, EN and ES, no horizontal overflow). Link target unchanged: https://clients.ekoaiautomation.com/.
+
 ## 2026-09-23 — Client portal entry
 
 Added the client sign-in link to desktop and mobile landing-page navigation in English and Spanish. Existing booking and CRM routes are unchanged.

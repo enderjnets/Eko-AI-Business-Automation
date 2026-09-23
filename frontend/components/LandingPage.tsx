@@ -131,7 +131,7 @@ export default function LandingPage() {
             <Link href="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">
               {t("home.nav.pricing")}
             </Link>
-            <a href="https://clients.ekoaiautomation.com/" className="text-sm text-gray-300 hover:text-white rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-eko-violet focus-visible:outline-offset-4">
+            <a href="https://clients.ekoaiautomation.com/" className="text-sm px-4 py-2 rounded-lg border border-white/25 text-white font-medium hover:border-eko-violet hover:bg-white/5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-eko-violet focus-visible:outline-offset-4">
               {t("home.nav.client_login")}
             </a>
             <LanguageSelector />
@@ -157,8 +157,9 @@ export default function LandingPage() {
             </a>
           </div>
         </div>
-        <div className="md:hidden px-4 pb-2 text-right">
-          <a href="https://clients.ekoaiautomation.com/" className="text-sm text-gray-300 hover:text-white rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-eko-violet focus-visible:outline-offset-4">
+        {/* Mobile: a second row keeps the client login visible in both languages. */}
+        <div className="md:hidden px-4 pb-2 flex justify-end">
+          <a href="https://clients.ekoaiautomation.com/" className="text-xs px-3 py-1.5 rounded-lg border border-white/25 text-white font-medium whitespace-nowrap hover:border-eko-violet transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-eko-violet focus-visible:outline-offset-4">
             {t("home.nav.client_login")}
           </a>
         </div>

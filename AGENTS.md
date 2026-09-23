@@ -173,4 +173,4 @@ curl -sS "http://100.88.47.99:3100/api/companies/a5151f95-51cd-4d2d-a35b-7d7cb4f
 
 ## Client portal — 2026-09-23
 
-Public navigation links to https://clients.ekoaiautomation.com/ on desktop and mobile. Authentication and client project assignments live in the separate portal; do not publish project names or move CRM authentication into this link.
+Public navigation links to https://clients.ekoaiautomation.com/ on desktop and mobile as an outlined "Client login" button (desktop: next to Book Demo; mobile: second header row, because the Spanish labels do not fit one row). Authentication and client project assignments live in the separate portal; do not publish project names or move CRM authentication into this link.
