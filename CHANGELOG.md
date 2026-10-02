@@ -1,3 +1,7 @@
+## 2026-10-02 — Google Maps discovery runs on SerpApi
+
+Google Maps discovery never worked in production: `OUTSCRAPER_API_KEY` was a 3-character placeholder, so every run returned 0 leads. `GoogleMapsSource` now uses SerpApi's `google_maps` engine with the key we already have (Free plan, 250 searches/month, shared with the research agent). Each page of 20 places is one search; it pages until `max_results` and never past `start=100`, so a 50-lead run costs 3 searches. A failing later page keeps the earlier ones. `_normalize_place` now reads `gps_coordinates` and the ZIP code from the address. Live check (`nail salons`, Denver): 20/20 with name, category, phone, city, ZIP and coordinates, 18/20 with a website. `outscraper.py` is untouched and no longer used.
+
 ## 2026-10-02 — Celery back: eko-redis no longer publishes host port 6379
 
 Celery worker and beat had not run a single scheduled task since 2026-07-29. The ROG has its own system `redis-server` on `127.0.0.1:6379` (installed 2026-03-16); when it started before Docker at boot, `eko-redis` could not bind host port 6379 and Docker left the container with no network, so nobody could resolve `redis`. No Eko service uses that host port — all of them connect to `redis:6379` on the compose network — so the `ports:` mapping is removed. Recreate only that container: `docker compose up -d --no-deps redis` (data stays in the `redisdata` volume).

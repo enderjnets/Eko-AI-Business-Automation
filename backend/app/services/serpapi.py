@@ -58,6 +58,36 @@ class SerpApiClient:
         logger.info(f"SerpApi Google search returned {len(organic)} results for: {query}")
         return organic
 
+    async def search_google_maps(self, query: str, start: int = 0) -> List[Dict[str, Any]]:
+        """Search Google Maps via SerpApi and return one page (up to 20) of local results.
+
+        Each call is one SerpApi search. Pages advance by 20 through `start`.
+        """
+        if not self.api_key:
+            raise ValueError("SerpApi API key not configured. Get one free at https://serpapi.com/dashboard")
+
+        params = {
+            "engine": "google_maps",
+            "type": "search",
+            "q": query,
+            "start": start,
+            "hl": "en",
+            "gl": "us",
+            "api_key": self.api_key,
+            "output": "json",
+        }
+
+        resp = await self.client.get(SERPAPI_BASE_URL, params=params)
+        resp.raise_for_status()
+        data = resp.json()
+
+        if "error" in data:
+            raise RuntimeError(f"SerpApi error: {data['error']}")
+
+        local = data.get("local_results", [])
+        logger.info(f"SerpApi Google Maps returned {len(local)} places for: {query} (start={start})")
+        return local
+
     async def close(self):
         await self.client.aclose()
 

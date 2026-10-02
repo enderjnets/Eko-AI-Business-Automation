@@ -16,7 +16,7 @@ class DiscoveryAgent:
     Discovery Agent: Finds potential leads from multiple sources.
     
     Currently supports:
-    - Google Maps (via Outscraper)
+    - Google Maps (via SerpApi)
     - Yelp (web scraping)
     - LinkedIn (via Apify)
     - Colorado Secretary of State (Apify + scraping)
