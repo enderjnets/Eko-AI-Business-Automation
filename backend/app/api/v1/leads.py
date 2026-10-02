@@ -917,7 +917,6 @@ async def _enrich_leads_batch(lead_ids: list[int]):
     from app.db.base import AsyncSessionLocal
 
     async with AsyncSessionLocal() as db:
-        agent = ResearchAgent()
         enriched_count = 0
         failed_count = 0
 
@@ -928,6 +927,8 @@ async def _enrich_leads_batch(lead_ids: list[int]):
                 if not lead:
                     continue
 
+                # One agent per lead: enrich() closes its HTTP clients when it finishes.
+                agent = ResearchAgent()
                 enriched = await agent.enrich(lead)
                 for field, value in enriched.model_dump(exclude_unset=True).items():
                     setattr(lead, field, value)

@@ -1,3 +1,7 @@
+## 2026-10-02 — Batch enrichment: one ResearchAgent per lead
+
+`ResearchAgent.enrich()` closes its HTTP clients when it finishes, so an agent is single-use. Both batch paths (`enrich_pending_leads` in Celery and `_enrich_leads_batch` behind the dashboard's bulk enrich) built one agent and reused it, so every lead after the first failed its website fetch (`Cannot send a request, as the client has been closed`) and was scored by the LLM with no website data and no email. Seen on the 45-dentist pilot; that run was stopped before it committed anything. Each lead now gets its own agent. Deploy note: restart `celery-worker` (it does not auto-reload).
+
 ## 2026-10-02 — Google Maps discovery runs on SerpApi
 
 Google Maps discovery never worked in production: `OUTSCRAPER_API_KEY` was a 3-character placeholder, so every run returned 0 leads. `GoogleMapsSource` now uses SerpApi's `google_maps` engine with the key we already have (Free plan, 250 searches/month, shared with the research agent). Each page of 20 places is one search; it pages until `max_results` and never past `start=100`, so a 50-lead run costs 3 searches. A failing later page keeps the earlier ones. `_normalize_place` now reads `gps_coordinates` and the ZIP code from the address. Live check (`nail salons`, Denver): 20/20 with name, category, phone, city, ZIP and coordinates, 18/20 with a website. `outscraper.py` is untouched and no longer used.

@@ -443,12 +443,13 @@ async def _enrich_pending_leads_async(batch_size: int = 100):
             logger.info("No pending leads to enrich")
             return {"enriched": 0, "skipped": 0}
 
-        agent = ResearchAgent()
         enriched_count = 0
         skipped_count = 0
 
         for lead in leads:
             try:
+                # One agent per lead: enrich() closes its HTTP clients when it finishes.
+                agent = ResearchAgent()
                 enrichment = await agent.enrich(lead)
 
                 # Update lead with enriched data
