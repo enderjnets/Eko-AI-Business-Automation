@@ -78,25 +78,67 @@ def _trip_tts_quota_breaker(reason: str) -> None:
         logger.warning(f"TTS quota breaker: failed to set redis key ({e})")
 
 
-async def generate_tts_audio(text: str, language: str = "en", output_path: str = "") -> Optional[str]:
-    """Generate TTS audio using ElevenLabs and save to output_path.
+# ─── v0.7.X: Coqui XTTS-v2 local server (PRIMARY TTS) ──────────────────
+COQUI_TTS_URL = os.environ.get("COQUI_TTS_URL", "http://127.0.0.1:7777/tts")
+# Voice cloned from lead_601.mp3 (Sarah/Bella ElevenLabs reference)
+COQUI_VOICE_BY_LANG = {
+    "es": "spanish_female",
+    "en": "spanish_female",  # Sarah/Bella speaks both
+}
 
-    Returns the output_path on success, None on failure. Failure modes
-    handled gracefully (no exception bubbles up):
-      • API key missing → None + warning
-      • Quota breaker open → None (no API call made)
-      • 401 quota_exceeded → trip breaker + None
-      • Other HTTP / network errors → None + warning
-    """
-    api_key = settings.ELEVENLABS_API_KEY or os.environ.get("ELEVENLABS_API_KEY", "")
-    if not api_key:
-        logger.warning("[TTS] ELEVENLABS_API_KEY not configured")
+
+async def _coqui_tts(text: str, language: str, output_path: str) -> Optional[str]:
+    """Call local Coqui XTTS-v2 server (~/coqui-xtts/server.py on ROG)."""
+    voice = COQUI_VOICE_BY_LANG.get(language[:2].lower(), "spanish_female")
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                COQUI_TTS_URL,
+                json={
+                    "text": text,
+                    "voice": voice,
+                    "speed": 1.10,           # +10% A/B-tested sweet spot
+                    "language": "es" if language[:2].lower() == "es" else "en",
+                    "padding": True,         # adds "Gracias por escuchar." buffer (avoids cut-off)
+                    "format": "mp3",
+                },
+            )
+            response.raise_for_status()
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, "wb") as f:
+                f.write(response.content)
+            gen_time = response.headers.get("X-Generation-Time-Sec", "?")
+            logger.info(f"[TTS Coqui] saved {output_path} ({len(response.content)} bytes, gen={gen_time}s)")
+            return output_path
+    except httpx.HTTPStatusError as e:
+        logger.warning(f"[TTS Coqui] HTTP {e.response.status_code}: {e.response.text[:200]}")
+        return None
+    except Exception as e:
+        logger.warning(f"[TTS Coqui] error: {e}")
         return None
 
-    # Short-circuit if a recent call already exhausted the plan quota —
-    # avoids dozens of 401s per hour while the user upgrades their plan.
+
+async def generate_tts_audio(text: str, language: str = "en", output_path: str = "") -> Optional[str]:
+    """Generate TTS audio: Coqui XTTS-v2 PRIMARY (free, local) -> ElevenLabs fallback.
+
+    v0.7.X: Coqui XTTS-v2 server on ROG clones Sarah/Bella voice. Free, no quota.
+    ElevenLabs kept as fallback during 1-week validation period before cancellation.
+    """
+    # 1. PRIMARY: Coqui XTTS-v2 local (free, no quota)
+    result = await _coqui_tts(text, language, output_path)
+    if result:
+        return result
+
+    logger.warning("[TTS] Coqui local failed, falling back to ElevenLabs")
+
+    # 2. FALLBACK: ElevenLabs (legacy, remove after week 1 validation)
+    api_key = settings.ELEVENLABS_API_KEY or os.environ.get("ELEVENLABS_API_KEY", "")
+    if not api_key:
+        logger.warning("[TTS] ELEVENLABS_API_KEY not configured — no fallback available")
+        return None
+
     if _is_tts_quota_breaker_open():
-        logger.info("[TTS] Quota breaker open, skipping ElevenLabs call")
+        logger.info("[TTS] Quota breaker open, skipping ElevenLabs fallback")
         return None
 
     voice_id = ELEVENLABS_VOICE_MAP.get(language[:2].lower(), DEFAULT_VOICE)
@@ -119,17 +161,13 @@ async def generate_tts_audio(text: str, language: str = "en", output_path: str =
                 },
             )
             response.raise_for_status()
-
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             with open(output_path, "wb") as f:
                 f.write(response.content)
-
-            logger.info(f"[TTS] Audio saved: {output_path} ({len(response.content)} bytes)")
+            logger.info(f"[TTS ElevenLabs fallback] saved {output_path} ({len(response.content)} bytes)")
             return output_path
 
     except httpx.HTTPStatusError as e:
-        # Detect ElevenLabs quota exhausted ('quota_exceeded' code) and
-        # trip the breaker so the next ~24h of TTS calls short-circuit.
         body_text = ""
         try:
             body_text = e.response.text.lower()
@@ -138,12 +176,12 @@ async def generate_tts_audio(text: str, language: str = "en", output_path: str =
         is_quota = e.response.status_code == 401 and (
             "quota_exceeded" in body_text or "exceeds your quota" in body_text
         )
-        logger.warning(f"[TTS] HTTP error {e.response.status_code}: {e.response.text[:200]}")
+        logger.warning(f"[TTS ElevenLabs] HTTP error {e.response.status_code}: {e.response.text[:200]}")
         if is_quota:
             _trip_tts_quota_breaker(f"HTTP 401 quota_exceeded: {body_text[:160]}")
         return None
     except Exception as e:
-        logger.warning(f"[TTS] Error: {e}")
+        logger.warning(f"[TTS ElevenLabs] error: {e}")
         return None
 
 
