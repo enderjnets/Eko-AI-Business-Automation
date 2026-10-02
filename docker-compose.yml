@@ -24,8 +24,9 @@ services:
     image: redis:7-alpine
     container_name: eko-redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # No host port: every service reaches it as redis:6379 on the compose
+    # network. Publishing 6379 collided with the ROG's system redis-server,
+    # which left this container with no network after reboots (2026-10-02).
     volumes:
       - redisdata:/data
     healthcheck:

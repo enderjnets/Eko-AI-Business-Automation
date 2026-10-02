@@ -1,3 +1,7 @@
+## 2026-10-02 — Celery back: eko-redis no longer publishes host port 6379
+
+Celery worker and beat had not run a single scheduled task since 2026-07-29. The ROG has its own system `redis-server` on `127.0.0.1:6379` (installed 2026-03-16); when it started before Docker at boot, `eko-redis` could not bind host port 6379 and Docker left the container with no network, so nobody could resolve `redis`. No Eko service uses that host port — all of them connect to `redis:6379` on the compose network — so the `ports:` mapping is removed. Recreate only that container: `docker compose up -d --no-deps redis` (data stays in the `redisdata` volume).
+
 ## 2026-10-02 — main = production (sync)
 
 Production on the ROG had been running `feature/pricing-v2` plus hand-copied changes, so `main` no longer matched it. This merge makes `main` match it exactly, with no change to running code:
