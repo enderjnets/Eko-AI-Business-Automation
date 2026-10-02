@@ -1,6 +1,25 @@
+## 2026-10-02 — main = production (sync)
+
+Production on the ROG had been running `feature/pricing-v2` plus hand-copied changes, so `main` no longer matched it. This merge makes `main` match it exactly, with no change to running code:
+
+- Pricing v2 (0.8.0) — already live since 2026-05-24 — is now on `main`.
+- Coqui XTTS-v2 local TTS (primary, ElevenLabs fallback) — live since 2026-05-25 but never committed — is now committed.
+- The 2026-09-23 client-portal changes that had been copied by hand into production are reconciled with their `main` commits.
+- `docker-compose.main.yml` (0.7.61, dev-only stack) arrives on the production branch; it is not used by production.
+
+## 2026-09-23 — Browser tab icon
+
+The site had no favicon (`/favicon.ico` answered 404), so browser tabs showed a blank page icon. Added a custom Eko mark, "Always-on": an open violet→magenta ring with a magenta point on the noir ground (#0A0414), for the 24/7 agents. Chosen by Ender from three directions. Files: `app/icon.svg`, `app/favicon.ico` (16/32/48 px) and `app/apple-icon.png` (180 px, square corners for iOS to round).
+
+## 2026-09-23 — Client login as a button
+
+"Client login" / "Acceso de clientes" is now an outlined button: next to Book Demo on desktop, and in its own row under the header on mobile so both languages fit (checked at 1440, 1024, 390 and 320 px, EN and ES, no horizontal overflow). Link target unchanged: https://clients.ekoaiautomation.com/.
+
 ## 2026-09-23 — Client portal entry
 
 Added the client sign-in link to desktop and mobile landing-page navigation in English and Spanish. Existing booking and CRM routes are unchanged.
+
+
 
 ## [0.8.0] — 2026-05-24
 
@@ -43,6 +62,21 @@ git checkout v0.7.60-stable && docker compose build frontend && docker compose u
 ---
 
 
+
+## [0.7.61] — 2026-05-25
+
+### Dev tooling — stack docker aislado (`eko-main`) para trabajo en paralelo de la rama main
+
+Montaje para correr la rama `main` en paralelo con `feature/pricing-v2` sin que se pisen, usando git worktree (`~/Eko-AI-main`) + un stack docker totalmente aislado.
+
+#### Cambios
+
+**`docker-compose.main.yml`** (nuevo, proyecto compose `eko-main`):
+
+- backend/frontend/db/redis propios en puertos `8010/3003/5433/6380`, aislados de producción (`3001/8000/5432/6379`) y del preview de pricing-v2 (`:3002`).
+- Sin celery worker/beat y con `AUTO_REPLY_ENABLED=false` a propósito: el preview nunca duplica jobs programados ni manda emails salientes contra servicios externos de producción.
+- Alias de red `eko-backend` dentro del proyecto para que el rewrite hardcoded de `next.config.js` (`/api` → `http://eko-backend:8000`) resuelva al backend aislado.
+- Cambio **infra-only**: no toca código de la app. Setup completo y gotchas (static/audio faltante, clonar schema de prod por el índice duplicado de `landing_page`) documentados en `EKO_PARALLEL_CONTEXT.md`.
 
 ## [0.7.44] — 2026-05-20
 
