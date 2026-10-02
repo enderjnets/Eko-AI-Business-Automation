@@ -1,3 +1,7 @@
+## 2026-09-23 — Client portal entry
+
+Added the client sign-in link to desktop and mobile landing-page navigation in English and Spanish. Existing booking and CRM routes are unchanged.
+
 ## [0.8.0] — 2026-05-24
 
 ### Pricing v2 — Council recommendations (Starter $249 / Growth $749 verticals / Enterprise $1,999)
