@@ -1,3 +1,7 @@
+## 2026-10-03 — Welcome-email retry only for landing-page leads
+
+`retry_failed_welcome_emails` (hourly) re-dispatches `enrich_and_welcome_lead`, which sends the "AI automation analysis" email, to any recent ENRICHED/SCORED/CONTACTED lead with an email and no outbound. It had no source filter, so discovered leads were cold-emailed automatically once enrichment found an address. On 2026-10-02 22:11 UTC one Google Maps dentist lead got that email — to `email@address.com`, a placeholder scraped from its website, so it never reached the clinic. The query now requires `source = LANDING_PAGE`, the only leads that asked for that email (the other dispatcher is `create_public_lead`). Discovered leads are contacted only by an explicit decision. Deploy note: restart `celery-worker`.
+
 ## 2026-10-02 — Batch enrichment: one ResearchAgent per lead
 
 `ResearchAgent.enrich()` closes its HTTP clients when it finishes, so an agent is single-use. Both batch paths (`enrich_pending_leads` in Celery and `_enrich_leads_batch` behind the dashboard's bulk enrich) built one agent and reused it, so every lead after the first failed its website fetch (`Cannot send a request, as the client has been closed`) and was scored by the LLM with no website data and no email. Seen on the 45-dentist pilot; that run was stopped before it committed anything. Each lead now gets its own agent. Deploy note: restart `celery-worker` (it does not auto-reload).

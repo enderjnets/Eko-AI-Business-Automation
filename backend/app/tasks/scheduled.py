@@ -8,7 +8,7 @@ from app.tasks.celery_app import celery_app
 from app.db.base import AsyncSessionLocal
 from app.models.workspace import Workspace, WorkspaceMember  # noqa: F401
 from app.models.user import User
-from app.models.lead import Lead, LeadStatus, Interaction
+from app.models.lead import Lead, LeadStatus, LeadSource, Interaction
 from app.models.payment import Payment  # noqa: F401 - needed for Lead mapper resolution
 from app.models.landing_page import LandingPage  # noqa: F401 - needed for Lead.landing_page_id FK resolution
 from app.models.landing_page_visit import LandingPageVisit  # noqa: F401
@@ -739,9 +739,11 @@ async def _retry_failed_welcome_emails_async():
         # Eligible: lead has email, not DNC, created in last 7 days, status
         # advanced past DISCOVERED (i.e. enrichment ran), and NO outbound
         # email interaction yet. Limit to 25 per run so we don't blow the
-        # quota again.
+        # quota again. Landing-page leads only: they asked for the analysis
+        # email; discovered leads must never be cold-emailed by this retry.
         q = await db.execute(
             select(Lead.id)
+            .where(Lead.source == LeadSource.LANDING_PAGE)
             .where(Lead.email.isnot(None))
             .where(Lead.do_not_contact == False)
             .where(Lead.created_at >= cutoff)
